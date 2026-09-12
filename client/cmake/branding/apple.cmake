@@ -1,13 +1,16 @@
 if(NOT CLIENT_SWIFT_MODULE_NAME)
-    set(CLIENT_SWIFT_MODULE_NAME "${CLIENT_APPLICATION_NAME}" CACHE STRING "Swift module name for Objective-C interop header")
+    set(CLIENT_SWIFT_MODULE_NAME "TunnelCoreVPN" CACHE STRING "Swift module name for Objective-C interop header")
 endif()
 if(NOT CLIENT_SWIFT_OBJC_HEADER_NAME)
     set(CLIENT_SWIFT_OBJC_HEADER_NAME "${CLIENT_SWIFT_MODULE_NAME}-Swift.h" CACHE STRING "Generated Swift Objective-C header name")
 endif()
 if(NOT CLIENT_NETWORK_EXTENSION_NAME)
-    set(CLIENT_NETWORK_EXTENSION_NAME "${CLIENT_APPLICATION_NAME}NetworkExtension" CACHE STRING "Display name for Apple network extension targets")
+    set(CLIENT_NETWORK_EXTENSION_NAME "TunnelCoreVPNNetworkExtension" CACHE STRING "Display name for Apple network extension targets")
 endif()
 
+# Apple identifiers/signing defaults are intentionally kept compatible with the
+# upstream project until TunnelCore's own Apple Developer identifiers and
+# provisioning profiles are configured.
 if(NOT BUILD_OSX_APP_IDENTIFIER)
     set(BUILD_OSX_APP_IDENTIFIER org.amnezia.AmneziaVPN CACHE STRING "OSX Application identifier")
 endif()
@@ -18,5 +21,5 @@ if(NOT BUILD_IOS_GROUP_IDENTIFIER)
     set(BUILD_IOS_GROUP_IDENTIFIER group.org.amnezia.AmneziaVPN CACHE STRING "iOS Group identifier")
 endif()
 if(NOT BUILD_VPN_DEVELOPMENT_TEAM)
-    set(BUILD_VPN_DEVELOPMENT_TEAM X7UJ388FXK CACHE STRING "Amnezia VPN Development Team")
+    set(BUILD_VPN_DEVELOPMENT_TEAM X7UJ388FXK CACHE STRING "Legacy upstream development team; override for TunnelCore signing")
 endif()
