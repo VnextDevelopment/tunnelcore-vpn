@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.25.0 FATAL_ERROR)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Keep the historical CMake project/target identifier for compatibility with
+# upstream build scripts while exposing TunnelCore VPN as the product brand.
 set(PROJECT AmneziaVPN)
 if(NOT AMNEZIAVPN_VERSION)
     set(AMNEZIAVPN_VERSION 5.0.2.2 CACHE STRING "Client app version")
@@ -16,8 +18,8 @@ set(CMAKE_PROJECT_TOP_LEVEL_INCLUDES
     CACHE STRING "" FORCE)
 
 project(${PROJECT} VERSION ${AMNEZIAVPN_VERSION}
-        DESCRIPTION "AmneziaVPN"
-        HOMEPAGE_URL "https://amnezia.org/"
+        DESCRIPTION "TunnelCore VPN"
+        HOMEPAGE_URL "https://github.com/VnextDevelopment/tunnelcore-vpn"
 )
 
 # trigger conan to kick off `conan install` globally
