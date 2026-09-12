@@ -13,6 +13,14 @@ winbuild*.bat
 .venv/
 .cursor*
 
+# Local secrets and signing material
+.env
+.env.*
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.mobileprovision
 
 # Qt-es
 /.qmake.cache
@@ -121,11 +129,6 @@ captures/
 *.iml
 .idea/
 
-# Keystore files
-# Uncomment the following lines if you do not want to check your keystore files in.
-#*.jks
-#*.keystore
-
 # External native build folder generated in Android Studio 2.2 and later
 .externalNativeBuild
 
@@ -145,4 +148,3 @@ macos-signed-build.sh
 macos-with-sign-build.sh
 DeveloperIdApplicationCertificate.p12
 DeveloperIdInstallerCertificate.p12
-
