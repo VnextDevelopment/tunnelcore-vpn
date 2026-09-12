@@ -1,20 +1,23 @@
 if(NOT CLIENT_TARGET_NAME)
+    # Keep the legacy executable target name for now so upstream packaging and
+    # platform glue remain compatible while the user-facing product is rebranded.
     set(CLIENT_TARGET_NAME "AmneziaVPN" CACHE STRING "Client executable target name")
 endif()
 if(NOT CLIENT_APPLICATION_NAME)
-    set(CLIENT_APPLICATION_NAME "AmneziaVPN" CACHE STRING "Application display and executable name")
+    set(CLIENT_APPLICATION_NAME "TunnelCore VPN" CACHE STRING "Application display name")
 endif()
 if(NOT CLIENT_SERVICE_NAME)
+    # Service executable rename is handled separately from the display brand.
     set(CLIENT_SERVICE_NAME "AmneziaVPN-service" CACHE STRING "Service executable name")
 endif()
 if(NOT CLIENT_ORGANIZATION_NAME)
-    set(CLIENT_ORGANIZATION_NAME "AmneziaVPN.ORG" CACHE STRING "QSettings organization name")
+    set(CLIENT_ORGANIZATION_NAME "TunnelCore" CACHE STRING "QSettings organization name")
 endif()
 if(NOT CLIENT_APP_INSTANCE_NAME)
-    set(CLIENT_APP_INSTANCE_NAME "AmneziaVPNInstance" CACHE STRING "Single-instance local server name")
+    set(CLIENT_APP_INSTANCE_NAME "TunnelCoreVPNInstance" CACHE STRING "Single-instance local server name")
 endif()
 if(NOT CLIENT_KEYCHAIN_NAME)
-    set(CLIENT_KEYCHAIN_NAME "${CLIENT_APPLICATION_NAME}-Keychain" CACHE STRING "QtKeychain service name used for encrypted settings keys")
+    set(CLIENT_KEYCHAIN_NAME "TunnelCoreVPN-Keychain" CACHE STRING "QtKeychain service name used for encrypted settings keys")
 endif()
 
 # -- QML entry points and UI resources
@@ -38,6 +41,8 @@ if(NOT CLIENT_EXTRA_QRC)
 endif()
 
 # -- translations
+# Translation filenames stay compatible with upstream resources. The product
+# name shown to users is controlled by CLIENT_APPLICATION_NAME and branded UI.
 if(NOT CLIENT_TS_PREFIX)
     set(CLIENT_TS_PREFIX "amneziavpn" CACHE STRING "Translation filename prefix")
 endif()
@@ -56,5 +61,5 @@ else()
 endif()
 
 if(NOT CLIENT_NOTIFICATION_IDENTIFIER)
-    set(CLIENT_NOTIFICATION_IDENTIFIER "${CLIENT_TS_PREFIX}" CACHE STRING "Local notification request identifier")
+    set(CLIENT_NOTIFICATION_IDENTIFIER "tunnelcorevpn" CACHE STRING "Local notification request identifier")
 endif()
