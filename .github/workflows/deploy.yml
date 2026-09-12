@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - '**'
+  workflow_dispatch:
 
 env:
   QT_MIRROR: https://mirrors.ocf.berkeley.edu/qt/ # https://download.qt.io/static/mirrorlist/
@@ -30,7 +31,7 @@ jobs:
   Bake-Prebuilts-Linux:
     runs-on: ubuntu-22.04
     needs: Detect-Changes
-    if: needs.Detect-Changes.outputs.recipes_changed == 'true'
+    if: ${{ github.event_name == 'push' && needs.Detect-Changes.outputs.recipes_changed == 'true' }}
 
     steps:
     - uses: actions/checkout@v4
@@ -66,7 +67,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     needs: Bake-Prebuilts-Linux
-    if: ${{ always() }}
+    if: ${{ always() && github.event_name == 'push' }}
 
     env:
       QT_VERSION: 6.10.1
@@ -139,7 +140,7 @@ jobs:
   Bake-Prebuilts-Windows:
     runs-on: windows-latest
     needs: Detect-Changes
-    if: needs.Detect-Changes.outputs.recipes_changed == 'true'
+    if: ${{ github.event_name == 'push' && needs.Detect-Changes.outputs.recipes_changed == 'true' }}
 
     steps:
     - uses: actions/checkout@v4
@@ -173,7 +174,7 @@ jobs:
     runs-on: windows-latest
 
     needs: Bake-Prebuilts-Windows
-    if: ${{ always() }}
+    if: ${{ always() && github.event_name == 'push' }}
 
     env:
       QT_VERSION: 6.10.1
@@ -264,7 +265,7 @@ jobs:
 
   Bake-Prebuilts-iOS:
     needs: Detect-Changes
-    if: needs.Detect-Changes.outputs.recipes_changed == 'true'
+    if: ${{ github.event_name == 'workflow_dispatch' && needs.Detect-Changes.outputs.recipes_changed == 'true' }}
 
     strategy:
       matrix:
@@ -309,7 +310,7 @@ jobs:
     runs-on: macos-latest
 
     needs: Bake-Prebuilts-iOS
-    if: ${{ always() }}
+    if: ${{ always() && github.event_name == 'workflow_dispatch' }}
 
     env:
       QT_VERSION: 6.10.1
@@ -408,7 +409,7 @@ jobs:
 
   Bake-Prebuilts-MacOS:
     needs: Detect-Changes
-    if: needs.Detect-Changes.outputs.recipes_changed == 'true'
+    if: ${{ github.event_name == 'workflow_dispatch' && needs.Detect-Changes.outputs.recipes_changed == 'true' }}
 
     strategy:
       matrix:
@@ -457,7 +458,7 @@ jobs:
     runs-on: macos-15
 
     needs: Bake-Prebuilts-MacOS
-    if: ${{ always() }}
+    if: ${{ always() && github.event_name == 'workflow_dispatch' }}
 
     env:
       QT_VERSION: 6.10.1
@@ -550,7 +551,7 @@ jobs:
 
   Bake-Prebuilts-MacOS-NE:
     needs: Detect-Changes
-    if: needs.Detect-Changes.outputs.recipes_changed == 'true'
+    if: ${{ github.event_name == 'workflow_dispatch' && needs.Detect-Changes.outputs.recipes_changed == 'true' }}
 
     strategy:
       matrix:
@@ -599,7 +600,7 @@ jobs:
     runs-on: macos-26
 
     needs: Bake-Prebuilts-MacOS-NE
-    if: ${{ always() }}
+    if: ${{ always() && github.event_name == 'workflow_dispatch' }}
 
     env:
       QT_VERSION: 6.10.1
@@ -688,7 +689,7 @@ jobs:
   Bake-Prebuilts-Android:
     runs-on: android-runner
     needs: Detect-Changes
-    if: needs.Detect-Changes.outputs.recipes_changed == 'true'
+    if: ${{ github.event_name == 'push' && needs.Detect-Changes.outputs.recipes_changed == 'true' }}
 
     env:
       ANDROID_PLATFORM: android-28
@@ -743,7 +744,7 @@ jobs:
     runs-on: android-runner
 
     needs: Bake-Prebuilts-Android
-    if: ${{ always() }}
+    if: ${{ always() && github.event_name == 'push' }}
 
     strategy:
       fail-fast: false
@@ -987,6 +988,7 @@ jobs:
 
   Extra:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' }}
     steps:
       - name: Search a corresponding PR
         uses: octokit/request-action@v2.x
@@ -1002,4 +1004,3 @@ jobs:
         run: | 
           echo "Pull request:" >> $GITHUB_STEP_SUMMARY
           echo "[[#${{ fromJSON(steps.pull_request.outputs.data)[0].number }}] ${{ fromJSON(steps.pull_request.outputs.data)[0].title }}](${{ fromJSON(steps.pull_request.outputs.data)[0].html_url }})" >> $GITHUB_STEP_SUMMARY
-
