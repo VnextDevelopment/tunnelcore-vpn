@@ -108,6 +108,9 @@ jobs:
       QT_VERSION: 6.10.1
       QT_DESKTOP_MODULES: 'qtremoteobjects qt5compat qtimageformats qtshadertools'
       QT_ANDROID_MODULES: 'qtremoteobjects qt5compat qtshadertools'
+      QT_ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/tunnelcore-test.keystore
+      QT_ANDROID_KEYSTORE_STORE_PASS: tunnelcore-test
+      QT_ANDROID_KEYSTORE_ALIAS: tunnelcore-test
       PROD_AGW_PUBLIC_KEY: ${{ secrets.PROD_AGW_PUBLIC_KEY }}
       PROD_S3_ENDPOINT: ${{ secrets.PROD_S3_ENDPOINT }}
       FALLBACK_S3_ENDPOINT: ${{ secrets.FALLBACK_S3_ENDPOINT }}
@@ -153,6 +156,19 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: '17'
+
+    - name: 'Create test Android keystore'
+      shell: bash
+      run: |
+        keytool -genkeypair -v \
+          -keystore "$QT_ANDROID_KEYSTORE_PATH" \
+          -storepass "$QT_ANDROID_KEYSTORE_STORE_PASS" \
+          -keypass "$QT_ANDROID_KEYSTORE_STORE_PASS" \
+          -alias "$QT_ANDROID_KEYSTORE_ALIAS" \
+          -keyalg RSA \
+          -keysize 2048 \
+          -validity 3650 \
+          -dname "CN=TunnelCore VPN Test, OU=CI, O=VnextDevelopment, L=CI, ST=CI, C=DE"
 
     - name: 'Setup Android SDK'
       uses: android-actions/setup-android@v4
