@@ -287,6 +287,15 @@ install(SCRIPT ${QT_DEPLOY_SCRIPT}
     COMPONENT AmneziaVPN
 )
 
+# Qt deployment normally pulls Core5Compat transitively, but keep an explicit
+# Windows install rule as a safety net so packaged builds cannot miss the DLL.
+if(WIN32)
+    install(FILES "$<TARGET_FILE:Qt6::Core5Compat>"
+        DESTINATION ${CMAKE_INSTALL_BINDIR}
+        COMPONENT AmneziaVPN
+    )
+endif()
+
 if (APPLE AND NOT IOS AND NOT MACOS_NE)
     list(APPEND OVPN_SCRIPTS "${CMAKE_SOURCE_DIR}/deploy/data/macos/update-resolv-conf.sh")
     set_target_properties(${PROJECT} PROPERTIES
