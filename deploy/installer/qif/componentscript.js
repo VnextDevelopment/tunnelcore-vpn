@@ -4,15 +4,24 @@ function appName()
     return installer.value("Name")
 }
 
+function displayName()
+{
+    return "TunnelCore VPN"
+}
+
 function serviceName()
 {
-    return (appName() + "-service")
+    // Keep the legacy service executable/name until the Windows service layer
+    // is renamed end-to-end. This is internal and not user-facing.
+    return "AmneziaVPN-service"
 }
 
 function appExecutableFileName()
 {
+    // Keep the legacy binary name for compatibility with the existing build
+    // target while exposing TunnelCore VPN everywhere users see it.
     if (runningOnWindows()) {
-        return appName() + ".exe";
+        return "AmneziaVPN.exe";
     } else {
         return appName();
     }
@@ -64,12 +73,11 @@ Component.prototype.createOperations = function()
     if (runningOnWindows()) {
 
         component.addOperation("CreateShortcut", "@TargetDir@/" + appExecutableFileName(),
-                               QDesktopServices.storageLocation(QDesktopServices.DesktopLocation) + "/" + appName() + ".lnk",
+                               QDesktopServices.storageLocation(QDesktopServices.DesktopLocation) + "/" + displayName() + ".lnk",
                                "workingDirectory=@TargetDir@", "iconPath=@TargetDir@\\" + appExecutableFileName(), "iconId=0");
 
-
         component.addElevatedOperation("CreateShortcut", "@TargetDir@/" + appExecutableFileName(),
-                                       installer.value("AllUsersStartMenuProgramsPath") + "/" + appName() + ".lnk",
+                                       installer.value("AllUsersStartMenuProgramsPath") + "/" + displayName() + ".lnk",
                                        "workingDirectory=@TargetDir@", "iconPath=@TargetDir@\\" + appExecutableFileName(), "iconId=0");
 
         if (!vcRuntimeIsInstalled()) {
@@ -87,9 +95,10 @@ Component.prototype.createOperations = function()
         let pu_path = installer.value("TargetDir").replace(/\//g, '\\') + "\\"
         component.addElevatedOperation("Execute",
                                        ["sc", "create", serviceName(), "binpath=", pu_path + serviceName() + ".exe",
+                                        "DisplayName=", displayName() + " Service",
                                         "start=", "auto", "depend=", "BFE/nsi"],
                                         "UNDOEXECUTE", "cmd", "/c", pu_path + "post_uninstall.cmd");
-										
+                                        
         component.addElevatedOperation("Execute", "cmd", "/c", pu_path + "post_install.cmd");
     } else if (runningOnMacOS()) {
         component.addElevatedOperation("Execute", "@TargetDir@/post_install.sh", "UNDOEXECUTE", "@TargetDir@/post_uninstall.sh");
@@ -122,8 +131,8 @@ Component.prototype.installationFinished = function()
         } else if (runningOnMacOS()) {
             command = "/Applications/" + appName() + ".app/Contents/MacOS/" + appName();
         } else if (runningOnLinux()) {
-	    command = "@TargetDir@/client/" + appName();
-	}
+            command = "@TargetDir@/client/" + appName();
+        }
 
         installer.dropAdminRights()
 
