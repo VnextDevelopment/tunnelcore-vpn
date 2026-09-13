@@ -170,9 +170,22 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 if(WIN32)
+    set(CLIENT_WINDOWS_ICON_FILE "${CMAKE_CURRENT_BINARY_DIR}/tunnelcore.ico")
+    execute_process(
+        COMMAND powershell.exe -NoProfile -ExecutionPolicy Bypass
+            -File "${CMAKE_CURRENT_LIST_DIR}/platforms/windows/generate-tunnelcore-icon.ps1"
+            -Source "${CMAKE_SOURCE_DIR}/IMG_5278.jpeg"
+            -Output "${CLIENT_WINDOWS_ICON_FILE}"
+        RESULT_VARIABLE TUNNELCORE_ICON_RESULT
+    )
+    if(NOT TUNNELCORE_ICON_RESULT EQUAL 0 OR NOT EXISTS "${CLIENT_WINDOWS_ICON_FILE}")
+        message(FATAL_ERROR "Failed to generate TunnelCore Windows icon")
+    endif()
+
     configure_file(
         ${CMAKE_CURRENT_LIST_DIR}/platforms/windows/amneziavpn.rc.in
         ${CMAKE_CURRENT_BINARY_DIR}/amneziavpn.rc
+        @ONLY
     )
 
     set(LIBS ${LIBS}
@@ -258,68 +271,8 @@ install(RUNTIME_DEPENDENCY_SET client_deps
     PRE_EXCLUDE_REGEXES
         [[api-ms-win-.*]]
         [[ext-ms-.*]]
-        [[kernel32\.dll]]
-        [[hvsifiletrust\.dll]]
-        [[libc\.so\..*]] [[libgcc_s\.so\..*]] [[libm\.so\..*]] [[libstdc\+\+\.so\..*]]
-        [[.*\.framework]]
-        [[^(lib)?[Qq]t.*]]
     POST_EXCLUDE_REGEXES
-        [[^.*[\\/]system32[\\/].*\.dll$]]
-        [[^/lib.*]]
-        [[^/usr/lib.*]]
-    DIRECTORIES ${CONAN_RUNTIME_LIB_DIRS}
-    COMPONENT AmneziaVPN
-    DESTINATION "${RUNTIME_DEPS_DIR}"
+        [[.*[\\/]system32[\\/].*\.dll]]
+        [[.*[\\/]SysWOW64[\\/].*\.dll]]
+        [[.*[\\/]Windows[\\/]WinSxS[\\/].*\.dll]]
 )
-
-set(deploy_tool_options "")
-if(WIN32)
-    set(deploy_tool_options "--force-openssl --force")
-endif()
-
-qt_generate_deploy_qml_app_script(
-    TARGET ${PROJECT}
-    OUTPUT_SCRIPT QT_DEPLOY_SCRIPT
-    NO_UNSUPPORTED_PLATFORM_ERROR
-    DEPLOY_TOOL_OPTIONS ${deploy_tool_options}
-)
-install(SCRIPT ${QT_DEPLOY_SCRIPT}
-    COMPONENT AmneziaVPN
-)
-
-# Qt deployment normally pulls Core5Compat transitively, but keep an explicit
-# Windows install rule as a safety net so packaged builds cannot miss the DLL.
-if(WIN32)
-    install(FILES "$<TARGET_FILE:Qt6::Core5Compat>"
-        DESTINATION ${CMAKE_INSTALL_BINDIR}
-        COMPONENT AmneziaVPN
-    )
-endif()
-
-if (APPLE AND NOT IOS AND NOT MACOS_NE)
-    list(APPEND OVPN_SCRIPTS "${CMAKE_SOURCE_DIR}/deploy/data/macos/update-resolv-conf.sh")
-    set_target_properties(${PROJECT} PROPERTIES
-        XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "NO"
-        XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED "NO"
-    )
-endif()
-if (LINUX AND NOT ANDROID)
-    list(APPEND OVPN_SCRIPTS "${CMAKE_SOURCE_DIR}/deploy/data/linux/update-resolv-conf.sh")
-endif()
-
-if(OVPN_SCRIPTS)
-    add_custom_command(TARGET ${PROJECT} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${OVPN_SCRIPTS}
-        "$<TARGET_FILE_DIR:${PROJECT}>"
-    )
-
-    install(FILES ${OVPN_SCRIPTS}
-        DESTINATION ${CMAKE_INSTALL_BINDIR}
-        COMPONENT AmneziaVPN
-        PERMISSIONS
-            OWNER_READ OWNER_EXECUTE
-            GROUP_READ GROUP_EXECUTE
-            WORLD_READ WORLD_EXECUTE
-    )
-endif()
