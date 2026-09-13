@@ -1,7 +1,5 @@
 if(NOT CLIENT_TARGET_NAME)
-    # Keep the legacy executable target name for now so upstream packaging and
-    # platform glue remain compatible while the user-facing product is rebranded.
-    set(CLIENT_TARGET_NAME "AmneziaVPN" CACHE STRING "Client executable target name")
+    set(CLIENT_TARGET_NAME "TunnelCoreVPN" CACHE STRING "Client executable target name")
 endif()
 if(NOT CLIENT_APPLICATION_NAME)
     set(CLIENT_APPLICATION_NAME "TunnelCore VPN" CACHE STRING "Application display name")
