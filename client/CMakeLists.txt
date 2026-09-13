@@ -276,3 +276,21 @@ install(RUNTIME_DEPENDENCY_SET client_deps
         [[.*[\\/]SysWOW64[\\/].*\.dll]]
         [[.*[\\/]Windows[\\/]WinSxS[\\/].*\.dll]]
 )
+
+# Let Qt deploy all runtime libraries, QML modules and plugins into the
+# installation tree. Without this step the Windows installer can be built
+# successfully while missing DLLs such as Qt6QuickControls2.dll.
+set(deploy_tool_options "")
+if(WIN32)
+    set(deploy_tool_options "--force-openssl --force")
+endif()
+
+qt_generate_deploy_qml_app_script(
+    TARGET ${PROJECT}
+    OUTPUT_SCRIPT QT_DEPLOY_SCRIPT
+    NO_UNSUPPORTED_PLATFORM_ERROR
+    DEPLOY_TOOL_OPTIONS ${deploy_tool_options}
+)
+install(SCRIPT ${QT_DEPLOY_SCRIPT}
+    COMPONENT AmneziaVPN
+)
