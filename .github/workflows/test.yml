@@ -191,7 +191,7 @@ jobs:
         deploy/build.sh -t android --abi arm64-v8a --build ./deploy/build/android-arm64
         mkdir -p deploy/artifacts
         VERSION=$(grep CMAKE_PROJECT_VERSION:STATIC deploy/build/android-arm64/CMakeCache.txt | cut -d= -f2)
-        cp deploy/build/android-arm64/client/android-build/AmneziaVPN.apk \
+        cp deploy/build/android-arm64/client/android-build/build/outputs/apk/android-build-release-unsigned.apk \
            deploy/artifacts/TunnelCoreVPN_${VERSION}_arm64-v8a.apk
 
     - name: 'Upload Android APK'
