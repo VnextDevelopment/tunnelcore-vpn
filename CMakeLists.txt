@@ -6,8 +6,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Keep the historical CMake project/target identifier for compatibility with
 # upstream build scripts while exposing TunnelCore VPN as the product brand.
 set(PROJECT AmneziaVPN)
+
+# Local/release fallback stays stable. GitHub Actions test builds automatically
+# use 5.0.2.<run_number>, so every produced package can be identified uniquely.
 if(NOT AMNEZIAVPN_VERSION)
-    set(AMNEZIAVPN_VERSION 5.0.2.2 CACHE STRING "Client app version")
+    if(DEFINED ENV{GITHUB_RUN_NUMBER} AND NOT "$ENV{GITHUB_RUN_NUMBER}" STREQUAL "")
+        set(AMNEZIAVPN_VERSION "5.0.2.$ENV{GITHUB_RUN_NUMBER}" CACHE STRING "Client app version")
+    else()
+        set(AMNEZIAVPN_VERSION 5.0.2.2 CACHE STRING "Client app version")
+    endif()
 endif()
 
 set(QT_CREATOR_SKIP_PACKAGE_MANAGER_SETUP ON CACHE BOOL "" FORCE)
@@ -33,8 +40,13 @@ set(RELEASE_DATE "${CURRENT_DATE}")
 
 set(APP_MAJOR_VERSION ${CMAKE_PROJECT_VERSION_MAJOR}.${CMAKE_PROJECT_VERSION_MINOR}.${CMAKE_PROJECT_VERSION_PATCH})
 
-# bump by 2 on every release, because we're releasing two versions on the play store
-set(APP_ANDROID_VERSION_CODE 2161)
+# Keep Android versionCode unique as well. The two Play Store variants use
+# offsets 0/1, so multiplying the workflow run number by 2 leaves room for both.
+if(DEFINED ENV{GITHUB_RUN_NUMBER} AND NOT "$ENV{GITHUB_RUN_NUMBER}" STREQUAL "")
+    math(EXPR APP_ANDROID_VERSION_CODE "2161000 + ($ENV{GITHUB_RUN_NUMBER} * 2)")
+else()
+    set(APP_ANDROID_VERSION_CODE 2161)
+endif()
 if(DEFINED APP_ANDROID_VERSION_CODE_OFFSET)
     math(EXPR APP_ANDROID_VERSION_CODE "${APP_ANDROID_VERSION_CODE} + ${APP_ANDROID_VERSION_CODE_OFFSET}")
 endif()
