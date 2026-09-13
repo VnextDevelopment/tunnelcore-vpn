@@ -1,7 +1,7 @@
 #include <windows.h>
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 
-IDI_ICON1               ICON                    "../../images/app.ico"
+IDI_ICON1               ICON                    "@CLIENT_WINDOWS_ICON_FILE@"
 
 #define VER_COMPANYNAME_STR         "TunnelCore"
 #define VER_FILEDESCRIPTION_STR     "TunnelCore VPN"
