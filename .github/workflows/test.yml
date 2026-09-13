@@ -106,7 +106,8 @@ jobs:
       ANDROID_PLATFORM: android-28
       NDK_VERSION: 27.0.11718014
       QT_VERSION: 6.10.1
-      QT_MODULES: 'qtremoteobjects qt5compat qtimageformats qtshadertools'
+      QT_DESKTOP_MODULES: 'qtremoteobjects qt5compat qtimageformats qtshadertools'
+      QT_ANDROID_MODULES: 'qtremoteobjects qt5compat qtshadertools'
       PROD_AGW_PUBLIC_KEY: ${{ secrets.PROD_AGW_PUBLIC_KEY }}
       PROD_S3_ENDPOINT: ${{ secrets.PROD_S3_ENDPOINT }}
       FALLBACK_S3_ENDPOINT: ${{ secrets.FALLBACK_S3_ENDPOINT }}
@@ -130,7 +131,7 @@ jobs:
         host: 'linux'
         target: 'desktop'
         arch: 'linux_gcc_64'
-        modules: ${{ env.QT_MODULES }}
+        modules: ${{ env.QT_DESKTOP_MODULES }}
         dir: ${{ runner.temp }}
         py7zrversion: '==0.22.*'
         extra: '--base ${{ env.QT_MIRROR }}'
@@ -142,7 +143,7 @@ jobs:
         host: 'linux'
         target: 'android'
         arch: 'android_arm64_v8a'
-        modules: ${{ env.QT_MODULES }}
+        modules: ${{ env.QT_ANDROID_MODULES }}
         dir: ${{ runner.temp }}
         py7zrversion: '==0.22.*'
         extra: '--base ${{ env.QT_MIRROR }}'
