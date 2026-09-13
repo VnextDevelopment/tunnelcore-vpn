@@ -21,14 +21,28 @@ PageType {
         anchors.fill: parent
         spacing: 0
 
-        Image {
-            id: image
-            source: "qrc:/images/amneziaBigLogo.png"
-
+        ColumnLayout {
             Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
             Layout.topMargin: 32 + PageController.safeAreaTopMargin
-            Layout.preferredWidth: 360
-            Layout.preferredHeight: 287
+            Layout.fillWidth: true
+            spacing: 16
+
+            Image {
+                source: "qrc:/images/icon.png"
+                Layout.alignment: Qt.AlignHCenter
+                Layout.preferredWidth: 160
+                Layout.preferredHeight: 160
+                fillMode: Image.PreserveAspectFit
+                smooth: true
+            }
+
+            Header2TextType {
+                Layout.fillWidth: true
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
+                text: "TunnelCore VPN"
+                horizontalAlignment: Text.AlignHCenter
+            }
         }
 
         BasicButtonType {
