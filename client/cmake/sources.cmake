@@ -53,6 +53,7 @@ set(HEADERS ${HEADERS}
     ${CLIENT_ROOT_DIR}/core/repositories/secureAppSettingsRepository.h
     ${CLIENT_ROOT_DIR}/core/protocols/qmlRegisterProtocols.h
     ${CLIENT_ROOT_DIR}/ui/utils/pages.h
+    ${CLIENT_ROOT_DIR}/ui/utils/pageEnum.h
     ${CLIENT_PAGE_ENUM_HEADER}
     ${CLIENT_ROOT_DIR}/ui/utils/qAutoStart.h
     ${CLIENT_ROOT_DIR}/ui/utils/mtProxyPublicHostInput.h
