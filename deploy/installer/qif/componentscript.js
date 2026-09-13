@@ -18,10 +18,8 @@ function serviceName()
 
 function appExecutableFileName()
 {
-    // Keep the legacy binary name for compatibility with the existing build
-    // target while exposing TunnelCore VPN everywhere users see it.
     if (runningOnWindows()) {
-        return "AmneziaVPN.exe";
+        return "TunnelCoreVPN.exe";
     } else {
         return appName();
     }
