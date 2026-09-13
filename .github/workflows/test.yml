@@ -108,7 +108,7 @@ jobs:
       QT_VERSION: 6.10.1
       QT_DESKTOP_MODULES: 'qtremoteobjects qt5compat qtimageformats qtshadertools'
       QT_ANDROID_MODULES: 'qtremoteobjects qt5compat qtshadertools'
-      QT_ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/tunnelcore-test.keystore
+      QT_ANDROID_KEYSTORE_PATH: /tmp/tunnelcore-test.keystore
       QT_ANDROID_KEYSTORE_STORE_PASS: tunnelcore-test
       QT_ANDROID_KEYSTORE_ALIAS: tunnelcore-test
       PROD_AGW_PUBLIC_KEY: ${{ secrets.PROD_AGW_PUBLIC_KEY }}
