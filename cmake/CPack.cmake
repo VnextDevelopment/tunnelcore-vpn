@@ -11,7 +11,9 @@ elseif(LINUX AND NOT ANDROID)
 endif()
 if(WIN32)
     set(CPACK_PACKAGE_INSTALL_DIRECTORY "TunnelCore VPN")
-    set(CPACK_PACKAGE_EXECUTABLES       TunnelCoreVPN "TunnelCore VPN")
+    # Keep the internal executable name until platform glue/service integration is fully renamed.
+    # The second value is the user-visible shortcut label.
+    set(CPACK_PACKAGE_EXECUTABLES       AmneziaVPN "TunnelCore VPN")
 else()
     set(CPACK_PACKAGE_INSTALL_DIRECTORY AmneziaVPN)
     set(CPACK_PACKAGE_EXECUTABLES       AmneziaVPN AmneziaVPN)
