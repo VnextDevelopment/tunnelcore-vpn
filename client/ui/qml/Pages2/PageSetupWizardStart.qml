@@ -15,16 +15,25 @@ PageType {
     id: root
     enableTimer: (SettingsController.isOnTv()) ? false : true
 
-    ColumnLayout {
+    Flickable {
         id: content
 
-        anchors.fill: parent
-        spacing: 0
+        anchors.top: parent.top
+        anchors.bottom: startButton.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.topMargin: 32 + PageController.safeAreaTopMargin
+        anchors.bottomMargin: 24
+        contentHeight: Math.max(height, branding.implicitHeight)
+        flickableDirection: Flickable.VerticalFlick
+        boundsBehavior: Flickable.StopAtBounds
+        clip: true
 
         ColumnLayout {
-            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-            Layout.topMargin: 32 + PageController.safeAreaTopMargin
-            Layout.fillWidth: true
+            id: branding
+
+            width: content.width
+            y: Math.max(0, (content.height - implicitHeight) / 2)
             spacing: 16
 
             Image {
@@ -32,6 +41,8 @@ PageType {
                 Layout.alignment: Qt.AlignHCenter
                 Layout.preferredWidth: 160
                 Layout.preferredHeight: 160
+                Layout.maximumWidth: 160
+                Layout.maximumHeight: 160
                 fillMode: Image.PreserveAspectFit
                 smooth: true
             }
@@ -44,20 +55,21 @@ PageType {
                 horizontalAlignment: Text.AlignHCenter
             }
         }
+    }
 
-        BasicButtonType {
-            id: startButton
-            Layout.fillWidth: true
-            Layout.bottomMargin: 48 + PageController.safeAreaBottomMargin
-            Layout.leftMargin: 16
-            Layout.rightMargin: 16
-            Layout.alignment: Qt.AlignBottom
+    BasicButtonType {
+        id: startButton
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 16 + PageController.safeAreaBottomMargin
+        anchors.leftMargin: 16
+        anchors.rightMargin: 16
 
-            text: qsTr("Let's get started")
+        text: qsTr("Let's get started")
 
-            clickedFunc: function() {
-                PageController.goToPage(PageEnum.PageSetupWizardConfigSource)
-            }
+        clickedFunc: function() {
+            PageController.goToPage(PageEnum.PageSetupWizardConfigSource)
         }
     }
 
