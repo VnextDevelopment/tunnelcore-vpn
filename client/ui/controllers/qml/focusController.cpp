@@ -20,14 +20,24 @@ FocusController::FocusController(QQmlApplicationEngine *engine, QObject *parent)
       m_lvfc { nullptr }
 {
     QObject::connect(m_engine, &QQmlApplicationEngine::objectCreated, this, [this](QObject *object, const QUrl &url) {
+        if (!object) {
+            logger.error() << "QML object creation failed for: " << url;
+            return;
+        }
+
         QQuickItem *newDefaultFocusItem = object->findChild<QQuickItem *>("defaultFocusItem");
         if (newDefaultFocusItem && m_defaultFocusItem != newDefaultFocusItem) {
             m_defaultFocusItem = newDefaultFocusItem;
         }
     });
 
-    QObject::connect(this, &FocusController::focusedItemChanged, this,
-                     [this]() { m_focusedItem->forceActiveFocus(Qt::TabFocusReason); });
+    QObject::connect(this, &FocusController::focusedItemChanged, this, [this]() {
+        if (!m_focusedItem) {
+            logger.warning() << "Cannot focus a null item";
+            return;
+        }
+        m_focusedItem->forceActiveFocus(Qt::TabFocusReason);
+    });
 }
 
 void FocusController::nextKeyTabItem()
