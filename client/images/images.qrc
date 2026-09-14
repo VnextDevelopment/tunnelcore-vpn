@@ -3,7 +3,7 @@
         <file>../fonts/pt-root-ui_vf.ttf</file>
     </qresource>
     <qresource prefix="/images">
-        <file alias="icon.png">../../IMG_5278.jpeg</file>
+        <file alias="icon.png">../../icon_1.png</file>
         <file>amneziaBigLogo.png</file>
         <file>AmneziaVPN.png</file>
         <file>controls/alert-circle.svg</file>
@@ -72,9 +72,9 @@
         <file>controls/text-cursor.svg</file>
         <file>controls/trash.svg</file>
         <file>controls/x-circle.svg</file>
-        <file alias="tray/active.png">../../IMG_5278.jpeg</file>
-        <file alias="tray/default.png">../../IMG_5278.jpeg</file>
-        <file alias="tray/error.png">../../IMG_5278.jpeg</file>
+        <file alias="tray/active.png">../../icon_1.png</file>
+        <file alias="tray/default.png">../../icon_1.png</file>
+        <file alias="tray/error.png">../../icon_1.png</file>
         <file>controls/monitor.svg</file>
     </qresource>
 </RCC>

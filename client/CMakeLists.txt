@@ -171,16 +171,11 @@ endif()
 
 if(WIN32)
     set(CLIENT_WINDOWS_ICON_FILE "${CMAKE_CURRENT_BINARY_DIR}/tunnelcore.ico")
-    execute_process(
-        COMMAND powershell.exe -NoProfile -ExecutionPolicy Bypass
-            -File "${CMAKE_CURRENT_LIST_DIR}/platforms/windows/generate-tunnelcore-icon.ps1"
-            -Source "${CMAKE_SOURCE_DIR}/IMG_5278.jpeg"
-            -Output "${CLIENT_WINDOWS_ICON_FILE}"
-        RESULT_VARIABLE TUNNELCORE_ICON_RESULT
+    configure_file(
+        "${CMAKE_CURRENT_LIST_DIR}/images/app.ico"
+        "${CLIENT_WINDOWS_ICON_FILE}"
+        COPYONLY
     )
-    if(NOT TUNNELCORE_ICON_RESULT EQUAL 0 OR NOT EXISTS "${CLIENT_WINDOWS_ICON_FILE}")
-        message(FATAL_ERROR "Failed to generate TunnelCore Windows icon")
-    endif()
 
     configure_file(
         ${CMAKE_CURRENT_LIST_DIR}/platforms/windows/amneziavpn.rc.in
