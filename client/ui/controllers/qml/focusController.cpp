@@ -21,7 +21,7 @@ FocusController::FocusController(QQmlApplicationEngine *engine, QObject *parent)
 {
     QObject::connect(m_engine, &QQmlApplicationEngine::objectCreated, this, [this](QObject *object, const QUrl &url) {
         if (!object) {
-            logger.error() << "QML object creation failed for: " << url;
+            logger.error() << "QML object creation failed for: " << url.toString();
             return;
         }
 
