@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="@android:color/transparent" />
+    <!-- Adaptive icons are composited onto an opaque surface by Android.
+         A transparent background becomes black in some launchers. -->
+    <solid android:color="@color/ic_launcher_background" />
 </shape>

@@ -101,6 +101,17 @@ jobs:
 
   Test-Android:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - abi: arm64-v8a
+            qt_arch: android_arm64_v8a
+            artifact: arm64
+          # Intel/AMD emulators must not depend on ARM native translation.
+          - abi: x86_64
+            qt_arch: android_x86_64
+            artifact: x86_64
 
     env:
       ANDROID_PLATFORM: android-28
@@ -139,13 +150,13 @@ jobs:
         py7zrversion: '==0.22.*'
         extra: '--base ${{ env.QT_MIRROR }}'
 
-    - name: 'Install Android Qt arm64'
+    - name: 'Install Android Qt ${{ matrix.abi }}'
       uses: jurplel/install-qt-action@v4
       with:
         version: ${{ env.QT_VERSION }}
         host: 'linux'
         target: 'android'
-        arch: 'android_arm64_v8a'
+        arch: ${{ matrix.qt_arch }}
         modules: ${{ env.QT_ANDROID_MODULES }}
         dir: ${{ runner.temp }}
         py7zrversion: '==0.22.*'
@@ -183,21 +194,21 @@ jobs:
     - name: 'Install Conan'
       run: pip install "conan==2.28.0"
 
-    - name: 'Build arm64 APK'
+    - name: 'Build ${{ matrix.abi }} APK'
       shell: bash
       env:
         QT_INSTALL_DIR: ${{ runner.temp }}
       run: |
-        deploy/build.sh -t android --abi arm64-v8a --build ./deploy/build/android-arm64
+        deploy/build.sh -t android --abi ${{ matrix.abi }} --build ./deploy/build/android-${{ matrix.abi }}
         mkdir -p deploy/artifacts
-        VERSION=$(grep CMAKE_PROJECT_VERSION:STATIC deploy/build/android-arm64/CMakeCache.txt | cut -d= -f2)
-        cp deploy/build/android-arm64/client/android-build/build/outputs/apk/android-build-release-unsigned.apk \
-           deploy/artifacts/TunnelCoreVPN_${VERSION}_arm64-v8a.apk
+        VERSION=$(grep CMAKE_PROJECT_VERSION:STATIC deploy/build/android-${{ matrix.abi }}/CMakeCache.txt | cut -d= -f2)
+        cp deploy/build/android-${{ matrix.abi }}/client/android-build/build/outputs/apk/android-build-release-unsigned.apk \
+           deploy/artifacts/TunnelCoreVPN_${VERSION}_${{ matrix.abi }}.apk
 
     - name: 'Upload Android APK'
       uses: actions/upload-artifact@v7
       with:
-        name: TunnelCoreVPN-Android-arm64
-        path: deploy/artifacts/TunnelCoreVPN_*_arm64-v8a.apk
+        name: TunnelCoreVPN-Android-${{ matrix.artifact }}
+        path: deploy/artifacts/TunnelCoreVPN_*_${{ matrix.abi }}.apk
         archive: false
         retention-days: 7
