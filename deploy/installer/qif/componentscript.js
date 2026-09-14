@@ -72,11 +72,11 @@ Component.prototype.createOperations = function()
 
         component.addOperation("CreateShortcut", "@TargetDir@/" + appExecutableFileName(),
                                QDesktopServices.storageLocation(QDesktopServices.DesktopLocation) + "/" + displayName() + ".lnk",
-                               "workingDirectory=@TargetDir@", "iconPath=@TargetDir@\\" + appExecutableFileName(), "iconId=0");
+                               "workingDirectory=@TargetDir@", "iconPath=@TargetDir@\\TunnelCoreVPN.ico", "iconId=0");
 
         component.addElevatedOperation("CreateShortcut", "@TargetDir@/" + appExecutableFileName(),
                                        installer.value("AllUsersStartMenuProgramsPath") + "/" + displayName() + ".lnk",
-                                       "workingDirectory=@TargetDir@", "iconPath=@TargetDir@\\" + appExecutableFileName(), "iconId=0");
+                                       "workingDirectory=@TargetDir@", "iconPath=@TargetDir@\\TunnelCoreVPN.ico", "iconId=0");
 
         if (!vcRuntimeIsInstalled()) {
             var vcRedistFileName = (systemInfo.currentCpuArchitecture.search("64") < 0) ? "vc_redist.x86.exe"

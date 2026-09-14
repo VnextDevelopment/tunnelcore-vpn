@@ -80,6 +80,13 @@ if(LINUX AND NOT ANDROID)
 endif()
 
 if(WIN32)
+    # Give shortcuts their own icon path instead of reusing a cached EXE icon.
+    install(FILES "${CMAKE_SOURCE_DIR}/client/images/app.ico"
+        DESTINATION "."
+        RENAME TunnelCoreVPN.ico
+        COMPONENT AmneziaVPN
+    )
+
     install(FILES
         ${CMAKE_SOURCE_DIR}/deploy/data/windows/post_install.cmd
         ${CMAKE_SOURCE_DIR}/deploy/data/windows/post_uninstall.cmd
