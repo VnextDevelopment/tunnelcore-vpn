@@ -154,7 +154,9 @@ jobs:
       uses: jurplel/install-qt-action@v4
       with:
         version: ${{ env.QT_VERSION }}
-        host: 'linux'
+        # Qt 6.7+ Android packages live in the shared all_os repository.
+        # Version discovery runs before install-qt can normalize the host.
+        host: 'all_os'
         target: 'android'
         arch: ${{ matrix.qt_arch }}
         modules: ${{ env.QT_ANDROID_MODULES }}
