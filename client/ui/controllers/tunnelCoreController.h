@@ -9,7 +9,6 @@
 
 class QNetworkReply;
 
-// Client credentials are distinct from the internal bot API token.
 // Keep the session in memory until cross-platform secure token storage is added.
 class TunnelCoreController : public QObject
 {
@@ -30,6 +29,9 @@ public:
     QVariantList subscriptions() const { return m_subscriptions; }
     QVariantList configs() const { return m_configs; }
 
+    Q_INVOKABLE void loginCode(const QString &code);
+    // Legacy login methods remain available during the server transition, but the
+    // TunnelCore UI uses one-time Telegram codes.
     Q_INVOKABLE void login(const QString &username, const QString &password);
     Q_INVOKABLE void loginEmail(const QString &email, const QString &password);
     Q_INVOKABLE void clearError();
@@ -43,7 +45,7 @@ signals:
     void configReady(const QString &data);
 
 private:
-    void authenticate(const QJsonObject &credentials);
+    void authenticate(const QString &path, const QJsonObject &credentials);
     void request(const QString &path, const QJsonObject &body,
                  std::function<void(const QJsonObject &)> success, bool post = false);
     void fail(const QString &message);
