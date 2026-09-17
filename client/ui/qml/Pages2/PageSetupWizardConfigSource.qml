@@ -251,29 +251,22 @@ PageType {
 
     property list<QtObject> variants: [
         amneziaVpn,
-        selfHostVpn,
         backupRestore,
         fileOpen,
         qrScan,
-        restorePurchases,
         siteLink
     ]
     
     QtObject {
         id: amneziaVpn
 
-        property string title: qsTr("VPN by Amnezia").replace("Amnezia", "TunnelCore")
-        property string description: qsTr("The easiest way to connect to the VPN")
+        property string title: qsTr("Аккаунт TunnelCore")
+        property string description: qsTr("Вход и конфигурации вашей подписки")
         property string imageSource: "qrc:/images/icon.png"
         property bool featuredAmneziaConnection: true
         property bool isVisible: true
         property var handler: function() {
-            PageController.showBusyIndicator(true)
-            var result = SubscriptionUiController.fillAvailableServices()
-            PageController.showBusyIndicator(false)
-            if (result) {
-                PageController.goToPage(PageEnum.PageSetupWizardApiServicesList)
-            }
+            PageController.goToPage(PageEnum.PageTunnelCoreAccount)
         }
     }
 

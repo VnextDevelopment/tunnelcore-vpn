@@ -102,6 +102,7 @@ PageType {
     }
 
     property list<QtObject> settingsEntries: [
+        tunnelCoreAccount,
         servers,
         connection,
         application,
@@ -110,6 +111,16 @@ PageType {
         about,
         devConsole
     ]
+
+    QtObject {
+        id: tunnelCoreAccount
+        property string title: qsTr("Аккаунт TunnelCore")
+        readonly property string leftImagePath: "qrc:/images/controls/server.svg"
+        property bool isVisible: true
+        readonly property var clickedHandler: function() {
+            PageController.goToPage(PageEnum.PageTunnelCoreAccount)
+        }
+    }
 
     QtObject {
         id: servers
