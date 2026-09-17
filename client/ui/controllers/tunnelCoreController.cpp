@@ -1,5 +1,6 @@
 #include "tunnelCoreController.h"
 
+#include <QDebug>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QNetworkReply>
@@ -8,6 +9,7 @@
 namespace {
 const QString apiBase = QStringLiteral("https://tlsdmd.isgood.host/api/vpn/v1/");
 constexpr qint64 maxResponseSize = 2 * 1024 * 1024;
+constexpr qsizetype maxLoggedResponseSize = 2048;
 }
 
 TunnelCoreController::TunnelCoreController(QObject *parent, QNetworkAccessManager *network)
@@ -39,6 +41,11 @@ void TunnelCoreController::request(const QString &path, const QJsonObject &body,
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     if (!post)
         request.setRawHeader("Authorization", "Bearer " + m_token);
+
+    const auto requestUrl = request.url().toString(QUrl::FullyEncoded);
+    const auto method = post ? QStringLiteral("POST") : QStringLiteral("GET");
+    qInfo().noquote() << "[TunnelCore API] request" << method << requestUrl;
+
     auto *reply = post ? m_network->post(request, QJsonDocument(body).toJson(QJsonDocument::Compact))
                        : m_network->get(request);
     m_reply = reply;
@@ -47,12 +54,34 @@ void TunnelCoreController::request(const QString &path, const QJsonObject &body,
         if (reply->bytesAvailable() > maxResponseSize)
             reply->abort();
     });
-    connect(reply, &QNetworkReply::finished, this, [this, reply, generation, post, success]() {
+    connect(reply, &QNetworkReply::finished, this,
+            [this, reply, generation, post, success, requestUrl, method]() {
         reply->deleteLater();
         if (generation != m_generation)
             return;
         m_reply.clear();
+
         const auto status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        const auto responseBody = reply->readAll();
+        if (reply->error() != QNetworkReply::NoError || status != 200) {
+            const auto wwwAuthenticate = reply->rawHeader("WWW-Authenticate");
+            qWarning().noquote()
+                << "[TunnelCore API] response"
+                << method
+                << requestUrl
+                << "status=" << status
+                << "qtError=" << static_cast<int>(reply->error())
+                << "error=" << reply->errorString()
+                << "www-authenticate="
+                << (wwwAuthenticate.isEmpty() ? QStringLiteral("<none>")
+                                              : QString::fromLatin1(wwwAuthenticate));
+            if (!responseBody.isEmpty()) {
+                qWarning().noquote()
+                    << "[TunnelCore API] error body="
+                    << QString::fromUtf8(responseBody.left(maxLoggedResponseSize));
+            }
+        }
+
         if (status == 401) {
             if (!post)
                 logout();
@@ -60,7 +89,7 @@ void TunnelCoreController::request(const QString &path, const QJsonObject &body,
             return;
         }
         if (post && status == 400) {
-            const auto error = QJsonDocument::fromJson(reply->readAll()).object().value("error").toString();
+            const auto error = QJsonDocument::fromJson(responseBody).object().value("error").toString();
             if (error == "email_and_password_required") {
                 fail(tr("Введите корректный email и пароль."));
                 return;
@@ -77,7 +106,7 @@ void TunnelCoreController::request(const QString &path, const QJsonObject &body,
             return;
         }
         QJsonParseError parseError;
-        const auto document = QJsonDocument::fromJson(reply->readAll(), &parseError);
+        const auto document = QJsonDocument::fromJson(responseBody, &parseError);
         if (parseError.error != QJsonParseError::NoError || !document.isObject()
             || !document.object().value("ok").toBool()) {
             fail(tr("Сервер вернул некорректный ответ."));
