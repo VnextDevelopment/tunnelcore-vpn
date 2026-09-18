@@ -29,7 +29,8 @@ void TunnelCoreController::clearError()
 }
 
 void TunnelCoreController::request(const QString &path, const QJsonObject &body,
-                                 std::function<void(const QJsonObject &)> success, bool post)
+                                 std::function<void(const QJsonObject &)> success, bool post,
+                                 std::function<void(int, const QJsonObject &)> failure)
 {
     m_busy = true;
     m_error.clear();
@@ -55,7 +56,7 @@ void TunnelCoreController::request(const QString &path, const QJsonObject &body,
             reply->abort();
     });
     connect(reply, &QNetworkReply::finished, this,
-            [this, reply, generation, post, success, requestUrl, method]() {
+            [this, reply, generation, post, success, failure, requestUrl, method]() {
         reply->deleteLater();
         if (generation != m_generation)
             return;
@@ -102,6 +103,12 @@ void TunnelCoreController::request(const QString &path, const QJsonObject &body,
             return;
         }
         if (reply->error() != QNetworkReply::NoError || status != 200) {
+            if (failure && status > 0) {
+                m_busy = false;
+                const auto errorObject = QJsonDocument::fromJson(responseBody).object();
+                failure(status, errorObject);
+                return;
+            }
             fail(tr("Не удалось связаться с TunnelCore. Проверьте подключение и повторите попытку."));
             return;
         }
@@ -216,11 +223,44 @@ void TunnelCoreController::selectConfig(int index)
 {
     if (m_busy || !authenticated() || index < 0 || index >= m_configs.size())
         return;
-    const auto data = m_configs.at(index).toMap().value("config").toString().trimmed();
-    if (data.isEmpty()) {
-        fail(tr("Конфигурация пока недоступна. Обновите список позже."));
+    const auto config = m_configs.at(index).toMap();
+    const auto data = config.value("config").toString().trimmed();
+    if (!data.isEmpty()) {
+        // Compatibility with servers that still return the configuration or
+        // its one-time download URL directly in the list response.
+        deliverConfig(data);
         return;
     }
+
+    bool validId = false;
+    const auto configId = config.value("id").toLongLong(&validId);
+    if (!validId || configId <= 0) {
+        fail(tr("Сервер вернул некорректные данные конфигурации."));
+        return;
+    }
+
+    request(QStringLiteral("configs/%1/").arg(configId), {},
+            [this](const QJsonObject &object) {
+        const auto downloadedConfig = object.value("config").toString().trimmed();
+        if (downloadedConfig.isEmpty()) {
+            fail(tr("Сервер вернул пустую VPN-конфигурацию."));
+            return;
+        }
+        deliverConfig(downloadedConfig);
+    }, false, [this](int status, const QJsonObject &object) {
+        const auto apiError = object.value("error").toString();
+        if (status == 404 || apiError == "config_not_found") {
+            fail(tr("Конфигурация уже получена или больше недоступна. Обновите список."));
+        } else if (status == 502 || apiError == "config_unavailable") {
+            fail(tr("Не удалось получить конфигурацию с VPN-сервера. Повторите позже."));
+        } else {
+            fail(tr("Не удалось загрузить VPN-конфигурацию."));
+        }
+    });
+}
+
+void TunnelCoreController::deliverConfig(const QString &data)
+{
     const QUrl url(data);
     if (url.scheme() != "https") {
         emit configReady(data);

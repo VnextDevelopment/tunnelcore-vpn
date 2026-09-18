@@ -185,6 +185,44 @@ private slots:
         QCOMPARE(network.requests.last().attribute(QNetworkRequest::RedirectPolicyAttribute).toInt(),
                  int(QNetworkRequest::ManualRedirectPolicy));
     }
+    void metadataConfigIsFetchedById()
+    {
+        Network network;
+        network.responses.enqueue({"{\"ok\":true,\"access_token\":\"test-token\",\"token_type\":\"Bearer\",\"user\":{\"username\":\"client\"}}"});
+        network.responses.enqueue({"{\"ok\":true,\"subscriptions\":[{\"id\":1,\"tariff\":\"VPN\"}]}"});
+        network.responses.enqueue({"{\"ok\":true,\"configs\":[{\"id\":17,\"name\":\"Germany\",\"protocol\":\"amneziawg\"}]}"});
+        network.responses.enqueue({"{\"ok\":true,\"id\":17,\"protocol\":\"amneziawg\",\"config\":\"[Interface]\\nPrivateKey = app-secret\"}"});
+        TunnelCoreController controller(nullptr, &network);
+        controller.loginCode("012345");
+        QTRY_VERIFY(!controller.busy());
+
+        QSignalSpy config(&controller, &TunnelCoreController::configReady);
+        controller.selectConfig(0);
+
+        QTRY_COMPARE(config.size(), 1);
+        QCOMPARE(network.requests.size(), 4);
+        QCOMPARE(network.requests.last().url().path(), QString("/api/vpn/v1/configs/17/"));
+        QCOMPARE(network.requests.last().rawHeader("Authorization"), QByteArray("Bearer test-token"));
+        QCOMPARE(config.first().first().toString(), QString("[Interface]\nPrivateKey = app-secret"));
+    }
+    void metadataConfigDownloadErrorIsShown()
+    {
+        Network network;
+        network.responses.enqueue({"{\"ok\":true,\"access_token\":\"test-token\",\"token_type\":\"Bearer\",\"user\":{\"username\":\"client\"}}"});
+        network.responses.enqueue({"{\"ok\":true,\"subscriptions\":[]}"});
+        network.responses.enqueue({"{\"ok\":true,\"configs\":[{\"id\":17,\"name\":\"Germany\"}]}"});
+        network.responses.enqueue({"{\"ok\":false,\"error\":\"config_not_found\"}", 404});
+        TunnelCoreController controller(nullptr, &network);
+        controller.loginCode("012345");
+        QTRY_VERIFY(!controller.busy());
+
+        QSignalSpy config(&controller, &TunnelCoreController::configReady);
+        controller.selectConfig(0);
+
+        QTRY_VERIFY(!controller.busy());
+        QCOMPARE(config.size(), 0);
+        QVERIFY(!controller.error().isEmpty());
+    }
     void wrongPassword()
     {
         Network network;

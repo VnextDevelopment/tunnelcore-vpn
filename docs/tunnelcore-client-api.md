@@ -4,7 +4,7 @@ The client uses `https://tlsdmd.isgood.host/api/vpn/v1/`, not the Django
 administration at `/admin/` or the internal `/api/bot/` API.
 
 Contract verified against `VnextDevelopment/tunnelcore`, main commit
-`64bd96ae9ef40087119c95bf5a736ea0d18b4ecd`:
+`9cd06ce`:
 
 - `POST auth/login/`: JSON `username`, `password` (bot credentials), or
   `email`, `password` (email login); response `ok`,
@@ -12,10 +12,12 @@ Contract verified against `VnextDevelopment/tunnelcore`, main commit
 - `POST auth/code/exchange/`: JSON `code` (six-digit one-time code from the
   Telegram bot); response uses the same access-token contract as login.
 - `GET me/`: Bearer token; response `user`, `subscriptions`.
-- `GET configs/`: Bearer token; response `configs`, with `name`, `config`,
-  `expires_at`, `subscription_id`, `node_id`, `id`.
+- `GET configs/`: Bearer token; response contains safe configuration metadata
+  (`id`, `name`, `location`, `protocol`, `expires_at`) without a private URL.
+- `GET configs/<id>/`: Bearer token; consumes the application-specific one-time
+  copy and returns `id`, `protocol`, `config`.
 
-An HTTPS configuration URL is fetched without the account Authorization header.
+Legacy HTTPS configuration URLs are fetched without the account Authorization header.
 Redirects are rejected; TLS verification stays enabled. Configuration contents
 go through the existing import preview and parser. A 401 on an authenticated
 request clears the account session. Logout cancels outstanding requests and
