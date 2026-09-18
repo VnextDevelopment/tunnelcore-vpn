@@ -25,13 +25,14 @@ PageType {
             if (emailMode)
                 TunnelCoreController.loginEmail(loginField.textField.text, passwordField.textField.text)
             else
-                TunnelCoreController.login(loginField.textField.text, passwordField.textField.text)
+                TunnelCoreController.loginCode(loginField.textField.text)
         }
     }
 
     Connections {
         target: TunnelCoreController
         function onSignedIn() {
+            loginField.textField.text = ""
             passwordField.textField.text = ""
             Qt.inputMethod.hide()
         }
@@ -104,22 +105,30 @@ PageType {
                     Layout.fillWidth: true
                     text: root.emailMode
                           ? qsTr("Введите email и пароль вашего аккаунта TunnelCore.")
-                          : qsTr("Введите логин и пароль для приложения, полученные в боте TunnelCore.")
+                          : qsTr("Введите шестизначный код, полученный в боте TunnelCore.")
                 }
                 TextFieldWithHeaderType {
                     id: loginField
                     Layout.fillWidth: true
                     enabled: !TunnelCoreController.busy
-                    headerText: root.emailMode ? qsTr("Email") : qsTr("Логин")
-                    textField.placeholderText: root.emailMode ? "name@example.com" : ""
-                    textField.maximumLength: root.emailMode ? 320 : 120
-                    textField.inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText | Qt.ImhSensitiveData
-                                                | (root.emailMode ? Qt.ImhEmailCharactersOnly : Qt.ImhNone)
-                    textField.onAccepted: passwordField.textField.forceActiveFocus()
+                    headerText: root.emailMode ? qsTr("Email") : qsTr("Код из бота")
+                    textField.placeholderText: root.emailMode ? "name@example.com" : "000000"
+                    textField.maximumLength: root.emailMode ? 320 : 6
+                    textField.inputMethodHints: root.emailMode
+                                                ? Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
+                                                  | Qt.ImhSensitiveData | Qt.ImhEmailCharactersOnly
+                                                : Qt.ImhDigitsOnly | Qt.ImhNoPredictiveText
+                    textField.onAccepted: {
+                        if (root.emailMode)
+                            passwordField.textField.forceActiveFocus()
+                        else
+                            root.submit()
+                    }
                 }
                 TextFieldWithHeaderType {
                     id: passwordField
                     Layout.fillWidth: true
+                    visible: root.emailMode
                     enabled: !TunnelCoreController.busy
                     headerText: qsTr("Пароль")
                     textField.echoMode: TextInput.Password
@@ -129,8 +138,11 @@ PageType {
                 BasicButtonType {
                     Layout.fillWidth: true
                     text: TunnelCoreController.busy ? qsTr("Входим…") : qsTr("Войти")
-                    enabled: !TunnelCoreController.busy && loginField.textField.text.trim().length > 0
-                             && passwordField.textField.text.length > 0
+                    enabled: !TunnelCoreController.busy
+                             && (root.emailMode
+                                 ? loginField.textField.text.trim().length > 0
+                                   && passwordField.textField.text.length > 0
+                                 : loginField.textField.text.trim().length === 6)
                     clickedFunc: root.submit
                 }
             }
