@@ -1,7 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<inset xmlns:android="http://schemas.android.com/apk/res/android"
-    android:drawable="@drawable/ic_amnezia_round"
-    android:insetLeft="19.5%"
-    android:insetTop="19.5%"
-    android:insetRight="19.5%"
-    android:insetBottom="19.5%" />
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="@android:color/white"
+        android:strokeWidth="4"
+        android:strokeLineJoin="round"
+        android:pathData="M54,23 C44,30 34,32 29,33 L31,54 C33,69 42,78 54,85 C66,78 75,69 77,54 L79,33 C69,32 62,28 54,23 Z" />
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="@android:color/white"
+        android:strokeWidth="4"
+        android:pathData="M45,51 L45,44 C45,32 63,32 63,44 L63,51" />
+    <path
+        android:fillColor="@android:color/white"
+        android:fillType="evenOdd"
+        android:pathData="M42,49 L66,49 Q69,49 69,52 L69,66 Q69,69 66,69 L42,69 Q39,69 39,66 L39,52 Q39,49 42,49 Z M54,54 A4,4 0,1 0,54,62 A4,4 0,1 0,54,54 Z M52,60 L56,60 L56,65 L52,65 Z" />
+</vector>

@@ -73,7 +73,7 @@ Window  {
         console.warn("Scene graph error:", error, message)
     }
 
-    title: "AmneziaVPN"
+    title: "TunnelCore VPN"
 
     Item { // This item is needed for focus handling
         id: defaultFocusItem
@@ -325,8 +325,6 @@ Window  {
 
         SubscriptionExpiredDrawer {
             id: subscriptionExpiredDrawer
-
-            anchors.fill: parent
         }
     }
 

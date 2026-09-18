@@ -70,7 +70,7 @@ QString getProtocolName(DockerContainer defaultContainer, const QMap<DockerConta
                 }
                 protocolVersion = AwgProtocolConfig::protocolVersionString(version);
                 if (defaultContainer == DockerContainer::Awg && !awg->serverConfig.isThirdPartyConfig) {
-                    containerName = QStringLiteral("AmneziaWG Legacy");
+                    containerName = QStringLiteral("TunnelCore VPN Legacy");
                 }
             }
         }

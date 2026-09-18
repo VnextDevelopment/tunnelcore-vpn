@@ -102,6 +102,7 @@ PageType {
     }
 
     property list<QtObject> settingsEntries: [
+        tunnelCoreAccount,
         servers,
         connection,
         application,
@@ -110,6 +111,16 @@ PageType {
         about,
         devConsole
     ]
+
+    QtObject {
+        id: tunnelCoreAccount
+        property string title: qsTr("TunnelCore account")
+        readonly property string leftImagePath: "qrc:/images/controls/server.svg"
+        property bool isVisible: true
+        readonly property var clickedHandler: function() {
+            PageController.goToPage(PageEnum.PageTunnelCoreAccount)
+        }
+    }
 
     QtObject {
         id: servers
@@ -174,8 +185,8 @@ PageType {
     QtObject {
         id: about
 
-        property string title: qsTr("About AmneziaVPN")
-        readonly property string leftImagePath: "qrc:/images/controls/amnezia.svg"
+        property string title: qsTr("About TunnelCore VPN")
+        readonly property string leftImagePath: "qrc:/images/controls/info.svg"
         property bool isVisible: true
         readonly property var clickedHandler: function() {
             PageController.goToPage(PageEnum.PageSettingsAbout)

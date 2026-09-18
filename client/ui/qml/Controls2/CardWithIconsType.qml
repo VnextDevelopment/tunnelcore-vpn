@@ -107,8 +107,14 @@ Button {
                 Image {
                     id: leftImage
                     source: leftImageSource
+                    sourceSize.width: 40
+                    sourceSize.height: 40
+                    fillMode: Image.PreserveAspectFit
 
                     visible: leftImageSource !== ""
+
+                    Layout.preferredWidth: 40
+                    Layout.preferredHeight: 40
 
                     Layout.alignment: Qt.AlignLeft | Qt.AlignTop
                     Layout.topMargin: 24

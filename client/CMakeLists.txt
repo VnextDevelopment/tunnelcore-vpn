@@ -100,7 +100,9 @@ file(GLOB_RECURSE AMNEZIAVPN_QML_FILES ${CMAKE_CURRENT_LIST_DIR}/ui/qml/*.qml)
 
 qt6_add_translations(${PROJECT}
     TS_FILES ${AMNEZIAVPN_TS_FILES}
-    SOURCES ${AMNEZIAVPN_QML_FILES}
+    SOURCES
+        ${AMNEZIAVPN_QML_FILES}
+        ${CMAKE_CURRENT_LIST_DIR}/ui/controllers/tunnelCoreController.cpp
     RESOURCE_PREFIX "/translations"
 )
 # -- i18n end
@@ -170,9 +172,17 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 if(WIN32)
+    set(CLIENT_WINDOWS_ICON_FILE "${CMAKE_CURRENT_BINARY_DIR}/tunnelcore.ico")
+    configure_file(
+        "${CMAKE_CURRENT_LIST_DIR}/images/app.ico"
+        "${CLIENT_WINDOWS_ICON_FILE}"
+        COPYONLY
+    )
+
     configure_file(
         ${CMAKE_CURRENT_LIST_DIR}/platforms/windows/amneziavpn.rc.in
         ${CMAKE_CURRENT_BINARY_DIR}/amneziavpn.rc
+        @ONLY
     )
 
     set(LIBS ${LIBS}
@@ -258,20 +268,15 @@ install(RUNTIME_DEPENDENCY_SET client_deps
     PRE_EXCLUDE_REGEXES
         [[api-ms-win-.*]]
         [[ext-ms-.*]]
-        [[kernel32\.dll]]
-        [[hvsifiletrust\.dll]]
-        [[libc\.so\..*]] [[libgcc_s\.so\..*]] [[libm\.so\..*]] [[libstdc\+\+\.so\..*]]
-        [[.*\.framework]]
-        [[^(lib)?[Qq]t.*]]
     POST_EXCLUDE_REGEXES
-        [[^.*[\\/]system32[\\/].*\.dll$]]
-        [[^/lib.*]]
-        [[^/usr/lib.*]]
-    DIRECTORIES ${CONAN_RUNTIME_LIB_DIRS}
-    COMPONENT AmneziaVPN
-    DESTINATION "${RUNTIME_DEPS_DIR}"
+        [[.*[\\/]system32[\\/].*\.dll]]
+        [[.*[\\/]SysWOW64[\\/].*\.dll]]
+        [[.*[\\/]Windows[\\/]WinSxS[\\/].*\.dll]]
 )
 
+# Let Qt deploy all runtime libraries, QML modules and plugins into the
+# installation tree. Without this step the Windows installer can be built
+# successfully while missing DLLs such as Qt6QuickControls2.dll.
 set(deploy_tool_options "")
 if(WIN32)
     set(deploy_tool_options "--force-openssl --force")
@@ -286,31 +291,3 @@ qt_generate_deploy_qml_app_script(
 install(SCRIPT ${QT_DEPLOY_SCRIPT}
     COMPONENT AmneziaVPN
 )
-
-if (APPLE AND NOT IOS AND NOT MACOS_NE)
-    list(APPEND OVPN_SCRIPTS "${CMAKE_SOURCE_DIR}/deploy/data/macos/update-resolv-conf.sh")
-    set_target_properties(${PROJECT} PROPERTIES
-        XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "NO"
-        XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED "NO"
-    )
-endif()
-if (LINUX AND NOT ANDROID)
-    list(APPEND OVPN_SCRIPTS "${CMAKE_SOURCE_DIR}/deploy/data/linux/update-resolv-conf.sh")
-endif()
-
-if(OVPN_SCRIPTS)
-    add_custom_command(TARGET ${PROJECT} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${OVPN_SCRIPTS}
-        "$<TARGET_FILE_DIR:${PROJECT}>"
-    )
-
-    install(FILES ${OVPN_SCRIPTS}
-        DESTINATION ${CMAKE_INSTALL_BINDIR}
-        COMPONENT AmneziaVPN
-        PERMISSIONS
-            OWNER_READ OWNER_EXECUTE
-            GROUP_READ GROUP_EXECUTE
-            WORLD_READ WORLD_EXECUTE
-    )
-endif()

@@ -11,6 +11,7 @@
 #include "logger.h"
 #include "secureQSettings.h"
 #include "core/utils/appUiConfig.h"
+#include "ui/controllers/tunnelCoreController.h"
 
 #if defined(Q_OS_ANDROID)
     #include "core/utils/installedAppsImageProvider.h"
@@ -205,6 +206,31 @@ void CoreController::initControllers()
 
     m_pageController = new PageController(m_serversController, m_settingsController, this);
     setQmlContextProperty("PageController", m_pageController);
+    TunnelCoreSessionStorage tunnelCoreSessionStorage;
+    tunnelCoreSessionStorage.load = [this]() {
+        return std::make_tuple(
+                m_settings->value(QStringLiteral("TunnelCore/accessToken")).toByteArray(),
+                m_settings->value(QStringLiteral("TunnelCore/username")).toString(),
+                m_settings->value(QStringLiteral("TunnelCore/emailAccount"), false).toBool(),
+                m_settings->value(QStringLiteral("TunnelCore/telegramLinked"), false).toBool());
+    };
+    tunnelCoreSessionStorage.save = [this](const QByteArray &token, const QString &username,
+                                           bool emailAccount, bool telegramLinked) {
+        m_settings->setValue(QStringLiteral("TunnelCore/accessToken"), token);
+        m_settings->setValue(QStringLiteral("TunnelCore/username"), username);
+        m_settings->setValue(QStringLiteral("TunnelCore/emailAccount"), emailAccount);
+        m_settings->setValue(QStringLiteral("TunnelCore/telegramLinked"), telegramLinked);
+        m_settings->sync();
+    };
+    tunnelCoreSessionStorage.clear = [this]() {
+        m_settings->remove(QStringLiteral("TunnelCore/accessToken"));
+        m_settings->remove(QStringLiteral("TunnelCore/username"));
+        m_settings->remove(QStringLiteral("TunnelCore/emailAccount"));
+        m_settings->remove(QStringLiteral("TunnelCore/telegramLinked"));
+        m_settings->sync();
+    };
+    setQmlContextProperty("TunnelCoreController",
+                          new TunnelCoreController(this, nullptr, std::move(tunnelCoreSessionStorage)));
 
     m_serversUiController = new ServersUiController(m_serversController, m_settingsController, m_serversModel, m_containersModel, m_defaultServerContainersModel, this);
     setQmlContextProperty("ServersUiController", m_serversUiController);

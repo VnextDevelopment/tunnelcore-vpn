@@ -40,7 +40,7 @@ PageType {
 
     function protocolDisplayName(protocol) {
         switch (protocol) {
-        case "awg": return "AmneziaWG"
+        case "awg": return "TunnelCore VPN"
         case "vless": return "VLESS"
         default: return protocol
         }
@@ -424,6 +424,7 @@ PageType {
                     imageColor: AmneziaStyle.color.goldenApricot
                     textColor: AmneziaStyle.color.goldenApricot
                     textString: qsTr("AmneziaWG 2.0 is outdated and no longer supported. Continued use requires a fresh installation of the AmneziaWG 3.1 container.")
+                                    .replace(/AmneziaWG/g, "TunnelCore VPN")
                 }
 
                 RowLayout {
