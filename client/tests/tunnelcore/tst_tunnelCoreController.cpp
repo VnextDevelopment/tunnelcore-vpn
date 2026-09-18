@@ -223,6 +223,65 @@ private slots:
         QCOMPARE(config.size(), 0);
         QVERIFY(!controller.error().isEmpty());
     }
+    void sessionIsRestoredAndValidated()
+    {
+        Network network;
+        network.responses.enqueue({"{\"ok\":true,\"subscriptions\":[{\"id\":1,\"tariff\":\"VPN\"}]}"});
+        network.responses.enqueue({"{\"ok\":true,\"configs\":[]}"});
+        bool cleared = false;
+        TunnelCoreSessionStorage storage;
+        storage.load = []() {
+            return qMakePair(QByteArray("stored-token"), QString("stored-user"));
+        };
+        storage.clear = [&cleared]() { cleared = true; };
+
+        TunnelCoreController controller(nullptr, &network, std::move(storage));
+
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(controller.authenticated());
+        QCOMPARE(controller.username(), QString("stored-user"));
+        QCOMPARE(network.requests.size(), 2);
+        QCOMPARE(network.requests.first().url().path(), QString("/api/vpn/v1/me/"));
+        QCOMPARE(network.requests.first().rawHeader("Authorization"), QByteArray("Bearer stored-token"));
+        QVERIFY(!cleared);
+    }
+    void invalidRestoredSessionIsCleared()
+    {
+        Network network;
+        network.responses.enqueue({"{\"ok\":false,\"error\":\"unauthorized\"}", 401});
+        bool cleared = false;
+        TunnelCoreSessionStorage storage;
+        storage.load = []() {
+            return qMakePair(QByteArray("expired-token"), QString("stored-user"));
+        };
+        storage.clear = [&cleared]() { cleared = true; };
+
+        TunnelCoreController controller(nullptr, &network, std::move(storage));
+
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(!controller.authenticated());
+        QVERIFY(cleared);
+        QVERIFY(!controller.error().isEmpty());
+    }
+    void successfulLoginIsPersisted()
+    {
+        Network network;
+        enqueueLogin(network);
+        QByteArray storedToken;
+        QString storedUsername;
+        TunnelCoreSessionStorage storage;
+        storage.save = [&storedToken, &storedUsername](const QByteArray &token, const QString &username) {
+            storedToken = token;
+            storedUsername = username;
+        };
+
+        TunnelCoreController controller(nullptr, &network, std::move(storage));
+        controller.loginCode("012345");
+
+        QTRY_VERIFY(!controller.busy());
+        QCOMPARE(storedToken, QByteArray("test-token"));
+        QCOMPARE(storedUsername, QString("client"));
+    }
     void wrongPassword()
     {
         Network network;

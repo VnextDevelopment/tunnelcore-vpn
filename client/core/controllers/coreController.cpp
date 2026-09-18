@@ -206,7 +206,24 @@ void CoreController::initControllers()
 
     m_pageController = new PageController(m_serversController, m_settingsController, this);
     setQmlContextProperty("PageController", m_pageController);
-    setQmlContextProperty("TunnelCoreController", new TunnelCoreController(this));
+    TunnelCoreSessionStorage tunnelCoreSessionStorage;
+    tunnelCoreSessionStorage.load = [this]() {
+        return qMakePair(
+                m_settings->value(QStringLiteral("TunnelCore/accessToken")).toByteArray(),
+                m_settings->value(QStringLiteral("TunnelCore/username")).toString());
+    };
+    tunnelCoreSessionStorage.save = [this](const QByteArray &token, const QString &username) {
+        m_settings->setValue(QStringLiteral("TunnelCore/accessToken"), token);
+        m_settings->setValue(QStringLiteral("TunnelCore/username"), username);
+        m_settings->sync();
+    };
+    tunnelCoreSessionStorage.clear = [this]() {
+        m_settings->remove(QStringLiteral("TunnelCore/accessToken"));
+        m_settings->remove(QStringLiteral("TunnelCore/username"));
+        m_settings->sync();
+    };
+    setQmlContextProperty("TunnelCoreController",
+                          new TunnelCoreController(this, nullptr, std::move(tunnelCoreSessionStorage)));
 
     m_serversUiController = new ServersUiController(m_serversController, m_settingsController, m_serversModel, m_containersModel, m_defaultServerContainersModel, this);
     setQmlContextProperty("ServersUiController", m_serversUiController);

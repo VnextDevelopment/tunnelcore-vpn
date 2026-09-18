@@ -23,9 +23,10 @@ go through the existing import preview and parser. A 401 on an authenticated
 request clears the account session. Logout cancels outstanding requests and
 clears the profile; previously imported VPN configurations remain available.
 
-The account session currently lives only in memory. Restarting the application
-requires signing in again to fetch account data. Passwords are not persisted.
-Secure persistent sessions are a separate outstanding integration step.
+The access token and username are persisted through the application's encrypted
+`SecureQSettings` storage. On startup the client validates the restored session
+by refreshing account data. A rejected token is removed automatically. Login
+codes and passwords are never persisted.
 
 ## Email login
 

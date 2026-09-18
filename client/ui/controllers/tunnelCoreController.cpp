@@ -12,8 +12,28 @@ constexpr qint64 maxResponseSize = 2 * 1024 * 1024;
 constexpr qsizetype maxLoggedResponseSize = 2048;
 }
 
-TunnelCoreController::TunnelCoreController(QObject *parent, QNetworkAccessManager *network)
-    : QObject(parent), m_network(network ? network : new QNetworkAccessManager(this)) {}
+TunnelCoreController::TunnelCoreController(QObject *parent, QNetworkAccessManager *network,
+                                           TunnelCoreSessionStorage sessionStorage)
+    : QObject(parent),
+      m_network(network ? network : new QNetworkAccessManager(this)),
+      m_sessionStorage(std::move(sessionStorage))
+{
+    if (!m_sessionStorage.load)
+        return;
+
+    const auto session = m_sessionStorage.load();
+    const auto token = session.first;
+    const auto username = session.second;
+    if (token.isEmpty() || token.contains('\r') || token.contains('\n') || username.isEmpty()) {
+        if (m_sessionStorage.clear)
+            m_sessionStorage.clear();
+        return;
+    }
+
+    m_token = token;
+    m_username = username;
+    refresh();
+}
 
 void TunnelCoreController::fail(const QString &message)
 {
@@ -176,6 +196,8 @@ void TunnelCoreController::authenticate(const QString &path, const QJsonObject &
         }
         m_token = token;
         m_username = username;
+        if (m_sessionStorage.save)
+            m_sessionStorage.save(m_token, m_username);
         emit signedIn();
         refresh();
     }, true);
@@ -194,6 +216,8 @@ void TunnelCoreController::logout()
     m_configs.clear();
     m_error.clear();
     m_busy = false;
+    if (m_sessionStorage.clear)
+        m_sessionStorage.clear();
     emit changed();
 }
 

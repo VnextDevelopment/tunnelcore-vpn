@@ -4,12 +4,20 @@
 #include <QNetworkAccessManager>
 #include <QObject>
 #include <QPointer>
+#include <QPair>
 #include <QVariantList>
 #include <functional>
+#include <utility>
 
 class QNetworkReply;
 
-// Keep the session in memory until cross-platform secure token storage is added.
+struct TunnelCoreSessionStorage
+{
+    std::function<QPair<QByteArray, QString>()> load;
+    std::function<void(const QByteArray &, const QString &)> save;
+    std::function<void()> clear;
+};
+
 class TunnelCoreController : public QObject
 {
     Q_OBJECT
@@ -21,7 +29,8 @@ class TunnelCoreController : public QObject
     Q_PROPERTY(QVariantList configs READ configs NOTIFY changed)
 
 public:
-    explicit TunnelCoreController(QObject *parent = nullptr, QNetworkAccessManager *network = nullptr);
+    explicit TunnelCoreController(QObject *parent = nullptr, QNetworkAccessManager *network = nullptr,
+                                  TunnelCoreSessionStorage sessionStorage = {});
     bool authenticated() const { return !m_token.isEmpty(); }
     bool busy() const { return m_busy; }
     QString username() const { return m_username; }
@@ -58,6 +67,7 @@ private:
     QString m_error;
     QVariantList m_subscriptions;
     QVariantList m_configs;
+    TunnelCoreSessionStorage m_sessionStorage;
     bool m_busy = false;
     unsigned int m_generation = 0;
 };
