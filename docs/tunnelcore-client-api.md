@@ -9,6 +9,8 @@ Contract verified against `VnextDevelopment/tunnelcore`, main commit
 - `POST auth/login/`: JSON `username`, `password` (bot credentials), or
   `email`, `password` (email login); response `ok`,
   `access_token`, `token_type: Bearer`, `expires_in`, `user`.
+- `POST auth/code/exchange/`: JSON `code` (six-digit one-time code from the
+  Telegram bot); response uses the same access-token contract as login.
 - `GET me/`: Bearer token; response `user`, `subscriptions`.
 - `GET configs/`: Bearer token; response `configs`, with `name`, `config`,
   `expires_at`, `subscription_id`, `node_id`, `id`.

@@ -126,7 +126,21 @@ void TunnelCoreController::login(const QString &username, const QString &passwor
         fail(tr("Введите логин и пароль из бота."));
         return;
     }
-    authenticate({{"username", username.trimmed()}, {"password", password}});
+    authenticate("auth/login/", {{"username", username.trimmed()}, {"password", password}});
+}
+
+void TunnelCoreController::loginCode(const QString &code)
+{
+    if (m_busy || authenticated())
+        return;
+    const auto normalizedCode = code.trimmed();
+    bool isNumber = false;
+    normalizedCode.toUInt(&isNumber);
+    if (normalizedCode.size() != 6 || !isNumber) {
+        fail(tr("Введите шестизначный код из бота."));
+        return;
+    }
+    authenticate("auth/code/exchange/", {{"code", normalizedCode}});
 }
 
 void TunnelCoreController::loginEmail(const QString &email, const QString &password)
@@ -139,12 +153,12 @@ void TunnelCoreController::loginEmail(const QString &email, const QString &passw
         return;
     }
     // The server validates the address; do not impose a different email grammar here.
-    authenticate({{"email", normalizedEmail}, {"password", password}});
+    authenticate("auth/login/", {{"email", normalizedEmail}, {"password", password}});
 }
 
-void TunnelCoreController::authenticate(const QJsonObject &credentials)
+void TunnelCoreController::authenticate(const QString &path, const QJsonObject &credentials)
 {
-    request("auth/login/", credentials,
+    request(path, credentials,
             [this](const QJsonObject &object) {
         const auto token = object.value("access_token").toString().toLatin1();
         const auto username = object.value("user").toObject().value("username").toString();

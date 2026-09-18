@@ -75,6 +75,34 @@ class TunnelCoreTests : public QObject
         network.responses.enqueue({"{\"ok\":true,\"configs\":[{\"name\":\"VPN\",\"config\":\"https://node.example/config/one-time\"}]}"});
     }
 private slots:
+    void codeLogin()
+    {
+        Network network;
+        enqueueLogin(network);
+        TunnelCoreController controller(nullptr, &network);
+        QSignalSpy signedIn(&controller, &TunnelCoreController::signedIn);
+        controller.loginCode(" 012345 ");
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(controller.authenticated());
+        QCOMPARE(signedIn.size(), 1);
+        QCOMPARE(network.requests.size(), 3);
+        QCOMPARE(network.requests[0].url().path(), QString("/api/vpn/v1/auth/code/exchange/"));
+        const auto body = QJsonDocument::fromJson(network.bodies[0]).object();
+        QCOMPARE(body.value("code").toString(), QString("012345"));
+        QCOMPARE(body.size(), 1);
+        QVERIFY(!network.requests[0].hasRawHeader("Authorization"));
+    }
+    void codeLoginRequiresSixDigits()
+    {
+        Network network;
+        TunnelCoreController controller(nullptr, &network);
+        controller.loginCode("12345");
+        QVERIFY(!controller.error().isEmpty());
+        controller.loginCode("12345a");
+        QVERIFY(!controller.error().isEmpty());
+        QVERIFY(network.requests.isEmpty());
+        QVERIFY(!controller.busy());
+    }
     void emailLogin()
     {
         Network network;
