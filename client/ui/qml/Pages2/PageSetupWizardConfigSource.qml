@@ -224,8 +224,8 @@ PageType {
                 headerText: title
                 bodyText: description
 
-                showRecommendedBadge: featuredAmneziaConnection
-                recommendedText: featuredAmneziaConnection ? qsTr("Recommended") : ""
+                showRecommendedBadge: featuredTunnelCoreConnection
+                recommendedText: featuredTunnelCoreConnection ? qsTr("Recommended") : ""
 
                 rightImageSource: "qrc:/images/controls/chevron-right.svg"
                 leftImageSource: imageSource
@@ -250,7 +250,7 @@ PageType {
     }
 
     property list<QtObject> variants: [
-        amneziaVpn,
+        tunnelCoreVpn,
         backupRestore,
         fileOpen,
         qrScan,
@@ -258,12 +258,12 @@ PageType {
     ]
     
     QtObject {
-        id: amneziaVpn
+        id: tunnelCoreVpn
 
-        property string title: qsTr("Аккаунт TunnelCore")
-        property string description: qsTr("Вход и конфигурации вашей подписки")
+        property string title: qsTr("TunnelCore account")
+        property string description: qsTr("Sign in and manage your subscription configurations")
         property string imageSource: "qrc:/images/icon.png"
-        property bool featuredAmneziaConnection: true
+        property bool featuredTunnelCoreConnection: true
         property bool isVisible: true
         property var handler: function() {
             PageController.goToPage(PageEnum.PageTunnelCoreAccount)
@@ -273,7 +273,7 @@ PageType {
     QtObject {
         id: selfHostVpn
 
-        property bool featuredAmneziaConnection: false
+        property bool featuredTunnelCoreConnection: false
         property string title: qsTr("Self-hosted VPN")
         property string description: qsTr("Configure Amnezia VPN on your own server").replace("Amnezia", "TunnelCore")
         property string imageSource: "qrc:/images/controls/server.svg"
@@ -286,7 +286,7 @@ PageType {
     QtObject {
         id: backupRestore
 
-        property bool featuredAmneziaConnection: false
+        property bool featuredTunnelCoreConnection: false
         property string title: qsTr("Restore from backup")
         property string description: qsTr("")
         property string imageSource: "qrc:/images/controls/archive-restore.svg"
@@ -312,7 +312,7 @@ PageType {
     QtObject {
         id: fileOpen
 
-        property bool featuredAmneziaConnection: false
+        property bool featuredTunnelCoreConnection: false
         property string title: qsTr("File with connection settings")
         property string description: qsTr("")
         property string imageSource: "qrc:/images/controls/folder-search-2.svg"
@@ -331,7 +331,7 @@ PageType {
     QtObject {
         id: qrScan
 
-        property bool featuredAmneziaConnection: false
+        property bool featuredTunnelCoreConnection: false
         property string title: qsTr("QR code")
         property string description: qsTr("")
         property string imageSource: "qrc:/images/controls/scan-line.svg"
@@ -347,7 +347,7 @@ PageType {
     QtObject {
         id: restorePurchases
 
-        property bool featuredAmneziaConnection: false
+        property bool featuredTunnelCoreConnection: false
         property string title: qsTr("Restore purchases")
         property string description: qsTr("")
         property string imageSource: "qrc:/images/controls/refresh-cw.svg"
@@ -362,7 +362,7 @@ PageType {
     QtObject {
         id: siteLink
 
-        property bool featuredAmneziaConnection: false
+        property bool featuredTunnelCoreConnection: false
         property string title: qsTr("I have nothing")
         property string description: qsTr("")
         property string imageSource: "qrc:/images/controls/help-circle.svg"

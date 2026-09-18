@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import Qt5Compat.GraphicalEffects
 
 import Style 1.0
 
@@ -47,8 +48,45 @@ TabButton {
 
     hoverEnabled: true
 
-    icon.source: image
+    // Qt 6.10's Android IconImage colorization renders transparent SVG pixels
+    // as an opaque rectangle on some graphics backends.  Keep the regular
+    // tinted control icon on desktop and render the SVG directly on Android.
+    icon.source: Qt.platform.os === "android" ? "" : image
     icon.color: isSelected ? selectedColor : defaultColor
+
+    contentItem: Item {
+        Image {
+            id: androidImage
+            anchors.centerIn: parent
+            width: 24
+            height: 24
+            visible: Qt.platform.os === "android"
+            source: root.image
+            sourceSize.width: width
+            sourceSize.height: height
+            fillMode: Image.PreserveAspectFit
+            opacity: root.isSelected ? 1.0 : 0.72
+        }
+
+        Image {
+            id: desktopImageMask
+            anchors.centerIn: parent
+            width: 24
+            height: 24
+            visible: false
+            source: root.image
+            sourceSize.width: width
+            sourceSize.height: height
+            fillMode: Image.PreserveAspectFit
+        }
+
+        ColorOverlay {
+            anchors.fill: desktopImageMask
+            visible: Qt.platform.os !== "android"
+            source: desktopImageMask
+            color: root.isSelected ? root.selectedColor : root.defaultColor
+        }
+    }
 
     background: Rectangle {
         id: background

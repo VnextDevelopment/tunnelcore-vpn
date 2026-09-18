@@ -208,18 +208,25 @@ void CoreController::initControllers()
     setQmlContextProperty("PageController", m_pageController);
     TunnelCoreSessionStorage tunnelCoreSessionStorage;
     tunnelCoreSessionStorage.load = [this]() {
-        return qMakePair(
+        return std::make_tuple(
                 m_settings->value(QStringLiteral("TunnelCore/accessToken")).toByteArray(),
-                m_settings->value(QStringLiteral("TunnelCore/username")).toString());
+                m_settings->value(QStringLiteral("TunnelCore/username")).toString(),
+                m_settings->value(QStringLiteral("TunnelCore/emailAccount"), false).toBool(),
+                m_settings->value(QStringLiteral("TunnelCore/telegramLinked"), false).toBool());
     };
-    tunnelCoreSessionStorage.save = [this](const QByteArray &token, const QString &username) {
+    tunnelCoreSessionStorage.save = [this](const QByteArray &token, const QString &username,
+                                           bool emailAccount, bool telegramLinked) {
         m_settings->setValue(QStringLiteral("TunnelCore/accessToken"), token);
         m_settings->setValue(QStringLiteral("TunnelCore/username"), username);
+        m_settings->setValue(QStringLiteral("TunnelCore/emailAccount"), emailAccount);
+        m_settings->setValue(QStringLiteral("TunnelCore/telegramLinked"), telegramLinked);
         m_settings->sync();
     };
     tunnelCoreSessionStorage.clear = [this]() {
         m_settings->remove(QStringLiteral("TunnelCore/accessToken"));
         m_settings->remove(QStringLiteral("TunnelCore/username"));
+        m_settings->remove(QStringLiteral("TunnelCore/emailAccount"));
+        m_settings->remove(QStringLiteral("TunnelCore/telegramLinked"));
         m_settings->sync();
     };
     setQmlContextProperty("TunnelCoreController",

@@ -100,7 +100,9 @@ file(GLOB_RECURSE AMNEZIAVPN_QML_FILES ${CMAKE_CURRENT_LIST_DIR}/ui/qml/*.qml)
 
 qt6_add_translations(${PROJECT}
     TS_FILES ${AMNEZIAVPN_TS_FILES}
-    SOURCES ${AMNEZIAVPN_QML_FILES}
+    SOURCES
+        ${AMNEZIAVPN_QML_FILES}
+        ${CMAKE_CURRENT_LIST_DIR}/ui/controllers/tunnelCoreController.cpp
     RESOURCE_PREFIX "/translations"
 )
 # -- i18n end

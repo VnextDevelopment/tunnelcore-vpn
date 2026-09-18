@@ -10,22 +10,34 @@ import "../Controls2/TextTypes"
 PageType {
     id: root
     property bool emailMode: false
+    property bool registrationMode: false
 
     function selectMode(email) {
         if (TunnelCoreController.busy || emailMode === email)
             return
         emailMode = email
+        registrationMode = false
         loginField.textField.text = ""
         passwordField.textField.text = ""
+        confirmPasswordField.textField.text = ""
         TunnelCoreController.clearError()
     }
 
     function submit() {
         if (!TunnelCoreController.busy) {
-            if (emailMode)
-                TunnelCoreController.loginEmail(loginField.textField.text, passwordField.textField.text)
-            else
+            if (emailMode) {
+                if (registrationMode
+                        && passwordField.textField.text !== confirmPasswordField.textField.text) {
+                    confirmPasswordField.textField.forceActiveFocus()
+                    return
+                }
+                if (registrationMode)
+                    TunnelCoreController.registerEmail(loginField.textField.text, passwordField.textField.text)
+                else
+                    TunnelCoreController.loginEmail(loginField.textField.text, passwordField.textField.text)
+            } else {
                 TunnelCoreController.loginCode(loginField.textField.text)
+            }
         }
     }
 
@@ -34,6 +46,7 @@ PageType {
         function onSignedIn() {
             loginField.textField.text = ""
             passwordField.textField.text = ""
+            confirmPasswordField.textField.text = ""
             Qt.inputMethod.hide()
         }
         function onConfigReady(data, fileName) {
@@ -75,7 +88,7 @@ PageType {
             SmallTextType {
                 Layout.fillWidth: true
                 textFormat: Text.PlainText
-                text: TunnelCoreController.authenticated ? TunnelCoreController.username : qsTr("Войдите в свой аккаунт")
+                text: TunnelCoreController.authenticated ? TunnelCoreController.username : qsTr("Sign in to your account")
                 horizontalAlignment: Text.AlignHCenter
             }
 
@@ -88,7 +101,7 @@ PageType {
                     Layout.fillWidth: true
                     BasicButtonType {
                         Layout.fillWidth: true
-                        text: qsTr("Из бота")
+                        text: qsTr("Bot code")
                         enabled: !TunnelCoreController.busy
                         defaultColor: root.emailMode ? AmneziaStyle.color.charcoalGray : AmneziaStyle.color.paleGray
                         clickedFunc: function() { root.selectMode(false) }
@@ -104,14 +117,32 @@ PageType {
                 SmallTextType {
                     Layout.fillWidth: true
                     text: root.emailMode
-                          ? qsTr("Введите email и пароль вашего аккаунта TunnelCore.")
-                          : qsTr("Введите шестизначный код, полученный в боте TunnelCore.")
+                          ? (root.registrationMode
+                             ? qsTr("Create a TunnelCore account with your email and password.")
+                             : qsTr("Enter the email and password for your TunnelCore account."))
+                          : qsTr("Enter the six-digit code from the TunnelCore bot.")
+                }
+                BasicButtonType {
+                    Layout.fillWidth: true
+                    visible: root.emailMode
+                    text: root.registrationMode
+                          ? qsTr("Already have an account? Sign in")
+                          : qsTr("Create account")
+                    enabled: !TunnelCoreController.busy
+                    defaultColor: AmneziaStyle.color.transparent
+                    textColor: AmneziaStyle.color.goldenApricot
+                    clickedFunc: function() {
+                        root.registrationMode = !root.registrationMode
+                        passwordField.textField.text = ""
+                        confirmPasswordField.textField.text = ""
+                        TunnelCoreController.clearError()
+                    }
                 }
                 TextFieldWithHeaderType {
                     id: loginField
                     Layout.fillWidth: true
                     enabled: !TunnelCoreController.busy
-                    headerText: root.emailMode ? qsTr("Email") : qsTr("Код из бота")
+                    headerText: root.emailMode ? qsTr("Email") : qsTr("Bot code")
                     textField.placeholderText: root.emailMode ? "name@example.com" : "000000"
                     textField.maximumLength: root.emailMode ? 320 : 6
                     textField.inputMethodHints: root.emailMode
@@ -130,18 +161,40 @@ PageType {
                     Layout.fillWidth: true
                     visible: root.emailMode
                     enabled: !TunnelCoreController.busy
-                    headerText: qsTr("Пароль")
+                    headerText: qsTr("Password")
                     textField.echoMode: TextInput.Password
                     textField.maximumLength: 1024
                     textField.onAccepted: root.submit()
                 }
+                TextFieldWithHeaderType {
+                    id: confirmPasswordField
+                    Layout.fillWidth: true
+                    visible: root.emailMode && root.registrationMode
+                    enabled: !TunnelCoreController.busy
+                    headerText: qsTr("Confirm password")
+                    textField.echoMode: TextInput.Password
+                    textField.maximumLength: 1024
+                    textField.onAccepted: root.submit()
+                }
+                SmallTextType {
+                    Layout.fillWidth: true
+                    visible: root.emailMode && root.registrationMode
+                             && confirmPasswordField.textField.text.length > 0
+                             && passwordField.textField.text !== confirmPasswordField.textField.text
+                    text: qsTr("Passwords do not match.")
+                    color: AmneziaStyle.color.vibrantRed
+                }
                 BasicButtonType {
                     Layout.fillWidth: true
-                    text: TunnelCoreController.busy ? qsTr("Входим…") : qsTr("Войти")
+                    text: TunnelCoreController.busy
+                          ? (root.registrationMode ? qsTr("Creating account…") : qsTr("Signing in…"))
+                          : (root.registrationMode ? qsTr("Create account") : qsTr("Sign in"))
                     enabled: !TunnelCoreController.busy
                              && (root.emailMode
                                  ? loginField.textField.text.trim().length > 0
                                    && passwordField.textField.text.length > 0
+                                   && (!root.registrationMode
+                                       || passwordField.textField.text === confirmPasswordField.textField.text)
                                  : loginField.textField.text.trim().length === 6)
                     clickedFunc: root.submit
                 }
@@ -155,7 +208,7 @@ PageType {
                 SmallTextType {
                     Layout.fillWidth: true
                     visible: TunnelCoreController.busy
-                    text: qsTr("Загружаем данные…")
+                    text: qsTr("Loading data…")
                 }
                 Repeater {
                     model: TunnelCoreController.subscriptions
@@ -163,14 +216,14 @@ PageType {
                         required property var modelData
                         Layout.fillWidth: true
                         textFormat: Text.PlainText
-                        text: modelData.tariff + "\n" + qsTr("До %1").arg(Qt.formatDateTime(new Date(modelData.expires_at), "dd.MM.yyyy"))
+                        text: modelData.tariff + "\n" + qsTr("Until %1").arg(Qt.formatDateTime(new Date(modelData.expires_at), "dd.MM.yyyy"))
                     }
                 }
                 SmallTextType {
                     Layout.fillWidth: true
                     visible: !TunnelCoreController.busy && !TunnelCoreController.error
                              && TunnelCoreController.configs.length === 0
-                    text: qsTr("Нет доступных VPN-конфигураций. Проверьте подписку в боте и обновите список.")
+                    text: qsTr("No VPN configurations are available. Check your subscription in the bot and refresh the list.")
                 }
                 Repeater {
                     model: TunnelCoreController.configs
@@ -187,18 +240,61 @@ PageType {
                 }
                 BasicButtonType {
                     Layout.fillWidth: true
-                    text: qsTr("Обновить")
+                    text: qsTr("Refresh")
                     enabled: !TunnelCoreController.busy
                     clickedFunc: function() { TunnelCoreController.refresh() }
                 }
                 BasicButtonType {
                     Layout.fillWidth: true
-                    text: qsTr("Выйти из аккаунта")
+                    text: qsTr("Sign out")
                     clickedFunc: function() { TunnelCoreController.logout() }
                 }
                 SmallTextType {
                     Layout.fillWidth: true
-                    text: qsTr("Выход завершает сессию аккаунта. Импортированные VPN-конфигурации остаются на устройстве.")
+                    text: qsTr("Signing out ends the account session. Imported VPN configurations remain on this device.")
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    visible: TunnelCoreController.emailAccount
+                    spacing: 12
+
+                    Header2TextType {
+                        Layout.fillWidth: true
+                        text: qsTr("Link Telegram")
+                    }
+                    SmallTextType {
+                        Layout.fillWidth: true
+                        visible: !TunnelCoreController.telegramLinked
+                        text: qsTr("Request a six-digit code in the TunnelCore bot and enter it here. Your Telegram subscriptions and payments will be transferred to this account.")
+                    }
+                    TextFieldWithHeaderType {
+                        id: telegramCodeField
+                        Layout.fillWidth: true
+                        visible: !TunnelCoreController.telegramLinked
+                        enabled: !TunnelCoreController.busy
+                        headerText: qsTr("Telegram code")
+                        textField.placeholderText: "000000"
+                        textField.maximumLength: 6
+                        textField.inputMethodHints: Qt.ImhDigitsOnly | Qt.ImhNoPredictiveText
+                        textField.onAccepted: TunnelCoreController.linkTelegram(telegramCodeField.textField.text)
+                    }
+                    BasicButtonType {
+                        Layout.fillWidth: true
+                        visible: !TunnelCoreController.telegramLinked
+                        enabled: !TunnelCoreController.busy
+                                 && telegramCodeField.textField.text.trim().length === 6
+                        text: qsTr("Link Telegram")
+                        clickedFunc: function() {
+                            TunnelCoreController.linkTelegram(telegramCodeField.textField.text)
+                        }
+                    }
+                    SmallTextType {
+                        Layout.fillWidth: true
+                        visible: TunnelCoreController.telegramLinked
+                        text: qsTr("Telegram is linked to this account.")
+                        color: AmneziaStyle.color.goldenApricot
+                    }
                 }
             }
 
@@ -212,12 +308,12 @@ PageType {
             BasicButtonType {
                 Layout.fillWidth: true
                 visible: ServersUiController.getServersCount() > 0
-                text: qsTr("К подключению")
+                text: qsTr("Go to connection")
                 clickedFunc: function() { PageController.goToPageHome() }
             }
             BasicButtonType {
                 Layout.fillWidth: true
-                text: qsTr("Импорт конфигурации")
+                text: qsTr("Import configuration")
                 enabled: !TunnelCoreController.busy
                 clickedFunc: function() { PageController.goToPage(PageEnum.PageSetupWizardConfigSource) }
             }

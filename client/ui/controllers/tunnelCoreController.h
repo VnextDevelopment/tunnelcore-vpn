@@ -7,14 +7,15 @@
 #include <QPair>
 #include <QVariantList>
 #include <functional>
+#include <tuple>
 #include <utility>
 
 class QNetworkReply;
 
 struct TunnelCoreSessionStorage
 {
-    std::function<QPair<QByteArray, QString>()> load;
-    std::function<void(const QByteArray &, const QString &)> save;
+    std::function<std::tuple<QByteArray, QString, bool, bool>()> load;
+    std::function<void(const QByteArray &, const QString &, bool, bool)> save;
     std::function<void()> clear;
 };
 
@@ -25,6 +26,8 @@ class TunnelCoreController : public QObject
     Q_PROPERTY(bool busy READ busy NOTIFY changed)
     Q_PROPERTY(QString username READ username NOTIFY changed)
     Q_PROPERTY(QString error READ error NOTIFY changed)
+    Q_PROPERTY(bool emailAccount READ emailAccount NOTIFY changed)
+    Q_PROPERTY(bool telegramLinked READ telegramLinked NOTIFY changed)
     Q_PROPERTY(QVariantList subscriptions READ subscriptions NOTIFY changed)
     Q_PROPERTY(QVariantList configs READ configs NOTIFY changed)
 
@@ -35,6 +38,8 @@ public:
     bool busy() const { return m_busy; }
     QString username() const { return m_username; }
     QString error() const { return m_error; }
+    bool emailAccount() const { return m_emailAccount; }
+    bool telegramLinked() const { return m_telegramLinked; }
     QVariantList subscriptions() const { return m_subscriptions; }
     QVariantList configs() const { return m_configs; }
 
@@ -43,6 +48,8 @@ public:
     // TunnelCore UI uses one-time Telegram codes.
     Q_INVOKABLE void login(const QString &username, const QString &password);
     Q_INVOKABLE void loginEmail(const QString &email, const QString &password);
+    Q_INVOKABLE void registerEmail(const QString &email, const QString &password);
+    Q_INVOKABLE void linkTelegram(const QString &code);
     Q_INVOKABLE void clearError();
     Q_INVOKABLE void logout();
     Q_INVOKABLE void refresh();
@@ -54,10 +61,12 @@ signals:
     void configReady(const QString &data, const QString &fileName);
 
 private:
-    void authenticate(const QString &path, const QJsonObject &credentials);
+    void authenticate(const QString &path, const QJsonObject &credentials, bool emailAccount = false);
     void request(const QString &path, const QJsonObject &body,
                  std::function<void(const QJsonObject &)> success, bool post = false,
-                 std::function<void(int, const QJsonObject &)> failure = {});
+                 std::function<void(int, const QJsonObject &)> failure = {},
+                 bool authenticatedRequest = false);
+    void saveSession();
     void deliverConfig(const QString &data, const QString &fileName = {});
     void fail(const QString &message);
     QNetworkAccessManager *m_network;
@@ -69,5 +78,7 @@ private:
     QVariantList m_configs;
     TunnelCoreSessionStorage m_sessionStorage;
     bool m_busy = false;
+    bool m_emailAccount = false;
+    bool m_telegramLinked = false;
     unsigned int m_generation = 0;
 };

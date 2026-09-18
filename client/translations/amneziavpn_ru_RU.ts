@@ -3167,6 +3167,11 @@ Create one from the current settings.</source>
 <context>
     <name>PageSettings</name>
     <message>
+        <location filename="../ui/qml/Pages2/PageSettings.qml" line="117"/>
+        <source>TunnelCore account</source>
+        <translation>Аккаунт TunnelCore</translation>
+    </message>
+    <message>
         <location filename="../ui/qml/Pages2/PageSettings.qml" line="48"/>
         <source>Settings</source>
         <translation>Настройки</translation>
@@ -3203,8 +3208,8 @@ Create one from the current settings.</source>
     </message>
     <message>
         <location filename="../ui/qml/Pages2/PageSettings.qml" line="177"/>
-        <source>About AmneziaVPN</source>
-        <translation>Об AmneziaVPN</translation>
+        <source>About TunnelCore VPN</source>
+        <translation>О TunnelCore VPN</translation>
     </message>
     <message>
         <location filename="../ui/qml/Pages2/PageSettings.qml" line="188"/>
@@ -4934,6 +4939,16 @@ Create one from the current settings.</source>
 </context>
 <context>
     <name>PageSetupWizardConfigSource</name>
+    <message>
+        <location filename="../ui/qml/Pages2/PageSetupWizardConfigSource.qml" line="263"/>
+        <source>TunnelCore account</source>
+        <translation>Аккаунт TunnelCore</translation>
+    </message>
+    <message>
+        <location filename="../ui/qml/Pages2/PageSetupWizardConfigSource.qml" line="264"/>
+        <source>Sign in and manage your subscription configurations</source>
+        <translation>Вход и управление конфигурациями вашей подписки</translation>
+    </message>
     <message>
         <location filename="../ui/qml/Pages2/PageSetupWizardConfigSource.qml" line="50"/>
         <source>Connection</source>
@@ -6877,5 +6892,65 @@ Remove the server from the app to continue.</source>
         <source>Cannot remove server during active connection</source>
         <translation>Невозможно удалить сервер во время активного соединения</translation>
     </message>
+</context>
+<context>
+    <name>PageTunnelCoreAccount</name>
+    <message><source>Sign in to your account</source><translation>Войдите в свой аккаунт</translation></message>
+    <message><source>Bot code</source><translation>Код из бота</translation></message>
+    <message><source>Enter the email and password for your TunnelCore account.</source><translation>Введите email и пароль вашего аккаунта TunnelCore.</translation></message>
+    <message><source>Enter the six-digit code from the TunnelCore bot.</source><translation>Введите шестизначный код, полученный в боте TunnelCore.</translation></message>
+    <message><source>Email</source><translation>Email</translation></message>
+    <message><source>Password</source><translation>Пароль</translation></message>
+    <message><source>Signing in…</source><translation>Входим…</translation></message>
+    <message><source>Sign in</source><translation>Войти</translation></message>
+    <message><source>Loading data…</source><translation>Загружаем данные…</translation></message>
+    <message><source>Until %1</source><translation>До %1</translation></message>
+    <message><source>No VPN configurations are available. Check your subscription in the bot and refresh the list.</source><translation>Нет доступных VPN-конфигураций. Проверьте подписку в боте и обновите список.</translation></message>
+    <message><source>Refresh</source><translation>Обновить</translation></message>
+    <message><source>Sign out</source><translation>Выйти из аккаунта</translation></message>
+    <message><source>Signing out ends the account session. Imported VPN configurations remain on this device.</source><translation>Выход завершает сессию аккаунта. Импортированные VPN-конфигурации остаются на устройстве.</translation></message>
+    <message><source>Go to connection</source><translation>К подключению</translation></message>
+    <message><source>Import configuration</source><translation>Импорт конфигурации</translation></message>
+    <message><source>Create a TunnelCore account with your email and password.</source><translation>Создайте аккаунт TunnelCore, указав email и пароль.</translation></message>
+    <message><source>Already have an account? Sign in</source><translation>Уже есть аккаунт? Войти</translation></message>
+    <message><source>Create account</source><translation>Создать аккаунт</translation></message>
+    <message><source>Confirm password</source><translation>Подтвердите пароль</translation></message>
+    <message><source>Passwords do not match.</source><translation>Пароли не совпадают.</translation></message>
+    <message><source>Creating account…</source><translation>Создаём аккаунт…</translation></message>
+    <message><source>Link Telegram</source><translation>Привязать Telegram</translation></message>
+    <message><source>Request a six-digit code in the TunnelCore bot and enter it here. Your Telegram subscriptions and payments will be transferred to this account.</source><translation>Запросите шестизначный код в боте TunnelCore и введите его здесь. Ваши подписки и платежи Telegram будут перенесены в этот аккаунт.</translation></message>
+    <message><source>Telegram code</source><translation>Код Telegram</translation></message>
+    <message><source>Telegram is linked to this account.</source><translation>Telegram привязан к этому аккаунту.</translation></message>
+</context>
+<context>
+    <name>TunnelCoreController</name>
+    <message><source>The login details or password are incorrect.</source><translation>Неверные данные для входа или пароль.</translation></message>
+    <message><source>Your session has ended. Sign in again.</source><translation>Сессия завершена. Войдите снова.</translation></message>
+    <message><source>Enter a valid email and password.</source><translation>Введите корректный email и пароль.</translation></message>
+    <message><source>The server rejected the login details. Check the sign-in method and API version.</source><translation>Сервер не принял данные для входа. Проверьте способ входа и версию API.</translation></message>
+    <message><source>The server rejected the login details.</source><translation>Сервер не принял данные для входа.</translation></message>
+    <message><source>Could not connect to TunnelCore. Check your connection and try again.</source><translation>Не удалось связаться с TunnelCore. Проверьте подключение и повторите попытку.</translation></message>
+    <message><source>The server returned an invalid response.</source><translation>Сервер вернул некорректный ответ.</translation></message>
+    <message><source>Enter the username and password from the bot.</source><translation>Введите логин и пароль из бота.</translation></message>
+    <message><source>Enter the six-digit code from the bot.</source><translation>Введите шестизначный код из бота.</translation></message>
+    <message><source>Enter your email and password.</source><translation>Введите email и пароль.</translation></message>
+    <message><source>The server returned an invalid authentication response.</source><translation>Сервер вернул некорректный ответ авторизации.</translation></message>
+    <message><source>The server returned an invalid subscription list.</source><translation>Сервер вернул некорректный список подписок.</translation></message>
+    <message><source>The server returned an invalid configuration list.</source><translation>Сервер вернул некорректный список конфигураций.</translation></message>
+    <message><source>The server returned invalid configuration data.</source><translation>Сервер вернул некорректные данные конфигурации.</translation></message>
+    <message><source>The server returned an empty VPN configuration.</source><translation>Сервер вернул пустую VPN-конфигурацию.</translation></message>
+    <message><source>This configuration has already been retrieved or is no longer available. Refresh the list.</source><translation>Конфигурация уже получена или больше недоступна. Обновите список.</translation></message>
+    <message><source>Could not retrieve the configuration from the VPN server. Try again later.</source><translation>Не удалось получить конфигурацию с VPN-сервера. Повторите позже.</translation></message>
+    <message><source>Could not download the VPN configuration.</source><translation>Не удалось загрузить VPN-конфигурацию.</translation></message>
+    <message><source>The server returned an invalid configuration URL.</source><translation>Сервер вернул некорректную ссылку на конфигурацию.</translation></message>
+    <message><source>Could not download the configuration. Get a new configuration from the bot and refresh the list.</source><translation>Не удалось загрузить конфигурацию. Получите новую конфигурацию в боте и обновите список.</translation></message>
+    <message><source>The Telegram code is invalid or has expired. Request a new code in the bot.</source><translation>Код Telegram неверен или истёк. Запросите новый код в боте.</translation></message>
+    <message><source>Telegram can only be linked to an email account.</source><translation>Telegram можно привязать только к аккаунту, созданному по email.</translation></message>
+    <message><source>No Telegram account was found for this code.</source><translation>Для этого кода не найден аккаунт Telegram.</translation></message>
+    <message><source>This Telegram account is already linked to another email account.</source><translation>Этот аккаунт Telegram уже привязан к другому email-аккаунту.</translation></message>
+    <message><source>Could not link the Telegram account. Try again.</source><translation>Не удалось привязать аккаунт Telegram. Повторите попытку.</translation></message>
+    <message><source>An account with this email already exists. Sign in instead.</source><translation>Аккаунт с этим email уже существует. Войдите в него.</translation></message>
+    <message><source>The password does not meet the security requirements.</source><translation>Пароль не соответствует требованиям безопасности.</translation></message>
+    <message><source>Could not create the account. Try again.</source><translation>Не удалось создать аккаунт. Повторите попытку.</translation></message>
 </context>
 </TS>

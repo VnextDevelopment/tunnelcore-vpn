@@ -161,6 +161,76 @@ private slots:
         QVERIFY(network.requests.isEmpty());
         QVERIFY(!controller.busy());
     }
+    void emailRegistration()
+    {
+        Network network;
+        network.responses.enqueue({"{\"ok\":true,\"access_token\":\"registered-token\",\"token_type\":\"Bearer\",\"user\":{\"username\":\"client-generated\",\"email\":\"user@example.com\"}}", 201});
+        network.responses.enqueue({"{\"ok\":true,\"subscriptions\":[]}"});
+        network.responses.enqueue({"{\"ok\":true,\"configs\":[]}"});
+        TunnelCoreController controller(nullptr, &network);
+
+        controller.registerEmail(" User@Example.COM ", "Strong-pass-2026!");
+
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(controller.authenticated());
+        QVERIFY(controller.emailAccount());
+        QVERIFY(!controller.telegramLinked());
+        QCOMPARE(controller.username(), QString("user@example.com"));
+        QCOMPARE(network.requests.first().url().path(), QString("/api/vpn/v1/auth/register/"));
+        const auto body = QJsonDocument::fromJson(network.bodies.first()).object();
+        QCOMPARE(body.value("email").toString(), QString("user@example.com"));
+        QCOMPARE(body.value("password").toString(), QString("Strong-pass-2026!"));
+        QVERIFY(!network.requests.first().hasRawHeader("Authorization"));
+    }
+    void duplicateEmailRegistrationShowsError()
+    {
+        Network network;
+        network.responses.enqueue({"{\"ok\":false,\"error\":\"email_already_registered\"}", 409});
+        TunnelCoreController controller(nullptr, &network);
+
+        controller.registerEmail("user@example.com", "Strong-pass-2026!");
+
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(!controller.authenticated());
+        QVERIFY(!controller.error().isEmpty());
+        QCOMPARE(network.requests.size(), 1);
+    }
+    void emailAccountCanLinkTelegram()
+    {
+        Network network;
+        enqueueLogin(network);
+        TunnelCoreController controller(nullptr, &network);
+        controller.loginEmail("user@example.com", "Strong-pass-2026!");
+        QTRY_VERIFY(!controller.busy());
+
+        network.responses.enqueue({"{\"ok\":true,\"telegram_id\":777001,\"user\":{\"username\":\"client\",\"email\":\"user@example.com\"}}"});
+        network.responses.enqueue({"{\"ok\":true,\"subscriptions\":[]}"});
+        network.responses.enqueue({"{\"ok\":true,\"configs\":[]}"});
+        controller.linkTelegram(" 012345 ");
+
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(controller.telegramLinked());
+        QCOMPARE(network.requests[3].url().path(), QString("/api/vpn/v1/auth/telegram/link/"));
+        QCOMPARE(network.requests[3].rawHeader("Authorization"), QByteArray("Bearer test-token"));
+        const auto body = QJsonDocument::fromJson(network.bodies[3]).object();
+        QCOMPARE(body.value("code").toString(), QString("012345"));
+    }
+    void expiredTelegramCodeKeepsSession()
+    {
+        Network network;
+        enqueueLogin(network);
+        TunnelCoreController controller(nullptr, &network);
+        controller.loginEmail("user@example.com", "Strong-pass-2026!");
+        QTRY_VERIFY(!controller.busy());
+
+        network.responses.enqueue({"{\"ok\":false,\"error\":\"invalid_or_expired_code\"}", 401});
+        controller.linkTelegram("012345");
+
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(controller.authenticated());
+        QVERIFY(!controller.telegramLinked());
+        QVERIFY(!controller.error().isEmpty());
+    }
     void loginAndDownload()
     {
         Network network;
@@ -233,7 +303,7 @@ private slots:
         bool cleared = false;
         TunnelCoreSessionStorage storage;
         storage.load = []() {
-            return qMakePair(QByteArray("stored-token"), QString("stored-user"));
+            return std::make_tuple(QByteArray("stored-token"), QString("stored-user"), true, true);
         };
         storage.clear = [&cleared]() { cleared = true; };
 
@@ -242,6 +312,8 @@ private slots:
         QTRY_VERIFY(!controller.busy());
         QVERIFY(controller.authenticated());
         QCOMPARE(controller.username(), QString("stored-user"));
+        QVERIFY(controller.emailAccount());
+        QVERIFY(controller.telegramLinked());
         QCOMPARE(network.requests.size(), 2);
         QCOMPARE(network.requests.first().url().path(), QString("/api/vpn/v1/me/"));
         QCOMPARE(network.requests.first().rawHeader("Authorization"), QByteArray("Bearer stored-token"));
@@ -254,7 +326,7 @@ private slots:
         bool cleared = false;
         TunnelCoreSessionStorage storage;
         storage.load = []() {
-            return qMakePair(QByteArray("expired-token"), QString("stored-user"));
+            return std::make_tuple(QByteArray("expired-token"), QString("stored-user"), false, false);
         };
         storage.clear = [&cleared]() { cleared = true; };
 
@@ -272,7 +344,8 @@ private slots:
         QByteArray storedToken;
         QString storedUsername;
         TunnelCoreSessionStorage storage;
-        storage.save = [&storedToken, &storedUsername](const QByteArray &token, const QString &username) {
+        storage.save = [&storedToken, &storedUsername](const QByteArray &token, const QString &username,
+                                                       bool, bool) {
             storedToken = token;
             storedUsername = username;
         };

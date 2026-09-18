@@ -22,8 +22,7 @@ TunnelCoreController::TunnelCoreController(QObject *parent, QNetworkAccessManage
         return;
 
     const auto session = m_sessionStorage.load();
-    const auto token = session.first;
-    const auto username = session.second;
+    const auto &[token, username, emailAccount, telegramLinked] = session;
     if (token.isEmpty() || token.contains('\r') || token.contains('\n') || username.isEmpty()) {
         if (m_sessionStorage.clear)
             m_sessionStorage.clear();
@@ -32,7 +31,15 @@ TunnelCoreController::TunnelCoreController(QObject *parent, QNetworkAccessManage
 
     m_token = token;
     m_username = username;
+    m_emailAccount = emailAccount;
+    m_telegramLinked = telegramLinked;
     refresh();
+}
+
+void TunnelCoreController::saveSession()
+{
+    if (m_sessionStorage.save)
+        m_sessionStorage.save(m_token, m_username, m_emailAccount, m_telegramLinked);
 }
 
 void TunnelCoreController::fail(const QString &message)
@@ -50,7 +57,8 @@ void TunnelCoreController::clearError()
 
 void TunnelCoreController::request(const QString &path, const QJsonObject &body,
                                  std::function<void(const QJsonObject &)> success, bool post,
-                                 std::function<void(int, const QJsonObject &)> failure)
+                                 std::function<void(int, const QJsonObject &)> failure,
+                                 bool authenticatedRequest)
 {
     m_busy = true;
     m_error.clear();
@@ -60,7 +68,7 @@ void TunnelCoreController::request(const QString &path, const QJsonObject &body,
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::ManualRedirectPolicy);
     request.setRawHeader("Accept", "application/json");
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    if (!post)
+    if (!post || authenticatedRequest)
         request.setRawHeader("Authorization", "Bearer " + m_token);
 
     const auto requestUrl = request.url().toString(QUrl::FullyEncoded);
@@ -84,7 +92,8 @@ void TunnelCoreController::request(const QString &path, const QJsonObject &body,
 
         const auto status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
         const auto responseBody = reply->readAll();
-        if (reply->error() != QNetworkReply::NoError || status != 200) {
+        const bool successfulStatus = status >= 200 && status < 300;
+        if (reply->error() != QNetworkReply::NoError || !successfulStatus) {
             const auto wwwAuthenticate = reply->rawHeader("WWW-Authenticate");
             qWarning().noquote()
                 << "[TunnelCore API] response"
@@ -103,40 +112,40 @@ void TunnelCoreController::request(const QString &path, const QJsonObject &body,
             }
         }
 
+        if (!successfulStatus && failure && status > 0) {
+            m_busy = false;
+            const auto errorObject = QJsonDocument::fromJson(responseBody).object();
+            failure(status, errorObject);
+            return;
+        }
         if (status == 401) {
             if (!post)
                 logout();
-            fail(post ? tr("Неверные данные для входа или пароль.") : tr("Сессия завершена. Войдите снова."));
+            fail(post ? tr("The login details or password are incorrect.") : tr("Your session has ended. Sign in again."));
             return;
         }
         if (post && status == 400) {
             const auto error = QJsonDocument::fromJson(responseBody).object().value("error").toString();
             if (error == "email_and_password_required") {
-                fail(tr("Введите корректный email и пароль."));
+                fail(tr("Enter a valid email and password."));
                 return;
             }
             if (error == "username_and_password_required") {
-                fail(tr("Сервер не принял данные для входа. Проверьте способ входа и версию API."));
+                fail(tr("The server rejected the login details. Check the sign-in method and API version."));
                 return;
             }
-            fail(tr("Сервер не принял данные для входа."));
+            fail(tr("The server rejected the login details."));
             return;
         }
-        if (reply->error() != QNetworkReply::NoError || status != 200) {
-            if (failure && status > 0) {
-                m_busy = false;
-                const auto errorObject = QJsonDocument::fromJson(responseBody).object();
-                failure(status, errorObject);
-                return;
-            }
-            fail(tr("Не удалось связаться с TunnelCore. Проверьте подключение и повторите попытку."));
+        if (reply->error() != QNetworkReply::NoError || !successfulStatus) {
+            fail(tr("Could not connect to TunnelCore. Check your connection and try again."));
             return;
         }
         QJsonParseError parseError;
         const auto document = QJsonDocument::fromJson(responseBody, &parseError);
         if (parseError.error != QJsonParseError::NoError || !document.isObject()
             || !document.object().value("ok").toBool()) {
-            fail(tr("Сервер вернул некорректный ответ."));
+            fail(tr("The server returned an invalid response."));
             return;
         }
         m_busy = false;
@@ -150,7 +159,7 @@ void TunnelCoreController::login(const QString &username, const QString &passwor
     if (m_busy || authenticated())
         return;
     if (username.trimmed().isEmpty() || password.isEmpty()) {
-        fail(tr("Введите логин и пароль из бота."));
+        fail(tr("Enter the username and password from the bot."));
         return;
     }
     authenticate("auth/login/", {{"username", username.trimmed()}, {"password", password}});
@@ -164,7 +173,7 @@ void TunnelCoreController::loginCode(const QString &code)
     bool isNumber = false;
     normalizedCode.toUInt(&isNumber);
     if (normalizedCode.size() != 6 || !isNumber) {
-        fail(tr("Введите шестизначный код из бота."));
+        fail(tr("Enter the six-digit code from the bot."));
         return;
     }
     authenticate("auth/code/exchange/", {{"code", normalizedCode}});
@@ -176,31 +185,105 @@ void TunnelCoreController::loginEmail(const QString &email, const QString &passw
         return;
     const auto normalizedEmail = email.trimmed().toLower();
     if (normalizedEmail.isEmpty() || password.isEmpty()) {
-        fail(tr("Введите email и пароль."));
+        fail(tr("Enter your email and password."));
         return;
     }
     // The server validates the address; do not impose a different email grammar here.
-    authenticate("auth/login/", {{"email", normalizedEmail}, {"password", password}});
+    authenticate("auth/login/", {{"email", normalizedEmail}, {"password", password}}, true);
 }
 
-void TunnelCoreController::authenticate(const QString &path, const QJsonObject &credentials)
+void TunnelCoreController::registerEmail(const QString &email, const QString &password)
+{
+    if (m_busy || authenticated())
+        return;
+    const auto normalizedEmail = email.trimmed().toLower();
+    if (normalizedEmail.isEmpty() || password.isEmpty()) {
+        fail(tr("Enter your email and password."));
+        return;
+    }
+    authenticate("auth/register/", {{"email", normalizedEmail}, {"password", password}}, true);
+}
+
+void TunnelCoreController::linkTelegram(const QString &code)
+{
+    if (m_busy || !authenticated() || !m_emailAccount)
+        return;
+    const auto normalizedCode = code.trimmed();
+    bool isNumber = false;
+    normalizedCode.toUInt(&isNumber);
+    if (normalizedCode.size() != 6 || !isNumber) {
+        fail(tr("Enter the six-digit code from the bot."));
+        return;
+    }
+
+    request("auth/telegram/link/", {{"code", normalizedCode}}, [this](const QJsonObject &) {
+        m_telegramLinked = true;
+        saveSession();
+        refresh();
+    }, true, [this](int status, const QJsonObject &object) {
+        const auto apiError = object.value("error").toString();
+        if (status == 401 && apiError == "invalid_or_expired_code") {
+            fail(tr("The Telegram code is invalid or has expired. Request a new code in the bot."));
+        } else if (status == 401 && apiError == "unauthorized") {
+            logout();
+            fail(tr("Your session has ended. Sign in again."));
+        } else if (status == 403 && apiError == "email_account_required") {
+            fail(tr("Telegram can only be linked to an email account."));
+        } else if (status == 409 && apiError == "telegram_link_not_found") {
+            fail(tr("No Telegram account was found for this code."));
+        } else if (status == 409 && apiError == "telegram_account_already_linked") {
+            fail(tr("This Telegram account is already linked to another email account."));
+        } else {
+            fail(tr("Could not link the Telegram account. Try again."));
+        }
+    }, true);
+}
+
+void TunnelCoreController::authenticate(const QString &path, const QJsonObject &credentials, bool emailAccount)
 {
     request(path, credentials,
-            [this](const QJsonObject &object) {
+            [this, emailAccount](const QJsonObject &object) {
         const auto token = object.value("access_token").toString().toLatin1();
-        const auto username = object.value("user").toObject().value("username").toString();
+        const auto user = object.value("user").toObject();
+        const auto accountUsername = user.value("username").toString();
+        const auto email = user.value("email").toString();
+        const auto username = emailAccount && !email.isEmpty() ? email : accountUsername;
         if (token.isEmpty() || token.contains('\r') || token.contains('\n') || username.isEmpty()
             || object.value("token_type").toString().compare("Bearer", Qt::CaseInsensitive) != 0) {
-            fail(tr("Сервер вернул некорректный ответ авторизации."));
+            fail(tr("The server returned an invalid authentication response."));
             return;
         }
         m_token = token;
         m_username = username;
-        if (m_sessionStorage.save)
-            m_sessionStorage.save(m_token, m_username);
+        m_emailAccount = emailAccount;
+        m_telegramLinked = false;
+        saveSession();
         emit signedIn();
         refresh();
-    }, true);
+    }, true, [this, path](int status, const QJsonObject &object) {
+        const auto apiError = object.value("error").toString();
+        if (path == "auth/register/") {
+            if (status == 409 && apiError == "email_already_registered") {
+                fail(tr("An account with this email already exists. Sign in instead."));
+            } else if (status == 400 && apiError == "password_invalid") {
+                fail(tr("The password does not meet the security requirements."));
+            } else if (status == 400 && apiError == "email_and_password_required") {
+                fail(tr("Enter a valid email and password."));
+            } else {
+                fail(tr("Could not create the account. Try again."));
+            }
+            return;
+        }
+        if (status == 400 && apiError == "email_and_password_required") {
+            fail(tr("Enter a valid email and password."));
+        } else if (status == 400 && apiError == "username_and_password_required") {
+            fail(tr("The server rejected the login details. Check the sign-in method and API version."));
+        } else if (status == 401) {
+            fail(tr("The login details or password are incorrect."));
+        } else {
+            fail(tr("Could not connect to TunnelCore. Check your connection and try again."));
+        }
+    });
 }
 
 void TunnelCoreController::logout()
@@ -216,6 +299,8 @@ void TunnelCoreController::logout()
     m_configs.clear();
     m_error.clear();
     m_busy = false;
+    m_emailAccount = false;
+    m_telegramLinked = false;
     if (m_sessionStorage.clear)
         m_sessionStorage.clear();
     emit changed();
@@ -229,13 +314,13 @@ void TunnelCoreController::refresh()
     m_subscriptions.clear();
     request("me/", {}, [this](const QJsonObject &object) {
         if (!object.value("subscriptions").isArray()) {
-            fail(tr("Сервер вернул некорректный список подписок."));
+            fail(tr("The server returned an invalid subscription list."));
             return;
         }
         m_subscriptions = object.value("subscriptions").toArray().toVariantList();
         request("configs/", {}, [this](const QJsonObject &object) {
             if (!object.value("configs").isArray()) {
-                fail(tr("Сервер вернул некорректный список конфигураций."));
+                fail(tr("The server returned an invalid configuration list."));
                 return;
             }
             m_configs = object.value("configs").toArray().toVariantList();
@@ -262,7 +347,7 @@ void TunnelCoreController::selectConfig(int index)
     bool validId = false;
     const auto configId = config.value("id").toLongLong(&validId);
     if (!validId || configId <= 0) {
-        fail(tr("Сервер вернул некорректные данные конфигурации."));
+        fail(tr("The server returned invalid configuration data."));
         return;
     }
 
@@ -270,7 +355,7 @@ void TunnelCoreController::selectConfig(int index)
             [this, suggestedFileName](const QJsonObject &object) {
         const auto downloadedConfig = object.value("config").toString().trimmed();
         if (downloadedConfig.isEmpty()) {
-            fail(tr("Сервер вернул пустую VPN-конфигурацию."));
+            fail(tr("The server returned an empty VPN configuration."));
             return;
         }
         auto fileName = object.value("filename").toString().trimmed();
@@ -281,12 +366,15 @@ void TunnelCoreController::selectConfig(int index)
         deliverConfig(downloadedConfig, fileName);
     }, false, [this](int status, const QJsonObject &object) {
         const auto apiError = object.value("error").toString();
-        if (status == 404 || apiError == "config_not_found") {
-            fail(tr("Конфигурация уже получена или больше недоступна. Обновите список."));
+        if (status == 401) {
+            logout();
+            fail(tr("Your session has ended. Sign in again."));
+        } else if (status == 404 || apiError == "config_not_found") {
+            fail(tr("This configuration has already been retrieved or is no longer available. Refresh the list."));
         } else if (status == 502 || apiError == "config_unavailable") {
-            fail(tr("Не удалось получить конфигурацию с VPN-сервера. Повторите позже."));
+            fail(tr("Could not retrieve the configuration from the VPN server. Try again later."));
         } else {
-            fail(tr("Не удалось загрузить VPN-конфигурацию."));
+            fail(tr("Could not download the VPN configuration."));
         }
     });
 }
@@ -299,7 +387,7 @@ void TunnelCoreController::deliverConfig(const QString &data, const QString &fil
         return;
     }
     if (url.host().isEmpty() || !url.userInfo().isEmpty()) {
-        fail(tr("Сервер вернул некорректную ссылку на конфигурацию."));
+        fail(tr("The server returned an invalid configuration URL."));
         return;
     }
     // Download URLs carry their own one-time token. Never send the account token to a node.
@@ -323,7 +411,7 @@ void TunnelCoreController::deliverConfig(const QString &data, const QString &fil
         m_reply.clear();
         if (reply->error() != QNetworkReply::NoError
             || reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200) {
-            fail(tr("Не удалось загрузить конфигурацию. Получите новую конфигурацию в боте и обновите список."));
+            fail(tr("Could not download the configuration. Get a new configuration from the bot and refresh the list."));
             return;
         }
         m_busy = false;

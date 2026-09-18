@@ -4,13 +4,17 @@ The client uses `https://tlsdmd.isgood.host/api/vpn/v1/`, not the Django
 administration at `/admin/` or the internal `/api/bot/` API.
 
 Contract verified against `VnextDevelopment/tunnelcore`, main commit
-`636ecca`:
+`f97cc9b`:
 
 - `POST auth/login/`: JSON `username`, `password` (bot credentials), or
   `email`, `password` (email login); response `ok`,
   `access_token`, `token_type: Bearer`, `expires_in`, `user`.
 - `POST auth/code/exchange/`: JSON `code` (six-digit one-time code from the
   Telegram bot); response uses the same access-token contract as login.
+- `POST auth/register/`: JSON `email`, `password`; creates an email account and
+  returns the same access-token contract with HTTP 201.
+- `POST auth/telegram/link/`: Bearer token plus JSON `code`; links a Telegram
+  profile to an email account and migrates its subscriptions and payments.
 - `GET me/`: Bearer token; response `user`, `subscriptions`.
 - `GET configs/`: Bearer token; response contains safe configuration metadata
   (`id`, `name`, `location`, `protocol`, `expires_at`) without a private URL.
@@ -25,30 +29,40 @@ go through the existing import preview and parser. A 401 on an authenticated
 request clears the account session. Logout cancels outstanding requests and
 clears the profile; previously imported VPN configurations remain available.
 
-The access token and username are persisted through the application's encrypted
-`SecureQSettings` storage. On startup the client validates the restored session
-by refreshing account data. A rejected token is removed automatically. Login
-codes and passwords are never persisted.
+The access token, display name, account type and successful Telegram-link state
+are persisted through the application's encrypted `SecureQSettings` storage.
+On startup the client validates the restored session by refreshing account data.
+A rejected token is removed automatically. Login codes and passwords are never
+persisted.
 
 ## Email login
 
-Email login is implemented against `feature/vpn-email-auth`,
-`web/vpn_api/auth_views.py` blob `00a77b91a77b6b4bf042e0ce8948fbbfbb96e592`.
-The Email tab sends only `email` and `password` to `auth/login/`; the address is
-trimmed and lowercased, while the password is preserved exactly. The server
-validates email syntax and checks the linked enabled VPN client credential.
-The response uses the same Bearer token contract as bot-credential login.
-Switching tabs clears the entered credentials and previous error.
+The Email tab supports both registration and sign-in. It sends only `email` and
+`password`; the address is trimmed and lowercased, while the password is
+preserved exactly. Registration signs the user in immediately after the server
+returns the token. Switching tabs or switching between registration and sign-in
+clears entered passwords and the previous error.
 
 The server returns `email_and_password_required` (400) for invalid or missing
 email/password and `invalid_credentials` (401) for rejected credentials.
-The client displays these failures without opening the account. On 2026-09-17,
-the configured live server returned `email_and_password_required` (400) for an
-empty email/password request, confirming that it recognizes the email contract.
-Successful sign-in with a real account has not been verified.
-The branch also provides `auth/register/`, but this client change covers login
-only. Do not substitute Django administrator credentials or bot service tokens
-for end-user authentication.
+Registration additionally returns `password_invalid` (400),
+`email_already_registered` (409), or `registration_conflict` (409). The client
+maps these failures to localized messages without opening an account. Do not
+substitute Django administrator credentials or bot service tokens for end-user
+authentication.
+
+## Telegram linking
+
+An authenticated email account can enter a six-digit PIN obtained from the
+TunnelCore Telegram bot. The client sends it to `auth/telegram/link/` with the
+account Bearer token. The server consumes the PIN, links the Telegram identity,
+and transfers subscriptions and payments to the email account. The client then
+refreshes subscriptions and configurations.
+
+Expected failures are `invalid_or_expired_code` (401), `unauthorized` (401),
+`email_account_required` (403), `telegram_link_not_found` (409), and
+`telegram_account_already_linked` (409). An invalid or expired PIN does not end
+the current email session; an explicit `unauthorized` response does.
 
 ## Validation
 
