@@ -2,6 +2,7 @@
 
 #include <QDataStream>
 #include <QDebug>
+#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonParseError>
@@ -191,6 +192,11 @@ ImportController::ImportResult ImportController::extractConfigFromData(const QSt
         result.config = extractWireGuardConfig(config, result.configType);
         result.isNativeWireGuardConfig = (result.configType == ConfigTypes::WireGuard);
         if (!result.config.empty()) {
+            QString safeFileName = configFileName;
+            safeFileName.replace('\\', '/');
+            const auto connectionName = QFileInfo(QFileInfo(safeFileName).fileName()).completeBaseName().trimmed();
+            if (!connectionName.isEmpty())
+                result.config[configKey::description] = connectionName;
             return result;
         }
         result.errorCode = ErrorCode::ImportInvalidConfigError;
@@ -759,4 +765,3 @@ void ImportController::processAmneziaConfig(QJsonObject &config) const
         }
     }
 }
-

@@ -5,6 +5,7 @@
 #include <QFileInfo>
 #include <QMutex>
 #include <QJsonDocument>
+#include <utility>
 
 #include "systemController.h"
 
@@ -64,7 +65,16 @@ bool ImportUiController::extractConfigFromFile(const QString &fileName)
 
 bool ImportUiController::extractConfigFromData(QString data)
 {
-    auto result = m_importController->extractConfigFromData(data);
+    return extractConfigFromData(std::move(data), {});
+}
+
+bool ImportUiController::extractConfigFromData(QString data, QString configFileName)
+{
+    // Treat an API-provided filename as display metadata only. Never allow it
+    // to carry a path into the import flow.
+    configFileName.replace('\\', '/');
+    configFileName = QFileInfo(configFileName).fileName();
+    auto result = m_importController->extractConfigFromData(data, configFileName);
     
     if (result.errorCode != ErrorCode::NoError) {
         emit importErrorOccurred(result.errorCode, false);

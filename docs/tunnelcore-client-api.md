@@ -4,7 +4,7 @@ The client uses `https://tlsdmd.isgood.host/api/vpn/v1/`, not the Django
 administration at `/admin/` or the internal `/api/bot/` API.
 
 Contract verified against `VnextDevelopment/tunnelcore`, main commit
-`9cd06ce`:
+`636ecca`:
 
 - `POST auth/login/`: JSON `username`, `password` (bot credentials), or
   `email`, `password` (email login); response `ok`,
@@ -15,7 +15,9 @@ Contract verified against `VnextDevelopment/tunnelcore`, main commit
 - `GET configs/`: Bearer token; response contains safe configuration metadata
   (`id`, `name`, `location`, `protocol`, `expires_at`) without a private URL.
 - `GET configs/<id>/`: Bearer token; consumes the application-specific one-time
-  copy and returns `id`, `protocol`, `config`.
+  copy and returns `id`, `name`, `filename`, `protocol`, `config`. The client
+  passes `filename` into the import flow and uses its safe basename (without
+  `.conf`) as the imported AWG/WireGuard connection name.
 
 Legacy HTTPS configuration URLs are fetched without the account Authorization header.
 Redirects are rejected; TLS verification stays enabled. Configuration contents

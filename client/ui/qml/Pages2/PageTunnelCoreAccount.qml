@@ -36,10 +36,10 @@ PageType {
             passwordField.textField.text = ""
             Qt.inputMethod.hide()
         }
-        function onConfigReady(data) {
+        function onConfigReady(data, fileName) {
             if (!root.visible)
                 return
-            if (ImportController.extractConfigFromData(data)) {
+            if (ImportController.extractConfigFromData(data, fileName)) {
                 PageController.goToPage(PageEnum.PageSetupWizardViewConfig)
             }
         }

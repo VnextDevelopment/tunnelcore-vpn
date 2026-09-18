@@ -182,6 +182,7 @@ private slots:
         controller.selectConfig(0);
         QTRY_COMPARE(config.size(), 1);
         QVERIFY(!network.requests.last().hasRawHeader("Authorization"));
+        QCOMPARE(config.first().at(1).toString(), QString("VPN"));
         QCOMPARE(network.requests.last().attribute(QNetworkRequest::RedirectPolicyAttribute).toInt(),
                  int(QNetworkRequest::ManualRedirectPolicy));
     }
@@ -191,7 +192,7 @@ private slots:
         network.responses.enqueue({"{\"ok\":true,\"access_token\":\"test-token\",\"token_type\":\"Bearer\",\"user\":{\"username\":\"client\"}}"});
         network.responses.enqueue({"{\"ok\":true,\"subscriptions\":[{\"id\":1,\"tariff\":\"VPN\"}]}"});
         network.responses.enqueue({"{\"ok\":true,\"configs\":[{\"id\":17,\"name\":\"Germany\",\"protocol\":\"amneziawg\"}]}"});
-        network.responses.enqueue({"{\"ok\":true,\"id\":17,\"protocol\":\"amneziawg\",\"config\":\"[Interface]\\nPrivateKey = app-secret\"}"});
+        network.responses.enqueue({"{\"ok\":true,\"id\":17,\"name\":\"tc42-d1\",\"filename\":\"tc42-d1.conf\",\"protocol\":\"amneziawg\",\"config\":\"[Interface]\\nPrivateKey = app-secret\"}"});
         TunnelCoreController controller(nullptr, &network);
         controller.loginCode("012345");
         QTRY_VERIFY(!controller.busy());
@@ -204,6 +205,7 @@ private slots:
         QCOMPARE(network.requests.last().url().path(), QString("/api/vpn/v1/configs/17/"));
         QCOMPARE(network.requests.last().rawHeader("Authorization"), QByteArray("Bearer test-token"));
         QCOMPARE(config.first().first().toString(), QString("[Interface]\nPrivateKey = app-secret"));
+        QCOMPARE(config.first().at(1).toString(), QString("tc42-d1.conf"));
     }
     void metadataConfigDownloadErrorIsShown()
     {

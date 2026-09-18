@@ -249,10 +249,13 @@ void TunnelCoreController::selectConfig(int index)
         return;
     const auto config = m_configs.at(index).toMap();
     const auto data = config.value("config").toString().trimmed();
+    const auto listedFileName = config.value("filename").toString().trimmed();
+    const auto listedName = config.value("name").toString().trimmed();
+    const auto suggestedFileName = !listedFileName.isEmpty() ? listedFileName : listedName;
     if (!data.isEmpty()) {
         // Compatibility with servers that still return the configuration or
         // its one-time download URL directly in the list response.
-        deliverConfig(data);
+        deliverConfig(data, suggestedFileName);
         return;
     }
 
@@ -264,13 +267,18 @@ void TunnelCoreController::selectConfig(int index)
     }
 
     request(QStringLiteral("configs/%1/").arg(configId), {},
-            [this](const QJsonObject &object) {
+            [this, suggestedFileName](const QJsonObject &object) {
         const auto downloadedConfig = object.value("config").toString().trimmed();
         if (downloadedConfig.isEmpty()) {
             fail(tr("Сервер вернул пустую VPN-конфигурацию."));
             return;
         }
-        deliverConfig(downloadedConfig);
+        auto fileName = object.value("filename").toString().trimmed();
+        if (fileName.isEmpty())
+            fileName = object.value("name").toString().trimmed();
+        if (fileName.isEmpty())
+            fileName = suggestedFileName;
+        deliverConfig(downloadedConfig, fileName);
     }, false, [this](int status, const QJsonObject &object) {
         const auto apiError = object.value("error").toString();
         if (status == 404 || apiError == "config_not_found") {
@@ -283,11 +291,11 @@ void TunnelCoreController::selectConfig(int index)
     });
 }
 
-void TunnelCoreController::deliverConfig(const QString &data)
+void TunnelCoreController::deliverConfig(const QString &data, const QString &fileName)
 {
     const QUrl url(data);
     if (url.scheme() != "https") {
-        emit configReady(data);
+        emit configReady(data, fileName);
         return;
     }
     if (url.host().isEmpty() || !url.userInfo().isEmpty()) {
@@ -308,7 +316,7 @@ void TunnelCoreController::deliverConfig(const QString &data)
         if (reply->bytesAvailable() > maxResponseSize)
             reply->abort();
     });
-    connect(reply, &QNetworkReply::finished, this, [this, reply, generation]() {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, generation, fileName]() {
         reply->deleteLater();
         if (generation != m_generation)
             return;
@@ -320,6 +328,6 @@ void TunnelCoreController::deliverConfig(const QString &data)
         }
         m_busy = false;
         emit changed();
-        emit configReady(QString::fromUtf8(reply->readAll()));
+        emit configReady(QString::fromUtf8(reply->readAll()), fileName);
     });
 }

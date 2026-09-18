@@ -51,14 +51,14 @@ public:
 signals:
     void changed();
     void signedIn();
-    void configReady(const QString &data);
+    void configReady(const QString &data, const QString &fileName);
 
 private:
     void authenticate(const QString &path, const QJsonObject &credentials);
     void request(const QString &path, const QJsonObject &body,
                  std::function<void(const QJsonObject &)> success, bool post = false,
                  std::function<void(int, const QJsonObject &)> failure = {});
-    void deliverConfig(const QString &data);
+    void deliverConfig(const QString &data, const QString &fileName = {});
     void fail(const QString &message);
     QNetworkAccessManager *m_network;
     QPointer<QNetworkReply> m_reply;
