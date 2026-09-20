@@ -386,6 +386,28 @@ private slots:
         QCOMPARE(storedToken, QByteArray("test-token"));
         QCOMPARE(storedUsername, QString("client"));
     }
+    void routingRulesAreFetchedAndApplied()
+    {
+        Network network;
+        enqueueLogin(network);
+        bool applied = false;
+        TunnelCoreSessionStorage storage;
+        storage.applyRouting = [&applied](const QJsonObject &routing, QString &) {
+            applied = routing.value("version").toString() == "test-routing-v1"
+                      && routing.value("rules").isArray();
+            return applied;
+        };
+
+        TunnelCoreController controller(nullptr, &network, std::move(storage));
+        controller.loginCode("012345");
+        QTRY_VERIFY(!controller.busy());
+
+        QVERIFY(applied);
+        QCOMPARE(network.requests[3].url().path(), QString("/api/vpn/v1/routing/"));
+        QVERIFY(!network.requests[3].url().query().isEmpty());
+        QCOMPARE(network.requests[3].rawHeader("Authorization"), QByteArray("Bearer test-token"));
+    }
+
     void selectVpnCountry()
     {
         Network network;
