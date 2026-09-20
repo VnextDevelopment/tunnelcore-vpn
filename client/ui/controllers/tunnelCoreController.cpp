@@ -467,7 +467,7 @@ void TunnelCoreController::selectVpnCountry(const QString &countryCode)
             return;
         }
         m_configs.clear();
-        refreshConfigs();
+        refreshRouting();
     }, true, [this](int status, const QJsonObject &object) {
         const auto apiError = object.value("error").toString();
         if (status == 401) {
