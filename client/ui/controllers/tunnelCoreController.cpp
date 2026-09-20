@@ -20,6 +20,8 @@ TunnelCoreController::TunnelCoreController(QObject *parent, QNetworkAccessManage
       m_network(network ? network : new QNetworkAccessManager(this)),
       m_sessionStorage(std::move(sessionStorage))
 {
+    if (m_sessionStorage.loadGeoRoutingCountry)
+        m_geoRoutingCountry = m_sessionStorage.loadGeoRoutingCountry().trimmed().toUpper();
     if (!m_sessionStorage.load)
         return;
 
@@ -362,13 +364,65 @@ QString TunnelCoreController::routingPlatform() const
 #endif
 }
 
+void TunnelCoreController::refreshGeoRoutingCountries()
+{
+    request("routing/countries/", {}, [this](const QJsonObject &object) {
+        const auto countriesValue = object.value("countries");
+        if (!countriesValue.isArray()) {
+            fail(tr("The server returned an invalid split-tunneling country list."));
+            return;
+        }
+
+        QVariantList countries;
+        for (const auto &value : countriesValue.toArray()) {
+            const auto code = value.toString().trimmed().toUpper();
+            if (code.size() != 2)
+                continue;
+            QVariantMap item;
+            item.insert(QStringLiteral("code"), code);
+            item.insert(QStringLiteral("name"), vpnCountryDisplayName(code));
+            countries.append(item);
+        }
+        m_geoRoutingCountries = countries;
+
+        if (!m_geoRoutingCountry.isEmpty()) {
+            bool available = false;
+            for (const auto &item : m_geoRoutingCountries) {
+                if (item.toMap().value(QStringLiteral("code")).toString() == m_geoRoutingCountry) {
+                    available = true;
+                    break;
+                }
+            }
+            if (!available) {
+                m_geoRoutingCountry.clear();
+                if (m_sessionStorage.saveGeoRoutingCountry)
+                    m_sessionStorage.saveGeoRoutingCountry({});
+            }
+        }
+
+        refreshRouting();
+    }, false, [this](int status, const QJsonObject &) {
+        if (status == 404) {
+            m_geoRoutingCountries.clear();
+            m_geoRoutingCountry.clear();
+            refreshGeoRoutingCountries();
+            return;
+        }
+        if (status == 401) {
+            logout();
+            fail(tr("Your session has ended. Sign in again."));
+            return;
+        }
+        fail(tr("Could not load the split-tunneling country list."));
+    });
+}
+
 void TunnelCoreController::refreshRouting()
 {
-    const auto path = QStringLiteral("routing/?platform=%1").arg(routingPlatform());
-    request(path, {}, [this](const QJsonObject &object) {
+    const auto applyAndContinue = [this](const QJsonObject &routing) {
         if (m_sessionStorage.applyRouting) {
             QString errorMessage;
-            if (!m_sessionStorage.applyRouting(object, errorMessage)) {
+            if (!m_sessionStorage.applyRouting(routing, errorMessage)) {
                 fail(errorMessage.isEmpty()
                          ? tr("Could not apply the VPN routing rules.")
                          : errorMessage);
@@ -376,7 +430,61 @@ void TunnelCoreController::refreshRouting()
             }
         }
         refreshConfigs();
-    }, false, [this](int status, const QJsonObject &) {
+    };
+
+    if (!m_geoRoutingCountry.isEmpty()) {
+        const auto path = QStringLiteral("routing/countries/%1/").arg(m_geoRoutingCountry);
+        request(path, {}, [this, applyAndContinue](const QJsonObject &object) {
+            if (object.value("mode").toString() != QStringLiteral("country_direct")
+                || object.value("default_route").toString() != QStringLiteral("vpn")
+                || object.value("country_route").toString() != QStringLiteral("direct")
+                || !object.value("ipv4").isArray()) {
+                fail(tr("The server returned invalid country routing data."));
+                return;
+            }
+
+            QJsonArray rules;
+            for (const auto &value : object.value("ipv4").toArray()) {
+                const auto subnet = value.toString().trimmed();
+                if (subnet.isEmpty())
+                    continue;
+                rules.append(QJsonObject{
+                    {QStringLiteral("type"), QStringLiteral("ip")},
+                    {QStringLiteral("value"), subnet},
+                    {QStringLiteral("route"), QStringLiteral("direct")},
+                    {QStringLiteral("priority"), 0},
+                });
+            }
+
+            QJsonObject routing{
+                {QStringLiteral("ok"), true},
+                {QStringLiteral("version"), object.value("version")},
+                {QStringLiteral("platform"), routingPlatform()},
+                {QStringLiteral("rules"), rules},
+            };
+            qInfo() << "[TunnelCore routing] applying GeoIP direct country"
+                    << m_geoRoutingCountry << "IPv4 routes=" << rules.size()
+                    << "IPv6 routes kept inside VPN="
+                    << object.value("ipv6").toArray().size();
+            applyAndContinue(routing);
+        }, false, [this](int status, const QJsonObject &object) {
+            const auto apiError = object.value("error").toString();
+            if (status == 401) {
+                logout();
+                fail(tr("Your session has ended. Sign in again."));
+            } else if (status == 404 || apiError == "country_disabled") {
+                fail(tr("This split-tunneling country is no longer available."));
+            } else if (status == 503 || apiError == "geoip_unavailable") {
+                fail(tr("Country routing data is temporarily unavailable."));
+            } else {
+                fail(tr("Could not load country routing data."));
+            }
+        });
+        return;
+    }
+
+    const auto path = QStringLiteral("routing/?platform=%1").arg(routingPlatform());
+    request(path, {}, applyAndContinue, false, [this](int status, const QJsonObject &) {
         if (status == 404) {
             // Compatibility with servers that have not deployed server-managed routing yet.
             refreshConfigs();
@@ -408,7 +516,7 @@ void TunnelCoreController::refresh()
                 fail(tr("The server returned an invalid VPN country list."));
                 return;
             }
-            refreshRouting();
+            refreshGeoRoutingCountries();
         }, false, [this](int status, const QJsonObject &) {
             if (status == 404) {
                 // Compatibility with servers that have not deployed country selection yet.
@@ -416,7 +524,7 @@ void TunnelCoreController::refresh()
                 m_vpnCountryMode = QStringLiteral("auto");
                 m_selectedVpnCountry.clear();
                 m_effectiveVpnCountry.clear();
-                refreshRouting();
+                refreshGeoRoutingCountries();
                 return;
             }
             if (status == 401) {
@@ -439,6 +547,36 @@ QString TunnelCoreController::vpnCountryDisplayName(const QString &countryCode) 
         return code;
     const auto name = QLocale().territoryToString(territory);
     return name.isEmpty() ? code : name;
+}
+
+void TunnelCoreController::selectGeoRoutingCountry(const QString &countryCode)
+{
+    if (m_busy || !authenticated())
+        return;
+
+    const auto normalized = countryCode.trimmed().toUpper();
+    if (normalized == m_geoRoutingCountry)
+        return;
+
+    if (!normalized.isEmpty()) {
+        bool available = false;
+        for (const auto &item : m_geoRoutingCountries) {
+            if (item.toMap().value(QStringLiteral("code")).toString() == normalized) {
+                available = true;
+                break;
+            }
+        }
+        if (!available) {
+            fail(tr("The selected split-tunneling country is unavailable."));
+            return;
+        }
+    }
+
+    m_geoRoutingCountry = normalized;
+    if (m_sessionStorage.saveGeoRoutingCountry)
+        m_sessionStorage.saveGeoRoutingCountry(m_geoRoutingCountry);
+    emit changed();
+    refreshRouting();
 }
 
 void TunnelCoreController::selectVpnCountry(const QString &countryCode)
