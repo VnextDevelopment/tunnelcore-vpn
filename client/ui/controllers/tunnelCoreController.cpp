@@ -49,6 +49,7 @@ void TunnelCoreController::saveSession()
 void TunnelCoreController::fail(const QString &message)
 {
     m_busy = false;
+    m_pendingConfigId = 0;
     m_error = message;
     emit changed();
 }
@@ -305,6 +306,7 @@ void TunnelCoreController::logout()
     m_vpnCountryMode = QStringLiteral("auto");
     m_selectedVpnCountry.clear();
     m_effectiveVpnCountry.clear();
+    m_pendingConfigId = 0;
     m_error.clear();
     m_busy = false;
     m_emailAccount = false;
@@ -344,6 +346,21 @@ void TunnelCoreController::refreshConfigs()
             return;
         }
         m_configs = object.value("configs").toArray().toVariantList();
+
+        if (m_pendingConfigId <= 0)
+            return;
+
+        const auto configId = std::exchange(m_pendingConfigId, 0);
+        for (qsizetype index = 0; index < m_configs.size(); ++index) {
+            bool validId = false;
+            const auto listedId = m_configs.at(index).toMap().value("id").toLongLong(&validId);
+            if (validId && listedId == configId) {
+                selectConfig(index);
+                return;
+            }
+        }
+
+        fail(tr("The server returned invalid configuration data."));
     });
 }
 
@@ -604,6 +621,11 @@ void TunnelCoreController::selectVpnCountry(const QString &countryCode)
             fail(tr("The server returned invalid VPN country data."));
             return;
         }
+
+        bool validConfigId = false;
+        const auto configId = object.value("selection").toObject().value("config_id")
+                                  .toVariant().toLongLong(&validConfigId);
+        m_pendingConfigId = validConfigId && configId > 0 ? configId : 0;
         m_configs.clear();
         refreshRouting();
     }, true, [this](int status, const QJsonObject &object) {

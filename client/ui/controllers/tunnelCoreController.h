@@ -103,6 +103,7 @@ private:
     QString m_vpnCountryMode = QStringLiteral("auto");
     QString m_selectedVpnCountry;
     QString m_effectiveVpnCountry;
+    qint64 m_pendingConfigId = 0;
     QVariantList m_geoRoutingCountries;
     QString m_geoRoutingCountry;
     TunnelCoreSessionStorage m_sessionStorage;

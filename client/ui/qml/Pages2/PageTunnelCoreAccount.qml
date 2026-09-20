@@ -300,19 +300,6 @@ PageType {
                              && TunnelCoreController.configs.length === 0
                     text: qsTr("No VPN configurations are available. Check your subscription in the bot and refresh the list.")
                 }
-                Repeater {
-                    model: TunnelCoreController.configs
-                    delegate: BasicButtonType {
-                        required property var modelData
-                        required property int index
-                        Layout.fillWidth: true
-                        text: modelData.name
-                        buttonTextLabel.elide: Text.ElideRight
-                        buttonTextLabel.width: Math.min(implicitWidth, root.width - 96)
-                        enabled: !TunnelCoreController.busy
-                        clickedFunc: function() { TunnelCoreController.selectConfig(index) }
-                    }
-                }
                 BasicButtonType {
                     Layout.fillWidth: true
                     text: qsTr("Refresh")

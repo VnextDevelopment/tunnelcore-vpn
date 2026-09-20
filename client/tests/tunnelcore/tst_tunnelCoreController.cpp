@@ -5,6 +5,7 @@
 #include <QSignalSpy>
 #include <QTest>
 #include <QTimer>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <cstring>
 
@@ -482,9 +483,13 @@ private slots:
                                    "\"migration\":{\"migrated\":1,\"unchanged\":0,\"warnings\":[]}}"});
         network.responses.enqueue({routingResponse()});
         network.responses.enqueue({"{\"ok\":true,\"configs\":[{\"id\":18,\"name\":\"Netherlands\",\"protocol\":\"amneziawg\"}]}"});
+        network.responses.enqueue({"{\"ok\":true,\"id\":18,\"name\":\"Netherlands\","
+                                   "\"filename\":\"netherlands.conf\",\"protocol\":\"amneziawg\","
+                                   "\"config\":\"[Interface]\\nPrivateKey = netherlands-secret\"}"});
 
+        QSignalSpy config(&controller, &TunnelCoreController::configReady);
         controller.selectVpnCountry("nl");
-        QTRY_VERIFY(!controller.busy());
+        QTRY_COMPARE(config.size(), 1);
 
         QCOMPARE(controller.vpnCountryMode(), QString("country"));
         QCOMPARE(controller.selectedVpnCountry(), QString("NL"));
@@ -496,6 +501,10 @@ private slots:
         QCOMPARE(body.value("mode").toString(), QString("country"));
         QCOMPARE(body.value("country").toString(), QString("NL"));
         QCOMPARE(network.requests[8].url().path(), QString("/api/vpn/v1/configs/"));
+        QCOMPARE(network.requests[9].url().path(), QString("/api/vpn/v1/configs/18/"));
+        QCOMPARE(config.first().first().toString(),
+                 QString("[Interface]\nPrivateKey = netherlands-secret"));
+        QCOMPARE(config.first().at(1).toString(), QString("netherlands.conf"));
     }
 
     void wrongPassword()
