@@ -11,6 +11,21 @@ PageType {
     id: root
     property bool emailMode: false
     property bool registrationMode: false
+    property string pendingVpnCountry: ""
+
+    function selectVpnCountry(countryCode) {
+        if (TunnelCoreController.busy || pendingVpnCountry.length > 0)
+            return
+
+        pendingVpnCountry = countryCode
+        if (ConnectionController.isConnected || ConnectionController.isConnectionInProgress) {
+            ConnectionController.closeConnection()
+            return
+        }
+
+        pendingVpnCountry = ""
+        TunnelCoreController.selectVpnCountry(countryCode)
+    }
 
     function localizedTariffName(subscription) {
         const tariffCode = subscription.tariff_code ? String(subscription.tariff_code) : ""
@@ -72,6 +87,21 @@ PageType {
             if (ImportController.extractConfigFromData(data, fileName)) {
                 PageController.goToPage(PageEnum.PageSetupWizardViewConfig)
             }
+        }
+    }
+
+    Connections {
+        target: ConnectionController
+        function onConnectionStateChanged() {
+            if (root.pendingVpnCountry.length === 0
+                    || ConnectionController.isConnected
+                    || ConnectionController.isConnectionInProgress) {
+                return
+            }
+
+            const countryCode = root.pendingVpnCountry
+            root.pendingVpnCountry = ""
+            TunnelCoreController.selectVpnCountry(countryCode)
         }
     }
 
@@ -224,7 +254,7 @@ PageType {
 
                 SmallTextType {
                     Layout.fillWidth: true
-                    visible: TunnelCoreController.busy
+                    visible: TunnelCoreController.busy || root.pendingVpnCountry.length > 0
                     text: qsTr("Loading data…")
                 }
                 Repeater {
@@ -266,11 +296,11 @@ PageType {
                     BasicButtonType {
                         Layout.fillWidth: true
                         text: qsTr("Automatic")
-                        enabled: !TunnelCoreController.busy
+                        enabled: !TunnelCoreController.busy && root.pendingVpnCountry.length === 0
                         defaultColor: TunnelCoreController.vpnCountryMode === "auto"
                                       ? AmneziaStyle.color.paleGray
                                       : AmneziaStyle.color.charcoalGray
-                        clickedFunc: function() { TunnelCoreController.selectVpnCountry("AUTO") }
+                        clickedFunc: function() { root.selectVpnCountry("AUTO") }
                     }
                     Repeater {
                         model: TunnelCoreController.vpnCountries
@@ -283,13 +313,13 @@ PageType {
                             text: TunnelCoreController.vpnCountryDisplayName(countryCode)
                                   + (cities.length > 0 ? " · " + cities : "")
                             buttonTextLabel.elide: Text.ElideRight
-                            enabled: !TunnelCoreController.busy
+                            enabled: !TunnelCoreController.busy && root.pendingVpnCountry.length === 0
                             defaultColor: TunnelCoreController.vpnCountryMode === "country"
                                           && TunnelCoreController.selectedVpnCountry === countryCode
                                           ? AmneziaStyle.color.paleGray
                                           : AmneziaStyle.color.charcoalGray
                             clickedFunc: function() {
-                                TunnelCoreController.selectVpnCountry(countryCode)
+                                root.selectVpnCountry(countryCode)
                             }
                         }
                     }
@@ -303,7 +333,7 @@ PageType {
                 BasicButtonType {
                     Layout.fillWidth: true
                     text: qsTr("Refresh")
-                    enabled: !TunnelCoreController.busy
+                    enabled: !TunnelCoreController.busy && root.pendingVpnCountry.length === 0
                     clickedFunc: function() { TunnelCoreController.refresh() }
                 }
                 BasicButtonType {
