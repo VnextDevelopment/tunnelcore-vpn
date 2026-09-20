@@ -6904,6 +6904,9 @@ Remove the server from the app to continue.</source>
     <message><source>Signing in…</source><translation>Входим…</translation></message>
     <message><source>Sign in</source><translation>Войти</translation></message>
     <message><source>Loading data…</source><translation>Загружаем данные…</translation></message>
+    <message><source>Trial VPN — 24 hours</source><translation>Пробный VPN — 24 часа</translation></message>
+    <message><source>VPN — 1 month</source><translation>VPN — 1 месяц</translation></message>
+    <message><source>VPN — 1 year</source><translation>VPN — 1 год</translation></message>
     <message><source>Until %1</source><translation>До %1</translation></message>
     <message><source>No VPN configurations are available. Check your subscription in the bot and refresh the list.</source><translation>Нет доступных VPN-конфигураций. Проверьте подписку в боте и обновите список.</translation></message>
     <message><source>Refresh</source><translation>Обновить</translation></message>

@@ -12,6 +12,23 @@ PageType {
     property bool emailMode: false
     property bool registrationMode: false
 
+    function localizedTariffName(subscription) {
+        const tariffCode = subscription.tariff_code ? String(subscription.tariff_code) : ""
+        const tariffName = subscription.tariff ? String(subscription.tariff) : ""
+        // Older API versions return only the Russian database label. Keep the
+        // fallback until all deployed servers include the stable tariff code.
+        const compactName = tariffName.replace(/\s/g, "")
+
+        if (tariffCode === "trial-vpn-24h" || compactName === "ПробныйVPN—24часа")
+            return qsTr("Trial VPN — 24 hours")
+        if (tariffCode === "vpn-month" || compactName === "VPN—1месяц")
+            return qsTr("VPN — 1 month")
+        if (tariffCode === "vpn-year" || compactName === "VPN—1год")
+            return qsTr("VPN — 1 year")
+
+        return tariffName
+    }
+
     function selectMode(email) {
         if (TunnelCoreController.busy || emailMode === email)
             return
@@ -216,7 +233,8 @@ PageType {
                         required property var modelData
                         Layout.fillWidth: true
                         textFormat: Text.PlainText
-                        text: modelData.tariff + "\n" + qsTr("Until %1").arg(Qt.formatDateTime(new Date(modelData.expires_at), "dd.MM.yyyy"))
+                        text: root.localizedTariffName(modelData) + "\n"
+                              + qsTr("Until %1").arg(Qt.formatDateTime(new Date(modelData.expires_at), "dd.MM.yyyy"))
                     }
                 }
                 SmallTextType {
