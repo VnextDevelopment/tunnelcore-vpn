@@ -6,6 +6,7 @@
 #include <QLocale>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QOperatingSystemVersion>
 
 namespace {
 const QString apiBase = QStringLiteral("https://tlsdmd.isgood.host/api/vpn/v1/");
@@ -344,6 +345,52 @@ void TunnelCoreController::refreshConfigs()
     });
 }
 
+QString TunnelCoreController::routingPlatform() const
+{
+#if defined(Q_OS_ANDROID)
+    return QStringLiteral("android");
+#elif defined(Q_OS_IOS)
+    return QStringLiteral("ios");
+#elif defined(Q_OS_WIN)
+    return QStringLiteral("windows");
+#elif defined(Q_OS_MACOS)
+    return QStringLiteral("macos");
+#elif defined(Q_OS_LINUX)
+    return QStringLiteral("linux");
+#else
+    return QStringLiteral("all");
+#endif
+}
+
+void TunnelCoreController::refreshRouting()
+{
+    const auto path = QStringLiteral("routing/?platform=%1").arg(routingPlatform());
+    request(path, {}, [this](const QJsonObject &object) {
+        if (m_sessionStorage.applyRouting) {
+            QString errorMessage;
+            if (!m_sessionStorage.applyRouting(object, errorMessage)) {
+                fail(errorMessage.isEmpty()
+                         ? tr("Could not apply the VPN routing rules.")
+                         : errorMessage);
+                return;
+            }
+        }
+        refreshConfigs();
+    }, false, [this](int status, const QJsonObject &) {
+        if (status == 404) {
+            // Compatibility with servers that have not deployed server-managed routing yet.
+            refreshConfigs();
+            return;
+        }
+        if (status == 401) {
+            logout();
+            fail(tr("Your session has ended. Sign in again."));
+            return;
+        }
+        fail(tr("Could not load the VPN routing rules."));
+    });
+}
+
 void TunnelCoreController::refresh()
 {
     if (m_busy || !authenticated())
@@ -361,7 +408,7 @@ void TunnelCoreController::refresh()
                 fail(tr("The server returned an invalid VPN country list."));
                 return;
             }
-            refreshConfigs();
+            refreshRouting();
         }, false, [this](int status, const QJsonObject &) {
             if (status == 404) {
                 // Compatibility with servers that have not deployed country selection yet.
@@ -369,7 +416,7 @@ void TunnelCoreController::refresh()
                 m_vpnCountryMode = QStringLiteral("auto");
                 m_selectedVpnCountry.clear();
                 m_effectiveVpnCountry.clear();
-                refreshConfigs();
+                refreshRouting();
                 return;
             }
             if (status == 401) {
