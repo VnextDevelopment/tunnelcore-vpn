@@ -124,7 +124,7 @@ private slots:
         QTRY_VERIFY(!controller.busy());
         QVERIFY(controller.authenticated());
         QCOMPARE(signedIn.size(), 1);
-        QCOMPARE(network.requests.size(), 3);
+        QCOMPARE(network.requests.size(), 4);
         QCOMPARE(network.requests[0].url().path(), QString("/api/vpn/v1/auth/login/"));
         const auto body = QJsonDocument::fromJson(network.bodies[0]).object();
         QCOMPARE(body.value("email").toString(), QString("user@example.com"));
