@@ -1,6 +1,9 @@
 #include "coreController.h"
 
 #include <QDirIterator>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QMap>
 #include <QTranslator>
 #include <QTimer>
 
@@ -228,6 +231,61 @@ void CoreController::initControllers()
         m_settings->remove(QStringLiteral("TunnelCore/emailAccount"));
         m_settings->remove(QStringLiteral("TunnelCore/telegramLinked"));
         m_settings->sync();
+    };
+    tunnelCoreSessionStorage.applyRouting = [this](const QJsonObject &routing, QString &errorMessage) {
+        const auto rulesValue = routing.value(QStringLiteral("rules"));
+        if (!rulesValue.isArray()) {
+            errorMessage = tr("The server returned an invalid VPN routing rule list.");
+            return false;
+        }
+
+        QMap<QString, QStringList> directSites;
+        QMap<QString, QStringList> vpnSites;
+        const auto rules = rulesValue.toArray();
+        for (const auto &value : rules) {
+            if (!value.isObject()) {
+                errorMessage = tr("The server returned an invalid VPN routing rule.");
+                return false;
+            }
+
+            const auto rule = value.toObject();
+            const auto type = rule.value(QStringLiteral("type")).toString().trimmed().toLower();
+            const auto route = rule.value(QStringLiteral("route")).toString().trimmed().toLower();
+            const auto ruleValue = rule.value(QStringLiteral("value")).toString().trimmed().toLower();
+            if ((type != QStringLiteral("domain") && type != QStringLiteral("ip"))
+                || (route != QStringLiteral("direct") && route != QStringLiteral("vpn"))
+                || ruleValue.isEmpty()) {
+                errorMessage = tr("The server returned an unsupported VPN routing rule.");
+                return false;
+            }
+
+            auto &target = route == QStringLiteral("direct") ? directSites : vpnSites;
+            target.insert(ruleValue, {});
+        }
+
+        // Amnezia's cross-platform site split-tunneling format has one global
+        // route direction. Never silently lose half of a mixed server policy.
+        if (!directSites.isEmpty() && !vpnSites.isEmpty()) {
+            errorMessage = tr("The server returned mixed direct and VPN routing rules, which this client version cannot apply safely.");
+            return false;
+        }
+
+        if (directSites.isEmpty() && vpnSites.isEmpty()) {
+            m_ipSplitTunnelingController->toggleSplitTunneling(false);
+            m_ipSplitTunnelingModel->updateModel(m_ipSplitTunnelingController->getCurrentSites());
+            return true;
+        }
+
+        const auto mode = !directSites.isEmpty()
+                              ? amnezia::RouteMode::VpnAllExceptSites
+                              : amnezia::RouteMode::VpnOnlyForwardSites;
+        const auto &sites = !directSites.isEmpty() ? directSites : vpnSites;
+
+        m_ipSplitTunnelingController->setRouteMode(mode);
+        m_ipSplitTunnelingController->addSites(sites, true);
+        m_ipSplitTunnelingController->toggleSplitTunneling(true);
+        m_ipSplitTunnelingModel->updateModel(m_ipSplitTunnelingController->getCurrentSites());
+        return true;
     };
     setQmlContextProperty("TunnelCoreController",
                           new TunnelCoreController(this, nullptr, std::move(tunnelCoreSessionStorage)));
