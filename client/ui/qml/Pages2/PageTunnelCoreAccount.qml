@@ -237,6 +237,63 @@ PageType {
                               + qsTr("Until %1").arg(Qt.formatDateTime(new Date(modelData.expires_at), "dd.MM.yyyy"))
                     }
                 }
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    visible: TunnelCoreController.vpnCountries.length > 0
+                    spacing: 8
+
+                    Header2TextType {
+                        Layout.fillWidth: true
+                        text: qsTr("VPN location")
+                    }
+                    SmallTextType {
+                        Layout.fillWidth: true
+                        textFormat: Text.PlainText
+                        text: TunnelCoreController.vpnCountryMode === "auto"
+                              ? (TunnelCoreController.effectiveVpnCountry.length > 0
+                                 ? qsTr("Automatic — %1").arg(
+                                       TunnelCoreController.vpnCountryDisplayName(
+                                           TunnelCoreController.effectiveVpnCountry))
+                                 : qsTr("Automatic"))
+                              : qsTr("Selected: %1").arg(
+                                    TunnelCoreController.vpnCountryDisplayName(
+                                        TunnelCoreController.selectedVpnCountry))
+                    }
+                    SmallTextType {
+                        Layout.fillWidth: true
+                        text: qsTr("Automatic selects an available VPN server. Choosing a country moves your VPN access to that country.")
+                    }
+                    BasicButtonType {
+                        Layout.fillWidth: true
+                        text: qsTr("Automatic")
+                        enabled: !TunnelCoreController.busy
+                        defaultColor: TunnelCoreController.vpnCountryMode === "auto"
+                                      ? AmneziaStyle.color.paleGray
+                                      : AmneziaStyle.color.charcoalGray
+                        clickedFunc: function() { TunnelCoreController.selectVpnCountry("AUTO") }
+                    }
+                    Repeater {
+                        model: TunnelCoreController.vpnCountries
+                        delegate: BasicButtonType {
+                            required property var modelData
+                            Layout.fillWidth: true
+                            readonly property string countryCode: modelData.code ? String(modelData.code) : ""
+                            readonly property string cities: modelData.cities && modelData.cities.length > 0
+                                                             ? modelData.cities.join(", ") : ""
+                            text: TunnelCoreController.vpnCountryDisplayName(countryCode)
+                                  + (cities.length > 0 ? " · " + cities : "")
+                            buttonTextLabel.elide: Text.ElideRight
+                            enabled: !TunnelCoreController.busy
+                            defaultColor: TunnelCoreController.vpnCountryMode === "country"
+                                          && TunnelCoreController.selectedVpnCountry === countryCode
+                                          ? AmneziaStyle.color.paleGray
+                                          : AmneziaStyle.color.charcoalGray
+                            clickedFunc: function() {
+                                TunnelCoreController.selectVpnCountry(countryCode)
+                            }
+                        }
+                    }
+                }
                 SmallTextType {
                     Layout.fillWidth: true
                     visible: !TunnelCoreController.busy && !TunnelCoreController.error
