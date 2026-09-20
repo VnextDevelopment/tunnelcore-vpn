@@ -84,7 +84,7 @@ PageType {
         function onConfigReady(data, fileName) {
             if (!root.visible)
                 return
-            if (ImportController.extractConfigFromData(data, fileName)) {
+            if (ImportController.extractTunnelCoreConfigFromData(data, fileName)) {
                 PageController.goToPage(PageEnum.PageSetupWizardViewConfig)
             }
         }
@@ -295,11 +295,13 @@ PageType {
                     }
                     BasicButtonType {
                         Layout.fillWidth: true
+                        readonly property bool isSelected: TunnelCoreController.vpnCountryMode === "auto"
                         text: qsTr("Automatic")
                         enabled: !TunnelCoreController.busy && root.pendingVpnCountry.length === 0
-                        defaultColor: TunnelCoreController.vpnCountryMode === "auto"
-                                      ? AmneziaStyle.color.paleGray
-                                      : AmneziaStyle.color.charcoalGray
+                        defaultColor: isSelected ? AmneziaStyle.color.goldenApricot
+                                                 : AmneziaStyle.color.paleGray
+                        hoveredColor: isSelected ? AmneziaStyle.color.goldenApricot
+                                                 : AmneziaStyle.color.lightGray
                         clickedFunc: function() { root.selectVpnCountry("AUTO") }
                     }
                     Repeater {
@@ -310,14 +312,16 @@ PageType {
                             readonly property string countryCode: modelData.code ? String(modelData.code) : ""
                             readonly property string cities: modelData.cities && modelData.cities.length > 0
                                                              ? modelData.cities.join(", ") : ""
+                            readonly property bool isSelected: TunnelCoreController.vpnCountryMode === "country"
+                                                               && TunnelCoreController.selectedVpnCountry === countryCode
                             text: TunnelCoreController.vpnCountryDisplayName(countryCode)
                                   + (cities.length > 0 ? " · " + cities : "")
                             buttonTextLabel.elide: Text.ElideRight
                             enabled: !TunnelCoreController.busy && root.pendingVpnCountry.length === 0
-                            defaultColor: TunnelCoreController.vpnCountryMode === "country"
-                                          && TunnelCoreController.selectedVpnCountry === countryCode
-                                          ? AmneziaStyle.color.paleGray
-                                          : AmneziaStyle.color.charcoalGray
+                            defaultColor: isSelected ? AmneziaStyle.color.goldenApricot
+                                                     : AmneziaStyle.color.paleGray
+                            hoveredColor: isSelected ? AmneziaStyle.color.goldenApricot
+                                                     : AmneziaStyle.color.lightGray
                             clickedFunc: function() {
                                 root.selectVpnCountry(countryCode)
                             }

@@ -392,7 +392,44 @@ void ImportController::importConfig(const QJsonObject &config)
     credentials.secretData = config.value(configKey::password).toString();
 
     if (credentials.isValid() || config.contains(configKey::containers)) {
-        m_serversRepository->addServer(QString(), config, serverConfigUtils::configTypeFromJson(config));
+        const auto kind = serverConfigUtils::configTypeFromJson(config);
+        const auto managedProfileId = config.value(configKey::managedProfileId).toString().trimmed();
+        QString managedServerId;
+        QString legacyServerId;
+
+        if (!managedProfileId.isEmpty() && kind == serverConfigUtils::ConfigType::Native) {
+            const auto importedDescription = config.value(configKey::description).toString().trimmed();
+            for (const auto &serverId : m_serversRepository->orderedServerIds()) {
+                const auto nativeConfig = m_serversRepository->nativeConfig(serverId);
+                if (!nativeConfig.has_value())
+                    continue;
+                if (nativeConfig->managedProfileId == managedProfileId) {
+                    managedServerId = serverId;
+                    break;
+                }
+                if (nativeConfig->managedProfileId.isEmpty() && !importedDescription.isEmpty()
+                    && nativeConfig->description == importedDescription
+                    && (legacyServerId.isEmpty()
+                        || serverId == m_serversRepository->defaultServerId())) {
+                    legacyServerId = serverId;
+                }
+            }
+        }
+
+        if (managedServerId.isEmpty())
+            managedServerId = legacyServerId;
+
+        if (!managedServerId.isEmpty()) {
+            QJsonObject updatedConfig = config;
+            const auto previousConfig = m_serversRepository->nativeConfig(managedServerId);
+            if (previousConfig.has_value() && !previousConfig->description.isEmpty())
+                updatedConfig.insert(configKey::description, previousConfig->description);
+            m_serversRepository->editServer(managedServerId, updatedConfig, kind);
+        } else {
+            managedServerId = m_serversRepository->addServer(QString(), config, kind);
+        }
+
+        m_serversRepository->setDefaultServer(managedServerId);
         emit importFinished();
     } else if (config.contains(configKey::configVersion)) {
         quint16 crc = qChecksum(QJsonDocument(config).toJson());
@@ -414,7 +451,9 @@ void ImportController::importConfig(const QJsonObject &config)
         } else {
             QJsonObject configWithCrc = config;
             configWithCrc.insert(configKey::crc, crc);
-            m_serversRepository->addServer(QString(), configWithCrc, serverConfigUtils::configTypeFromJson(configWithCrc));
+            const auto serverId = m_serversRepository->addServer(
+                    QString(), configWithCrc, serverConfigUtils::configTypeFromJson(configWithCrc));
+            m_serversRepository->setDefaultServer(serverId);
             emit importFinished();
         }
     } else {

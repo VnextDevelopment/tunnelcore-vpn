@@ -8,6 +8,11 @@
 #include <utility>
 
 #include "systemController.h"
+#include "core/utils/constants/configKeys.h"
+
+namespace {
+const QString tunnelCoreManagedProfileId = QStringLiteral("tunnelcore-vpn");
+}
 
 #ifdef Q_OS_ANDROID
     #include "platforms/android/android_controller.h"
@@ -86,6 +91,16 @@ bool ImportUiController::extractConfigFromData(QString data, QString configFileN
     m_maliciousWarningText = result.maliciousWarningText;
     m_isNativeWireGuardConfig = result.isNativeWireGuardConfig;
     
+    emit importConfigChanged();
+    return true;
+}
+
+bool ImportUiController::extractTunnelCoreConfigFromData(QString data, QString configFileName)
+{
+    if (!extractConfigFromData(std::move(data), std::move(configFileName)))
+        return false;
+
+    m_config.insert(amnezia::configKey::managedProfileId, tunnelCoreManagedProfileId);
     emit importConfigChanged();
     return true;
 }

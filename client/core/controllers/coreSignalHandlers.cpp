@@ -162,11 +162,7 @@ void CoreSignalHandlers::initImportControllerHandler()
             return;
         }
 
-        const int newServerIndex = m_coreController->m_serversController->getServersCount() - 1;
-        const QString serverId = m_coreController->m_serversController->getServerId(newServerIndex);
-        if (!serverId.isEmpty()) {
-            m_coreController->m_serversController->setDefaultServer(serverId);
-        }
+        const QString serverId = m_coreController->m_serversController->getDefaultServerId();
         if (m_coreController->m_serversUiController) {
             m_coreController->m_serversUiController->setProcessedServerId(serverId);
         }
@@ -443,4 +439,3 @@ void CoreSignalHandlers::initUpdateFoundHandler()
         emit m_coreController->m_pageController->goToPage(PageLoader::PageEnum::PageUpdate);
     });
 }
-
