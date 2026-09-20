@@ -18,6 +18,8 @@ struct TunnelCoreSessionStorage
     std::function<void(const QByteArray &, const QString &, bool, bool)> save;
     std::function<void()> clear;
     std::function<bool(const QJsonObject &, QString &)> applyRouting;
+    std::function<QString()> loadGeoRoutingCountry;
+    std::function<void(const QString &)> saveGeoRoutingCountry;
 };
 
 class TunnelCoreController : public QObject
@@ -35,6 +37,8 @@ class TunnelCoreController : public QObject
     Q_PROPERTY(QString vpnCountryMode READ vpnCountryMode NOTIFY changed)
     Q_PROPERTY(QString selectedVpnCountry READ selectedVpnCountry NOTIFY changed)
     Q_PROPERTY(QString effectiveVpnCountry READ effectiveVpnCountry NOTIFY changed)
+    Q_PROPERTY(QVariantList geoRoutingCountries READ geoRoutingCountries NOTIFY changed)
+    Q_PROPERTY(QString geoRoutingCountry READ geoRoutingCountry NOTIFY changed)
 
 public:
     explicit TunnelCoreController(QObject *parent = nullptr, QNetworkAccessManager *network = nullptr,
@@ -51,6 +55,8 @@ public:
     QString vpnCountryMode() const { return m_vpnCountryMode; }
     QString selectedVpnCountry() const { return m_selectedVpnCountry; }
     QString effectiveVpnCountry() const { return m_effectiveVpnCountry; }
+    QVariantList geoRoutingCountries() const { return m_geoRoutingCountries; }
+    QString geoRoutingCountry() const { return m_geoRoutingCountry; }
 
     Q_INVOKABLE void loginCode(const QString &code);
     // Legacy login methods remain available during the server transition, but the
@@ -65,6 +71,7 @@ public:
     Q_INVOKABLE void selectConfig(int index);
     Q_INVOKABLE void selectVpnCountry(const QString &countryCode);
     Q_INVOKABLE QString vpnCountryDisplayName(const QString &countryCode) const;
+    Q_INVOKABLE void selectGeoRoutingCountry(const QString &countryCode);
 
 signals:
     void changed();
@@ -81,6 +88,7 @@ private:
     bool applyVpnCountrySelection(const QJsonObject &object);
     void refreshConfigs();
     void refreshRouting();
+    void refreshGeoRoutingCountries();
     QString routingPlatform() const;
     void deliverConfig(const QString &data, const QString &fileName = {});
     void fail(const QString &message);
@@ -95,6 +103,8 @@ private:
     QString m_vpnCountryMode = QStringLiteral("auto");
     QString m_selectedVpnCountry;
     QString m_effectiveVpnCountry;
+    QVariantList m_geoRoutingCountries;
+    QString m_geoRoutingCountry;
     TunnelCoreSessionStorage m_sessionStorage;
     bool m_busy = false;
     bool m_emailAccount = false;
