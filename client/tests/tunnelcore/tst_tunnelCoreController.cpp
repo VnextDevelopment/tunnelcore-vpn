@@ -76,11 +76,21 @@ class TunnelCoreTests : public QObject
                "{\"code\":\"NL\",\"cities\":[\"Amsterdam\"]}]}}";
     }
 
+    static QByteArray routingResponse()
+    {
+        return "{\"ok\":true,\"version\":\"test-routing-v1\",\"platform\":\"all\","
+               "\"rules\":[{\"type\":\"domain\",\"value\":\"example.direct\","
+               "\"route\":\"direct\",\"priority\":10}],"
+               "\"domains\":{\"vpn\":[],\"direct\":[\"example.direct\"]},"
+               "\"ip_ranges\":{\"vpn\":[],\"direct\":[]}}";
+    }
+
     static void enqueueLogin(Network &network)
     {
         network.responses.enqueue({"{\"ok\":true,\"access_token\":\"test-token\",\"token_type\":\"Bearer\",\"user\":{\"username\":\"client\"}}"});
         network.responses.enqueue({"{\"ok\":true,\"subscriptions\":[{\"id\":1,\"tariff\":\"VPN\"}]}"});
         network.responses.enqueue({countrySelectionResponse()});
+        network.responses.enqueue({routingResponse()});
         network.responses.enqueue({"{\"ok\":true,\"configs\":[{\"name\":\"VPN\",\"config\":\"https://node.example/config/one-time\"}]}"});
     }
 private slots:
@@ -94,7 +104,7 @@ private slots:
         QTRY_VERIFY(!controller.busy());
         QVERIFY(controller.authenticated());
         QCOMPARE(signedIn.size(), 1);
-        QCOMPARE(network.requests.size(), 4);
+        QCOMPARE(network.requests.size(), 5);
         QCOMPARE(network.requests[0].url().path(), QString("/api/vpn/v1/auth/code/exchange/"));
         const auto body = QJsonDocument::fromJson(network.bodies[0]).object();
         QCOMPARE(body.value("code").toString(), QString("012345"));
@@ -124,7 +134,7 @@ private slots:
         QTRY_VERIFY(!controller.busy());
         QVERIFY(controller.authenticated());
         QCOMPARE(signedIn.size(), 1);
-        QCOMPARE(network.requests.size(), 4);
+        QCOMPARE(network.requests.size(), 5);
         QCOMPARE(network.requests[0].url().path(), QString("/api/vpn/v1/auth/login/"));
         const auto body = QJsonDocument::fromJson(network.bodies[0]).object();
         QCOMPARE(body.value("email").toString(), QString("user@example.com"));
@@ -176,6 +186,7 @@ private slots:
         network.responses.enqueue({"{\"ok\":true,\"access_token\":\"registered-token\",\"token_type\":\"Bearer\",\"user\":{\"username\":\"client-generated\",\"email\":\"user@example.com\"}}", 201});
         network.responses.enqueue({"{\"ok\":true,\"subscriptions\":[]}"});
         network.responses.enqueue({countrySelectionResponse()});
+        network.responses.enqueue({routingResponse()});
         network.responses.enqueue({"{\"ok\":true,\"configs\":[]}"});
         TunnelCoreController controller(nullptr, &network);
 
@@ -216,14 +227,15 @@ private slots:
         network.responses.enqueue({"{\"ok\":true,\"telegram_id\":777001,\"user\":{\"username\":\"client\",\"email\":\"user@example.com\"}}"});
         network.responses.enqueue({"{\"ok\":true,\"subscriptions\":[]}"});
         network.responses.enqueue({countrySelectionResponse()});
+        network.responses.enqueue({routingResponse()});
         network.responses.enqueue({"{\"ok\":true,\"configs\":[]}"});
         controller.linkTelegram(" 012345 ");
 
         QTRY_VERIFY(!controller.busy());
         QVERIFY(controller.telegramLinked());
-        QCOMPARE(network.requests[4].url().path(), QString("/api/vpn/v1/auth/telegram/link/"));
-        QCOMPARE(network.requests[4].rawHeader("Authorization"), QByteArray("Bearer test-token"));
-        const auto body = QJsonDocument::fromJson(network.bodies[4]).object();
+        QCOMPARE(network.requests[5].url().path(), QString("/api/vpn/v1/auth/telegram/link/"));
+        QCOMPARE(network.requests[5].rawHeader("Authorization"), QByteArray("Bearer test-token"));
+        const auto body = QJsonDocument::fromJson(network.bodies[5]).object();
         QCOMPARE(body.value("code").toString(), QString("012345"));
     }
     void expiredTelegramCodeKeepsSession()
@@ -273,6 +285,7 @@ private slots:
         network.responses.enqueue({"{\"ok\":true,\"access_token\":\"test-token\",\"token_type\":\"Bearer\",\"user\":{\"username\":\"client\"}}"});
         network.responses.enqueue({"{\"ok\":true,\"subscriptions\":[{\"id\":1,\"tariff\":\"VPN\"}]}"});
         network.responses.enqueue({countrySelectionResponse()});
+        network.responses.enqueue({routingResponse()});
         network.responses.enqueue({"{\"ok\":true,\"configs\":[{\"id\":17,\"name\":\"Germany\",\"protocol\":\"amneziawg\"}]}"});
         network.responses.enqueue({"{\"ok\":true,\"id\":17,\"name\":\"tc42-d1\",\"filename\":\"tc42-d1.conf\",\"protocol\":\"amneziawg\",\"config\":\"[Interface]\\nPrivateKey = app-secret\"}"});
         TunnelCoreController controller(nullptr, &network);
@@ -283,7 +296,7 @@ private slots:
         controller.selectConfig(0);
 
         QTRY_COMPARE(config.size(), 1);
-        QCOMPARE(network.requests.size(), 5);
+        QCOMPARE(network.requests.size(), 6);
         QCOMPARE(network.requests.last().url().path(), QString("/api/vpn/v1/configs/17/"));
         QCOMPARE(network.requests.last().rawHeader("Authorization"), QByteArray("Bearer test-token"));
         QCOMPARE(config.first().first().toString(), QString("[Interface]\nPrivateKey = app-secret"));
@@ -295,6 +308,7 @@ private slots:
         network.responses.enqueue({"{\"ok\":true,\"access_token\":\"test-token\",\"token_type\":\"Bearer\",\"user\":{\"username\":\"client\"}}"});
         network.responses.enqueue({"{\"ok\":true,\"subscriptions\":[]}"});
         network.responses.enqueue({countrySelectionResponse()});
+        network.responses.enqueue({routingResponse()});
         network.responses.enqueue({"{\"ok\":true,\"configs\":[{\"id\":17,\"name\":\"Germany\"}]}"});
         network.responses.enqueue({"{\"ok\":false,\"error\":\"config_not_found\"}", 404});
         TunnelCoreController controller(nullptr, &network);
@@ -313,6 +327,7 @@ private slots:
         Network network;
         network.responses.enqueue({"{\"ok\":true,\"subscriptions\":[{\"id\":1,\"tariff\":\"VPN\"}]}"});
         network.responses.enqueue({countrySelectionResponse()});
+        network.responses.enqueue({routingResponse()});
         network.responses.enqueue({"{\"ok\":true,\"configs\":[]}"});
         bool cleared = false;
         TunnelCoreSessionStorage storage;
@@ -328,7 +343,7 @@ private slots:
         QCOMPARE(controller.username(), QString("stored-user"));
         QVERIFY(controller.emailAccount());
         QVERIFY(controller.telegramLinked());
-        QCOMPARE(network.requests.size(), 3);
+        QCOMPARE(network.requests.size(), 4);
         QCOMPARE(network.requests.first().url().path(), QString("/api/vpn/v1/me/"));
         QCOMPARE(network.requests.first().rawHeader("Authorization"), QByteArray("Bearer stored-token"));
         QVERIFY(!cleared);
@@ -388,6 +403,7 @@ private slots:
                                    "\"countries\":[{\"code\":\"DE\",\"cities\":[\"Frankfurt\"]},"
                                    "{\"code\":\"NL\",\"cities\":[\"Amsterdam\"]}]},"
                                    "\"migration\":{\"migrated\":1,\"unchanged\":0,\"warnings\":[]}}"});
+        network.responses.enqueue({routingResponse()});
         network.responses.enqueue({"{\"ok\":true,\"configs\":[{\"id\":18,\"name\":\"Netherlands\",\"protocol\":\"amneziawg\"}]}"});
 
         controller.selectVpnCountry("nl");
@@ -397,12 +413,12 @@ private slots:
         QCOMPARE(controller.selectedVpnCountry(), QString("NL"));
         QCOMPARE(controller.effectiveVpnCountry(), QString("NL"));
         QCOMPARE(controller.configs().size(), 1);
-        QCOMPARE(network.requests[4].url().path(), QString("/api/vpn/v1/country-selection/"));
-        QCOMPARE(network.requests[4].rawHeader("Authorization"), QByteArray("Bearer test-token"));
-        const auto body = QJsonDocument::fromJson(network.bodies[4]).object();
+        QCOMPARE(network.requests[5].url().path(), QString("/api/vpn/v1/country-selection/"));
+        QCOMPARE(network.requests[5].rawHeader("Authorization"), QByteArray("Bearer test-token"));
+        const auto body = QJsonDocument::fromJson(network.bodies[5]).object();
         QCOMPARE(body.value("mode").toString(), QString("country"));
         QCOMPARE(body.value("country").toString(), QString("NL"));
-        QCOMPARE(network.requests[5].url().path(), QString("/api/vpn/v1/configs/"));
+        QCOMPARE(network.requests[7].url().path(), QString("/api/vpn/v1/configs/"));
     }
 
     void wrongPassword()
