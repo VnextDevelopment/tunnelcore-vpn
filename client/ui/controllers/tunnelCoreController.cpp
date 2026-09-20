@@ -3,6 +3,7 @@
 #include <QDebug>
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QLocale>
 #include <QNetworkReply>
 #include <QNetworkRequest>
 
@@ -297,6 +298,10 @@ void TunnelCoreController::logout()
     m_username.clear();
     m_subscriptions.clear();
     m_configs.clear();
+    m_vpnCountries.clear();
+    m_vpnCountryMode = QStringLiteral("auto");
+    m_selectedVpnCountry.clear();
+    m_effectiveVpnCountry.clear();
     m_error.clear();
     m_busy = false;
     m_emailAccount = false;
@@ -304,6 +309,39 @@ void TunnelCoreController::logout()
     if (m_sessionStorage.clear)
         m_sessionStorage.clear();
     emit changed();
+}
+
+bool TunnelCoreController::applyVpnCountrySelection(const QJsonObject &object)
+{
+    const auto selectionValue = object.value("selection");
+    if (!selectionValue.isObject())
+        return false;
+
+    const auto selection = selectionValue.toObject();
+    const auto countriesValue = selection.value("countries");
+    if (!countriesValue.isArray())
+        return false;
+
+    const auto mode = selection.value("mode").toString().trimmed().toLower();
+    if (mode != "auto" && mode != "country")
+        return false;
+
+    m_vpnCountries = countriesValue.toArray().toVariantList();
+    m_vpnCountryMode = mode;
+    m_selectedVpnCountry = selection.value("country").toString().trimmed().toUpper();
+    m_effectiveVpnCountry = selection.value("effective_country").toString().trimmed().toUpper();
+    return true;
+}
+
+void TunnelCoreController::refreshConfigs()
+{
+    request("configs/", {}, [this](const QJsonObject &object) {
+        if (!object.value("configs").isArray()) {
+            fail(tr("The server returned an invalid configuration list."));
+            return;
+        }
+        m_configs = object.value("configs").toArray().toVariantList();
+    });
 }
 
 void TunnelCoreController::refresh()
@@ -318,14 +356,86 @@ void TunnelCoreController::refresh()
             return;
         }
         m_subscriptions = object.value("subscriptions").toArray().toVariantList();
-        request("configs/", {}, [this](const QJsonObject &object) {
-            if (!object.value("configs").isArray()) {
-                fail(tr("The server returned an invalid configuration list."));
+        request("country-selection/", {}, [this](const QJsonObject &countryObject) {
+            if (!applyVpnCountrySelection(countryObject)) {
+                fail(tr("The server returned an invalid VPN country list."));
                 return;
             }
-            m_configs = object.value("configs").toArray().toVariantList();
+            refreshConfigs();
+        }, false, [this](int status, const QJsonObject &) {
+            if (status == 404) {
+                // Compatibility with servers that have not deployed country selection yet.
+                m_vpnCountries.clear();
+                m_vpnCountryMode = QStringLiteral("auto");
+                m_selectedVpnCountry.clear();
+                m_effectiveVpnCountry.clear();
+                refreshConfigs();
+                return;
+            }
+            if (status == 401) {
+                logout();
+                fail(tr("Your session has ended. Sign in again."));
+                return;
+            }
+            fail(tr("Could not load the VPN country list."));
         });
     });
+}
+
+QString TunnelCoreController::vpnCountryDisplayName(const QString &countryCode) const
+{
+    const auto code = countryCode.trimmed().toUpper();
+    if (code.isEmpty())
+        return {};
+    const auto territory = QLocale::codeToTerritory(code);
+    if (territory == QLocale::AnyTerritory)
+        return code;
+    const auto name = QLocale().territoryToString(territory);
+    return name.isEmpty() ? code : name;
+}
+
+void TunnelCoreController::selectVpnCountry(const QString &countryCode)
+{
+    if (m_busy || !authenticated())
+        return;
+
+    const auto normalized = countryCode.trimmed().toUpper();
+    const bool autoMode = normalized.isEmpty() || normalized == "AUTO";
+    if ((autoMode && m_vpnCountryMode == "auto")
+        || (!autoMode && m_vpnCountryMode == "country" && m_selectedVpnCountry == normalized)) {
+        return;
+    }
+
+    QJsonObject body;
+    if (autoMode) {
+        body.insert("mode", "auto");
+    } else {
+        body.insert("mode", "country");
+        body.insert("country", normalized);
+    }
+
+    request("country-selection/", body, [this](const QJsonObject &object) {
+        if (!applyVpnCountrySelection(object)) {
+            fail(tr("The server returned invalid VPN country data."));
+            return;
+        }
+        m_configs.clear();
+        refreshConfigs();
+    }, true, [this](int status, const QJsonObject &object) {
+        const auto apiError = object.value("error").toString();
+        if (status == 401) {
+            logout();
+            fail(tr("Your session has ended. Sign in again."));
+        } else if (status == 409 || apiError == "country_unavailable") {
+            fail(tr("This VPN country is temporarily unavailable. Choose another country or Automatic."));
+        } else if (status == 502 || apiError == "peer_migration_failed") {
+            fail(tr("Could not move your VPN connection to the selected country. Try again later."));
+        } else if (status == 400 || apiError == "invalid_country_code") {
+            fail(tr("The selected VPN country is invalid."));
+        } else {
+            fail(tr("Could not change the VPN country. Try again."));
+        }
+    }, true);
 }
 
 void TunnelCoreController::selectConfig(int index)
