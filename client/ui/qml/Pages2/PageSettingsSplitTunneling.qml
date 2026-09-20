@@ -80,6 +80,36 @@ PageType {
         }
     }
 
+    function geoCountriesModel() {
+        var result = [{ "name": qsTr("Standard rules"), "code": "" }]
+        var countries = TunnelCoreController.geoRoutingCountries
+        for (var i = 0; i < countries.length; ++i) {
+            result.push({
+                "name": countries[i].name + " (" + countries[i].code + ")",
+                "code": countries[i].code
+            })
+        }
+        return result
+    }
+
+    function geoCountryModelIndex() {
+        var selected = TunnelCoreController.geoRoutingCountry
+        var countries = TunnelCoreController.geoRoutingCountries
+        if (!selected || selected.length === 0)
+            return 0
+        for (var i = 0; i < countries.length; ++i) {
+            if (countries[i].code === selected)
+                return i + 1
+        }
+        return 0
+    }
+
+    function geoCountryText() {
+        var model = geoCountriesModel()
+        var index = geoCountryModelIndex()
+        return model[index].name
+    }
+
     ColumnLayout {
         id: header
 
@@ -110,6 +140,58 @@ PageType {
                 IpSplitTunnelingController.toggleSplitTunneling(checked)
                 selector.text = root.routeModesModel[getRouteModesModelIndex()].name
             }
+        }
+
+        DropDownType {
+            id: countryBypassSelector
+
+            Layout.fillWidth: true
+            Layout.topMargin: 24
+            Layout.leftMargin: 16
+            Layout.rightMargin: 16
+
+            drawerHeight: 0.55
+            drawerParent: root
+
+            visible: TunnelCoreController.authenticated
+                     && TunnelCoreController.geoRoutingCountries.length > 0
+            enabled: root.pageEnabled && !TunnelCoreController.busy
+
+            headerText: qsTr("Country traffic directly")
+            text: root.geoCountryText()
+
+            listView: ListViewWithRadioButtonType {
+                rootWidth: root.width
+                model: root.geoCountriesModel()
+                selectedIndex: root.geoCountryModelIndex()
+
+                clickedFunction: function() {
+                    countryBypassSelector.text = selectedText
+                    countryBypassSelector.closeTriggered()
+                    var item = root.geoCountriesModel()[selectedIndex]
+                    TunnelCoreController.selectGeoRoutingCountry(item.code)
+                }
+
+                Connections {
+                    target: TunnelCoreController
+                    function onChanged() {
+                        selectedIndex = root.geoCountryModelIndex()
+                        countryBypassSelector.text = root.geoCountryText()
+                    }
+                }
+            }
+        }
+
+        ParagraphTextType {
+            Layout.fillWidth: true
+            Layout.leftMargin: 16
+            Layout.rightMargin: 16
+            visible: countryBypassSelector.visible
+            text: TunnelCoreController.geoRoutingCountry.length > 0
+                  ? qsTr("Traffic to the selected country's IPv4 networks goes directly. All other traffic stays inside the VPN. IPv6 remains inside the VPN.")
+                  : qsTr("Choose a country to send its IPv4 networks directly while keeping all other traffic inside the VPN.")
+            color: AmneziaStyle.color.paleGray
+            maximumLineCount: 4
         }
 
         DropDownType {
