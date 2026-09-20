@@ -30,6 +30,10 @@ class TunnelCoreController : public QObject
     Q_PROPERTY(bool telegramLinked READ telegramLinked NOTIFY changed)
     Q_PROPERTY(QVariantList subscriptions READ subscriptions NOTIFY changed)
     Q_PROPERTY(QVariantList configs READ configs NOTIFY changed)
+    Q_PROPERTY(QVariantList vpnCountries READ vpnCountries NOTIFY changed)
+    Q_PROPERTY(QString vpnCountryMode READ vpnCountryMode NOTIFY changed)
+    Q_PROPERTY(QString selectedVpnCountry READ selectedVpnCountry NOTIFY changed)
+    Q_PROPERTY(QString effectiveVpnCountry READ effectiveVpnCountry NOTIFY changed)
 
 public:
     explicit TunnelCoreController(QObject *parent = nullptr, QNetworkAccessManager *network = nullptr,
@@ -42,6 +46,10 @@ public:
     bool telegramLinked() const { return m_telegramLinked; }
     QVariantList subscriptions() const { return m_subscriptions; }
     QVariantList configs() const { return m_configs; }
+    QVariantList vpnCountries() const { return m_vpnCountries; }
+    QString vpnCountryMode() const { return m_vpnCountryMode; }
+    QString selectedVpnCountry() const { return m_selectedVpnCountry; }
+    QString effectiveVpnCountry() const { return m_effectiveVpnCountry; }
 
     Q_INVOKABLE void loginCode(const QString &code);
     // Legacy login methods remain available during the server transition, but the
@@ -54,6 +62,8 @@ public:
     Q_INVOKABLE void logout();
     Q_INVOKABLE void refresh();
     Q_INVOKABLE void selectConfig(int index);
+    Q_INVOKABLE void selectVpnCountry(const QString &countryCode);
+    Q_INVOKABLE QString vpnCountryDisplayName(const QString &countryCode) const;
 
 signals:
     void changed();
@@ -67,6 +77,8 @@ private:
                  std::function<void(int, const QJsonObject &)> failure = {},
                  bool authenticatedRequest = false);
     void saveSession();
+    bool applyVpnCountrySelection(const QJsonObject &object);
+    void refreshConfigs();
     void deliverConfig(const QString &data, const QString &fileName = {});
     void fail(const QString &message);
     QNetworkAccessManager *m_network;
@@ -76,6 +88,10 @@ private:
     QString m_error;
     QVariantList m_subscriptions;
     QVariantList m_configs;
+    QVariantList m_vpnCountries;
+    QString m_vpnCountryMode = QStringLiteral("auto");
+    QString m_selectedVpnCountry;
+    QString m_effectiveVpnCountry;
     TunnelCoreSessionStorage m_sessionStorage;
     bool m_busy = false;
     bool m_emailAccount = false;
