@@ -17,6 +17,7 @@ struct TunnelCoreSessionStorage
     std::function<std::tuple<QByteArray, QString, bool, bool>()> load;
     std::function<void(const QByteArray &, const QString &, bool, bool)> save;
     std::function<void()> clear;
+    std::function<bool(const QJsonObject &, QString &)> applyRouting;
 };
 
 class TunnelCoreController : public QObject
@@ -79,6 +80,8 @@ private:
     void saveSession();
     bool applyVpnCountrySelection(const QJsonObject &object);
     void refreshConfigs();
+    void refreshRouting();
+    QString routingPlatform() const;
     void deliverConfig(const QString &data, const QString &fileName = {});
     void fail(const QString &message);
     QNetworkAccessManager *m_network;
