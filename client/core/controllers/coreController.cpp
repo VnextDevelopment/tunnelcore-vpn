@@ -232,6 +232,16 @@ void CoreController::initControllers()
         m_settings->remove(QStringLiteral("TunnelCore/telegramLinked"));
         m_settings->sync();
     };
+    tunnelCoreSessionStorage.loadGeoRoutingCountry = [this]() {
+        return m_settings->value(QStringLiteral("TunnelCore/geoRoutingCountry")).toString();
+    };
+    tunnelCoreSessionStorage.saveGeoRoutingCountry = [this](const QString &countryCode) {
+        if (countryCode.isEmpty())
+            m_settings->remove(QStringLiteral("TunnelCore/geoRoutingCountry"));
+        else
+            m_settings->setValue(QStringLiteral("TunnelCore/geoRoutingCountry"), countryCode);
+        m_settings->sync();
+    };
     tunnelCoreSessionStorage.applyRouting = [this](const QJsonObject &routing, QString &errorMessage) {
         const auto rulesValue = routing.value(QStringLiteral("rules"));
         if (!rulesValue.isArray()) {
