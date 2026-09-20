@@ -405,7 +405,7 @@ void TunnelCoreController::refreshGeoRoutingCountries()
         if (status == 404) {
             m_geoRoutingCountries.clear();
             m_geoRoutingCountry.clear();
-            refreshGeoRoutingCountries();
+            refreshRouting();
             return;
         }
         if (status == 401) {
