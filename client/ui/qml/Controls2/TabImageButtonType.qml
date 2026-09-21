@@ -55,6 +55,11 @@ TabButton {
     icon.color: isSelected ? selectedColor : defaultColor
 
     contentItem: Item {
+        // Keep the tab's implicit geometry non-zero after replacing the
+        // style-provided IconImage with a custom Android-safe renderer.
+        implicitWidth: 24
+        implicitHeight: 24
+
         Image {
             id: androidImage
             anchors.centerIn: parent
