@@ -36,6 +36,11 @@ Button {
         readonly property real imageWidth: root.icon.width > 0 ? root.icon.width : 24
         readonly property real imageHeight: root.icon.height > 0 ? root.icon.height : 24
 
+        // A custom contentItem must expose an implicit size. Without it,
+        // Button can collapse the icon area to 0x0 (notably on Android).
+        implicitWidth: imageWidth
+        implicitHeight: imageHeight
+
         Image {
             id: androidImage
             anchors.centerIn: parent
