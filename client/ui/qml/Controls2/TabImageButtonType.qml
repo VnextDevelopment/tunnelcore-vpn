@@ -49,8 +49,8 @@ TabButton {
     hoverEnabled: true
 
     // Qt 6.10's Android IconImage colorization renders transparent SVG pixels
-    // as an opaque rectangle on some graphics backends.  Keep the regular
-    // tinted control icon on desktop and render the SVG directly on Android.
+    // as an opaque rectangle on some graphics backends. Keep the regular
+    // tinted control icon on desktop and use the raster resource on Android.
     icon.source: Qt.platform.os === "android" ? "" : image
     icon.color: isSelected ? selectedColor : defaultColor
 

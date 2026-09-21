@@ -6,75 +6,78 @@
         <file alias="icon.png">../../icon_1.png</file>
         <file>amneziaBigLogo.png</file>
         <file>AmneziaVPN.png</file>
-        <file>controls/alert-circle.svg</file>
+        <!-- Keep the public SVG URLs while serving pre-rasterized transparent
+             controls. This avoids Qt 6.10 Android rendering SVG transparency
+             as opaque rectangles. -->
+        <file alias="controls/alert-circle.svg">controls-raster/alert-circle.png</file>
         <file>update/updateHeroDark.jpg</file>
         <file>update/plus-circle.svg</file>
         <file>update/arrow-up-circle.svg</file>
         <file>update/wrench.svg</file>
-        <file>controls/amnezia.svg</file>
-        <file>controls/app.svg</file>
-        <file>controls/archive-restore.svg</file>
-        <file>controls/arrow-left.svg</file>
-        <file>controls/arrow-left-right.svg</file>
-        <file>controls/arrow-right.svg</file>
-        <file>controls/bug.svg</file>
-        <file>controls/check.svg</file>
-        <file>controls/chevron-down.svg</file>
-        <file>controls/chevron-right.svg</file>
-        <file>controls/chevron-up.svg</file>
-        <file>controls/close.svg</file>
-        <file>controls/copy.svg</file>
-        <file>controls/delete.svg</file>
-        <file>controls/download.svg</file>
-        <file>controls/edit-3.svg</file>
-        <file>controls/eye-off.svg</file>
-        <file>controls/eye.svg</file>
-        <file>controls/external-link.svg</file>
-        <file>controls/file-check-2.svg</file>
-        <file>controls/file-cog-2.svg</file>
-        <file>controls/folder-open.svg</file>
-        <file>controls/folder-search-2.svg</file>
-        <file>controls/gauge.svg</file>
-        <file>controls/globe-2.svg</file>
-        <file>controls/github.svg</file>
-        <file>controls/headphones.svg</file>
-        <file>controls/help-circle.svg</file>
-        <file>controls/history.svg</file>
-        <file>controls/home.svg</file>
-        <file>controls/infinity.svg</file>
-        <file>controls/info.svg</file>
-        <file>controls/mail.svg</file>
-        <file>controls/map-pin.svg</file>
-        <file>controls/more-vertical.svg</file>
-        <file>controls/news.svg</file>
-        <file>controls/news-unread.svg</file>
-        <file>controls/unread-dot.svg</file>
-        <file>controls/plus.svg</file>
-        <file>controls/qr-code.svg</file>
+        <file alias="controls/amnezia.svg">controls-raster/amnezia.png</file>
+        <file alias="controls/app.svg">controls-raster/app.png</file>
+        <file alias="controls/archive-restore.svg">controls-raster/archive-restore.png</file>
+        <file alias="controls/arrow-left.svg">controls-raster/arrow-left.png</file>
+        <file alias="controls/arrow-left-right.svg">controls-raster/arrow-left-right.png</file>
+        <file alias="controls/arrow-right.svg">controls-raster/arrow-right.png</file>
+        <file alias="controls/bug.svg">controls-raster/bug.png</file>
+        <file alias="controls/check.svg">controls-raster/check.png</file>
+        <file alias="controls/chevron-down.svg">controls-raster/chevron-down.png</file>
+        <file alias="controls/chevron-right.svg">controls-raster/chevron-right.png</file>
+        <file alias="controls/chevron-up.svg">controls-raster/chevron-up.png</file>
+        <file alias="controls/close.svg">controls-raster/close.png</file>
+        <file alias="controls/copy.svg">controls-raster/copy.png</file>
+        <file alias="controls/delete.svg">controls-raster/delete.png</file>
+        <file alias="controls/download.svg">controls-raster/download.png</file>
+        <file alias="controls/edit-3.svg">controls-raster/edit-3.png</file>
+        <file alias="controls/eye-off.svg">controls-raster/eye-off.png</file>
+        <file alias="controls/eye.svg">controls-raster/eye.png</file>
+        <file alias="controls/external-link.svg">controls-raster/external-link.png</file>
+        <file alias="controls/file-check-2.svg">controls-raster/file-check-2.png</file>
+        <file alias="controls/file-cog-2.svg">controls-raster/file-cog-2.png</file>
+        <file alias="controls/folder-open.svg">controls-raster/folder-open.png</file>
+        <file alias="controls/folder-search-2.svg">controls-raster/folder-search-2.png</file>
+        <file alias="controls/gauge.svg">controls-raster/gauge.png</file>
+        <file alias="controls/globe-2.svg">controls-raster/globe-2.png</file>
+        <file alias="controls/github.svg">controls-raster/github.png</file>
+        <file alias="controls/headphones.svg">controls-raster/headphones.png</file>
+        <file alias="controls/help-circle.svg">controls-raster/help-circle.png</file>
+        <file alias="controls/history.svg">controls-raster/history.png</file>
+        <file alias="controls/home.svg">controls-raster/home.png</file>
+        <file alias="controls/infinity.svg">controls-raster/infinity.png</file>
+        <file alias="controls/info.svg">controls-raster/info.png</file>
+        <file alias="controls/mail.svg">controls-raster/mail.png</file>
+        <file alias="controls/map-pin.svg">controls-raster/map-pin.png</file>
+        <file alias="controls/more-vertical.svg">controls-raster/more-vertical.png</file>
+        <file alias="controls/news.svg">controls-raster/news.png</file>
+        <file alias="controls/news-unread.svg">controls-raster/news-unread.png</file>
+        <file alias="controls/unread-dot.svg">controls-raster/unread-dot.png</file>
+        <file alias="controls/plus.svg">controls-raster/plus.png</file>
+        <file alias="controls/qr-code.svg">controls-raster/qr-code.png</file>
         <file>controls/radio-button-inner-circle-pressed.png</file>
         <file>controls/radio-button-inner-circle.png</file>
-        <file>controls/radio-button-pressed.svg</file>
-        <file>controls/radio-button.svg</file>
-        <file>controls/radio.svg</file>
-        <file>controls/refresh-cw.svg</file>
-        <file>controls/save.svg</file>
-        <file>controls/scan-line.svg</file>
-        <file>controls/search.svg</file>
-        <file>controls/server.svg</file>
-        <file>controls/settings-2.svg</file>
-        <file>controls/settings.svg</file>
-        <file>controls/settings-news.svg</file>
-        <file>controls/share-2.svg</file>
-        <file>controls/split-tunneling.svg</file>
-        <file>controls/smartphone.svg</file>
-        <file>controls/tag.svg</file>
-        <file>controls/telegram.svg</file>
-        <file>controls/text-cursor.svg</file>
-        <file>controls/trash.svg</file>
-        <file>controls/x-circle.svg</file>
+        <file alias="controls/radio-button-pressed.svg">controls-raster/radio-button-pressed.png</file>
+        <file alias="controls/radio-button.svg">controls-raster/radio-button.png</file>
+        <file alias="controls/radio.svg">controls-raster/radio.png</file>
+        <file alias="controls/refresh-cw.svg">controls-raster/refresh-cw.png</file>
+        <file alias="controls/save.svg">controls-raster/save.png</file>
+        <file alias="controls/scan-line.svg">controls-raster/scan-line.png</file>
+        <file alias="controls/search.svg">controls-raster/search.png</file>
+        <file alias="controls/server.svg">controls-raster/server.png</file>
+        <file alias="controls/settings-2.svg">controls-raster/settings-2.png</file>
+        <file alias="controls/settings.svg">controls-raster/settings.png</file>
+        <file alias="controls/settings-news.svg">controls-raster/settings-news.png</file>
+        <file alias="controls/share-2.svg">controls-raster/share-2.png</file>
+        <file alias="controls/split-tunneling.svg">controls-raster/split-tunneling.png</file>
+        <file alias="controls/smartphone.svg">controls-raster/smartphone.png</file>
+        <file alias="controls/tag.svg">controls-raster/tag.png</file>
+        <file alias="controls/telegram.svg">controls-raster/telegram.png</file>
+        <file alias="controls/text-cursor.svg">controls-raster/text-cursor.png</file>
+        <file alias="controls/trash.svg">controls-raster/trash.png</file>
+        <file alias="controls/x-circle.svg">controls-raster/x-circle.png</file>
         <file alias="tray/active.png">../../icon_1.png</file>
         <file alias="tray/default.png">../../icon_1.png</file>
         <file alias="tray/error.png">../../icon_1.png</file>
-        <file>controls/monitor.svg</file>
+        <file alias="controls/monitor.svg">controls-raster/monitor.png</file>
     </qresource>
 </RCC>

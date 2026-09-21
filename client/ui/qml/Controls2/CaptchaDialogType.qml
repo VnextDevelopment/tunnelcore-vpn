@@ -202,7 +202,7 @@ Popup {
                             readonly property int _raster: Math.ceil(64 * Math.min(Math.max(_dpr, 1.0), 4.0))
                             sourceSize: Qt.size(_raster, _raster)
 
-                            layer.enabled: true
+                            layer.enabled: Qt.platform.os !== "android"
                             layer.smooth: true
                             layer.textureSize: Qt.size(_raster, _raster)
                             layer.effect: ColorOverlay {

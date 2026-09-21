@@ -26,9 +26,9 @@ Button {
 
     hoverEnabled: true
 
-    // Avoid the broken IconImage tint path on Qt 6.10/Android.  The source
-    // SVGs already contain suitable foreground colors, so a plain Image is
-    // both sufficient and reliable there.
+    // Avoid the broken IconImage tint path on Qt 6.10/Android. Control-icon
+    // URLs resolve to pre-rasterized transparent resources, so a plain Image
+    // is reliable there.
     icon.source: Qt.platform.os === "android" ? "" : image
     icon.color: root.enabled ? imageColor : disableImageColor
 

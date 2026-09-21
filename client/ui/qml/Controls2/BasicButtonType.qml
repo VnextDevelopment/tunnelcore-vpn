@@ -148,7 +148,7 @@ Button {
                 visible: root.leftImageSource === "" ? false : true
 
                 layer {
-                    enabled: leftImageColor !== "" ? true : false
+                    enabled: Qt.platform.os !== "android" && leftImageColor !== ""
                     effect: ColorOverlay {
                         color: leftImageColor
                     }
@@ -181,7 +181,7 @@ Button {
                 visible: root.rightImageSource === "" ? false : true
 
                 layer {
-                    enabled: true
+                    enabled: Qt.platform.os !== "android"
                     effect: ColorOverlay {
                         color: textColor
                     }

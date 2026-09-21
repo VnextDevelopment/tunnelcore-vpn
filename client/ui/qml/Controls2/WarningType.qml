@@ -45,7 +45,7 @@ Rectangle {
             source: iconPath
 
             layer {
-                enabled: true
+                enabled: Qt.platform.os !== "android"
                 effect: ColorOverlay {
                     color: imageColor
                 }

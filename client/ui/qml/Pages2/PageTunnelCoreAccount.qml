@@ -27,6 +27,17 @@ PageType {
         TunnelCoreController.selectVpnCountry(countryCode)
     }
 
+    function goToConnection() {
+        if (TunnelCoreController.busy || pendingVpnCountry.length > 0)
+            return
+
+        if (ServersUiController.getServersCount() > 0) {
+            PageController.goToPageHome()
+        } else if (TunnelCoreController.configs.length > 0) {
+            TunnelCoreController.selectConfig(0)
+        }
+    }
+
     function localizedTariffName(subscription) {
         const tariffCode = subscription.tariff_code ? String(subscription.tariff_code) : ""
         const tariffName = subscription.tariff ? String(subscription.tariff) : ""
@@ -295,6 +306,17 @@ PageType {
                     }
                     BasicButtonType {
                         Layout.fillWidth: true
+                        visible: ServersUiController.getServersCount() > 0
+                                 || TunnelCoreController.configs.length > 0
+                        text: qsTr("Go to connection")
+                        enabled: !TunnelCoreController.busy
+                                 && root.pendingVpnCountry.length === 0
+                        defaultColor: AmneziaStyle.color.goldenApricot
+                        hoveredColor: AmneziaStyle.color.goldenApricot
+                        clickedFunc: root.goToConnection
+                    }
+                    BasicButtonType {
+                        Layout.fillWidth: true
                         readonly property bool isSelected: TunnelCoreController.vpnCountryMode === "auto"
                         text: qsTr("Automatic")
                         enabled: !TunnelCoreController.busy && root.pendingVpnCountry.length === 0
@@ -403,9 +425,13 @@ PageType {
             }
             BasicButtonType {
                 Layout.fillWidth: true
-                visible: ServersUiController.getServersCount() > 0
+                visible: TunnelCoreController.authenticated
+                         && TunnelCoreController.vpnCountries.length === 0
+                         && (ServersUiController.getServersCount() > 0
+                             || TunnelCoreController.configs.length > 0)
                 text: qsTr("Go to connection")
-                clickedFunc: function() { PageController.goToPageHome() }
+                enabled: !TunnelCoreController.busy
+                clickedFunc: root.goToConnection
             }
             BasicButtonType {
                 Layout.fillWidth: true

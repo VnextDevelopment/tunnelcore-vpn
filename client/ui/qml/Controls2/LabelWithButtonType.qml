@@ -144,14 +144,14 @@ Item {
 
                 anchors.centerIn: parent
                 source: leftImageSource
-                visible: leftImageColor === ""
+                visible: Qt.platform.os === "android" || leftImageColor === ""
             }
 
             ColorOverlay {
                 anchors.fill: leftImage
                 source: leftImage
                 color: leftImageColor
-                visible: leftImageColor !== ""
+                visible: Qt.platform.os !== "android" && leftImageColor !== ""
             }
         }
 
@@ -244,13 +244,14 @@ Item {
 
                 anchors.centerIn: parent
                 source: rightWarningImageSource
-                visible: false
+                visible: Qt.platform.os === "android"
             }
 
             ColorOverlay {
                 anchors.fill: rightWarningImage
                 source: rightWarningImage
                 color: rightWarningImageColor
+                visible: Qt.platform.os !== "android"
             }
         }
 

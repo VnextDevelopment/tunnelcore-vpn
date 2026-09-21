@@ -28,7 +28,7 @@ ColumnLayout {
             source: root.iconSource
             sourceSize: Qt.size(18, 18)
 
-            layer.enabled: true
+            layer.enabled: Qt.platform.os !== "android"
             layer.effect: ColorOverlay {
                 color: AmneziaStyle.color.accentSuccess
             }

@@ -110,7 +110,7 @@ CheckBox {
 
                 source: root.pressed ? imageSource : root.checked ? imageSource : ""
                 layer {
-                    enabled: true
+                    enabled: Qt.platform.os !== "android"
                     effect: ColorOverlay {
                         color: {
                             if (root.pressed) {
