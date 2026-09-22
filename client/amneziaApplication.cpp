@@ -20,6 +20,7 @@
 
 #include "core/controllers/updateController.h"
 #include "core/protocols/qmlRegisterProtocols.h"
+#include "ui/utils/paintedIcon.h"
 #include "logger.h"
 #include "ui/controllers/qml/pageController.h"
 #include "ui/models/installedAppsModel.h"
@@ -231,6 +232,7 @@ void AmneziaApplication::registerTypes()
     qRegisterMetaType<ServiceType>("ServiceType");
 
     qmlRegisterType<QRCodeReader>("QRCodeReader", 1, 0, "QRCodeReader");
+    qmlRegisterType<PaintedIcon>("AppIcons", 1, 0, "PaintedIcon");
 
     m_containerProps.reset(new ContainerProps());
     qmlRegisterSingletonInstance("ContainerProps", 1, 0, "ContainerProps", m_containerProps.get());

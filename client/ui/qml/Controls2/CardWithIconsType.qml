@@ -104,12 +104,9 @@ Button {
 
                 Layout.fillWidth: true
 
-                Image {
+                IconImageType {
                     id: leftImage
                     source: leftImageSource
-                    sourceSize.width: 40
-                    sourceSize.height: 40
-                    fillMode: Image.PreserveAspectFit
 
                     visible: leftImageSource !== ""
 

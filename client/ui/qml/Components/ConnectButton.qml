@@ -17,6 +17,7 @@ Button {
     property bool buttonActiveFocus: activeFocus && (Qt.platform.os !== "android" || SettingsController.isOnTv())
 
     property bool isFocusable: true
+    property var clickedFunc: function() { ConnectionController.connectButtonClicked() }
     
     Keys.onTabPressed: {
         FocusController.nextKeyTabItem()
@@ -182,7 +183,7 @@ Button {
     }
 
     onClicked: {
-        ConnectionController.connectButtonClicked()
+        root.clickedFunc()
     }
 
     Keys.onEnterPressed: this.clicked()

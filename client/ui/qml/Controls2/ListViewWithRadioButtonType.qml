@@ -121,7 +121,7 @@ ListViewType {
 
                 }
 
-                Image {
+                IconImageType {
                     source: imageSource
                     visible: radioButton.checked
 

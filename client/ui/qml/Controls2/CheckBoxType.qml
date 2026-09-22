@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import Qt5Compat.GraphicalEffects
 
 import Style 1.0
 
@@ -47,11 +46,11 @@ CheckBox {
     Keys.onUpPressed: {
         FocusController.nextKeyUpItem()
     }
-    
+
     Keys.onDownPressed: {
         FocusController.nextKeyDownItem()
     }
-    
+
     Keys.onLeftPressed: {
         FocusController.nextKeyLeftItem()
     }
@@ -105,28 +104,12 @@ CheckBox {
             border.width: 1
             radius: 4
 
-            Image {
+            IconImageType {
                 anchors.centerIn: parent
-
-                source: root.pressed ? imageSource : root.checked ? imageSource : ""
-                layer {
-                    enabled: Qt.platform.os !== "android"
-                    effect: ColorOverlay {
-                        color: {
-                            if (root.pressed) {
-                                return root.pressedImageColor
-                            } else if (root.checked) {
-                                if (root.enabled) {
-                                    return root.checkedImageColor
-                                } else {
-                                    return root.checkedDisabledImageColor
-                                }
-                            } else {
-                                return root.defaultImageColor
-                            }
-                        }
-                    }
-                }
+                source: root.pressed || root.checked ? root.imageSource : ""
+                tint: root.pressed ? root.pressedImageColor
+                                  : root.checked ? (root.enabled ? root.checkedImageColor : root.checkedDisabledImageColor)
+                                                 : root.defaultImageColor
             }
         }
     }

@@ -17,7 +17,7 @@ RowLayout {
 
     visible: !isRightTextUndefined
 
-    Image {
+    IconImageType {
         Layout.preferredHeight: 18
         Layout.preferredWidth: 18
         source: root.imageSource

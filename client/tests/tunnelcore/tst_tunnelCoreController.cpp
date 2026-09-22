@@ -314,6 +314,44 @@ private slots:
         QCOMPARE(config.first().first().toString(), QString("[Interface]\nPrivateKey = app-secret"));
         QCOMPARE(config.first().at(1).toString(), QString("tc42-d1.conf"));
     }
+    void currentLocationUsesMatchingConfigNotFirst()
+    {
+        Network network;
+        enqueueLogin(network);
+        network.responses.last().body =
+            "{\"ok\":true,\"configs\":[{\"id\":99,\"name\":\"Unrelated\"},{\"id\":17,\"name\":\"Germany\"}]}";
+        TunnelCoreController controller(nullptr, &network);
+        controller.loginCode("012345");
+        QTRY_VERIFY(!controller.busy());
+        const auto profileKey = controller.selectedProfileKey();
+        QVERIFY(!profileKey.isEmpty());
+        network.responses.enqueue({"{\"ok\":true,\"config\":\"[Interface]\\nPrivateKey = selected\"}"});
+        QSignalSpy config(&controller, &TunnelCoreController::configReady);
+        controller.selectCurrentConfig();
+        controller.selectCurrentConfig(); // Double click while downloading.
+        QTRY_COMPARE(config.size(), 1);
+        QCOMPARE(network.requests.size(), 7);
+        QCOMPARE(network.requests.last().url().path(), QString("/api/vpn/v1/configs/17/"));
+        QCOMPARE(controller.selectedProfileKey(), profileKey);
+        controller.logout();
+        QVERIFY(controller.selectedProfileKey().isEmpty());
+    }
+
+    void currentLocationMissingDoesNotUseAnotherCountry()
+    {
+        Network network;
+        enqueueLogin(network);
+        network.responses.last().body = "{\"ok\":true,\"configs\":[{\"id\":99,\"name\":\"Unrelated\"}]}";
+        TunnelCoreController controller(nullptr, &network);
+        controller.loginCode("012345");
+        QTRY_VERIFY(!controller.busy());
+        QSignalSpy config(&controller, &TunnelCoreController::configReady);
+        controller.selectCurrentConfig();
+        QCOMPARE(network.requests.size(), 6);
+        QCOMPARE(config.size(), 0);
+        QVERIFY(!controller.error().isEmpty());
+    }
+
     void metadataConfigDownloadErrorIsShown()
     {
         Network network;

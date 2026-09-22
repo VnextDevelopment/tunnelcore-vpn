@@ -103,7 +103,6 @@ PageType {
 
     property list<QtObject> settingsEntries: [
         tunnelCoreAccount,
-        servers,
         connection,
         application,
         news,

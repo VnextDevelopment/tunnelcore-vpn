@@ -5650,6 +5650,7 @@ Create one from the current settings.</source>
 </context>
 <context>
     <name>PageStart</name>
+    <message><source>Refresh your VPN location and try again.</source><translation>Обновите локацию VPN и попробуйте снова.</translation></message>
     <message>
         <location filename="../ui/qml/Pages2/PageStart.qml" line="207"/>
         <source>Logging was disabled after 14 days, log files were deleted</source>
@@ -6927,6 +6928,7 @@ Remove the server from the app to continue.</source>
 </context>
 <context>
     <name>TunnelCoreController</name>
+    <message><source>No configuration is available for the selected VPN location. Refresh and try again.</source><translation>Для выбранной локации VPN нет конфигурации. Обновите список и попробуйте снова.</translation></message>
     <message><source>The login details or password are incorrect.</source><translation>Неверные данные для входа или пароль.</translation></message>
     <message><source>Your session has ended. Sign in again.</source><translation>Сессия завершена. Войдите снова.</translation></message>
     <message><source>Enter a valid email and password.</source><translation>Введите корректный email и пароль.</translation></message>

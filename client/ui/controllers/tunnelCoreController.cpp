@@ -308,6 +308,7 @@ void TunnelCoreController::logout()
     m_effectiveVpnCountry.clear();
     m_pendingConfigId = 0;
     m_error.clear();
+    m_selectedConfigId = 0;
     m_busy = false;
     m_emailAccount = false;
     m_telegramLinked = false;
@@ -335,6 +336,7 @@ bool TunnelCoreController::applyVpnCountrySelection(const QJsonObject &object)
     m_vpnCountryMode = mode;
     m_selectedVpnCountry = selection.value("country").toString().trimmed().toUpper();
     m_effectiveVpnCountry = selection.value("effective_country").toString().trimmed().toUpper();
+    m_selectedConfigId = selection.value("config_id").toVariant().toLongLong();
     return true;
 }
 
@@ -541,6 +543,7 @@ void TunnelCoreController::refresh()
                 m_vpnCountryMode = QStringLiteral("auto");
                 m_selectedVpnCountry.clear();
                 m_effectiveVpnCountry.clear();
+                m_selectedConfigId = 0;
                 refreshGeoRoutingCountries();
                 return;
             }
@@ -643,6 +646,35 @@ void TunnelCoreController::selectVpnCountry(const QString &countryCode)
             fail(tr("Could not change the VPN country. Try again."));
         }
     }, true);
+}
+
+QString TunnelCoreController::selectedProfileKey() const
+{
+    if (!authenticated() || m_selectedConfigId <= 0 || m_effectiveVpnCountry.isEmpty())
+        return {};
+    return QString::fromUtf8(QJsonDocument(QJsonArray {
+        m_username, QString::number(m_selectedConfigId), m_effectiveVpnCountry
+    }).toJson(QJsonDocument::Compact));
+}
+
+void TunnelCoreController::selectCurrentConfig()
+{
+    if (m_busy || !authenticated())
+        return;
+    for (qsizetype i = 0; i < m_configs.size(); ++i) {
+        if (m_selectedConfigId > 0
+            && m_configs.at(i).toMap().value("id").toLongLong() == m_selectedConfigId) {
+            selectConfig(i);
+            return;
+        }
+    }
+    // Legacy API without country-selection metadata is unambiguous only when
+    // it offers a single configuration. Never pick an unrelated first server.
+    if (m_selectedConfigId <= 0 && m_configs.size() == 1) {
+        selectConfig(0);
+        return;
+    }
+    fail(tr("No configuration is available for the selected VPN location. Refresh and try again."));
 }
 
 void TunnelCoreController::selectConfig(int index)

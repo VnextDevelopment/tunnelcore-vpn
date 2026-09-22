@@ -142,17 +142,12 @@ Button {
             id: content
             anchors.centerIn: parent
 
-            Image {
+            IconImageType {
                 id: leftImage
                 source: root.leftImageSource
                 visible: root.leftImageSource === "" ? false : true
 
-                layer {
-                    enabled: Qt.platform.os !== "android" && leftImageColor !== ""
-                    effect: ColorOverlay {
-                        color: leftImageColor
-                    }
-                }
+                tint: root.leftImageColor
 
                 Component.onCompleted: {
                     if (root.changeLeftImageSize) {
@@ -173,19 +168,14 @@ Button {
                 verticalAlignment: Text.AlignVCenter
             }
 
-            Image {
+            IconImageType {
                 Layout.preferredHeight: 20
                 Layout.preferredWidth: 20
 
                 source: root.rightImageSource
                 visible: root.rightImageSource === "" ? false : true
 
-                layer {
-                    enabled: Qt.platform.os !== "android"
-                    effect: ColorOverlay {
-                        color: textColor
-                    }
-                }
+                tint: root.textColor
             }
         }
     }

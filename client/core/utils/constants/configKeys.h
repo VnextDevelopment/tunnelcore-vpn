@@ -175,6 +175,7 @@ namespace amnezia
 
         constexpr QLatin1String storageServerId("storageServerId");
         constexpr QLatin1String managedProfileId("managedProfileId");
+        constexpr QLatin1String managedProfileKey("managedProfileKey");
 
         // ── Xray-specific keys ────────────────────────────────────────
 

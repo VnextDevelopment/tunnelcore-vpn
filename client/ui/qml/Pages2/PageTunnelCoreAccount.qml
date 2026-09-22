@@ -6,15 +6,23 @@ import Style 1.0
 
 import "../Controls2"
 import "../Controls2/TextTypes"
+import "../Components"
 
 PageType {
     id: root
     property bool emailMode: false
     property bool registrationMode: false
     property string pendingVpnCountry: ""
+    property bool connectAfterImport: false
+    property bool importingProfile: false
 
     function selectVpnCountry(countryCode) {
-        if (TunnelCoreController.busy || pendingVpnCountry.length > 0)
+        if (TunnelCoreController.busy || pendingVpnCountry.length > 0 || importingProfile)
+            return
+
+        if ((countryCode === "AUTO" && TunnelCoreController.vpnCountryMode === "auto")
+                || (TunnelCoreController.vpnCountryMode === "country"
+                    && countryCode === TunnelCoreController.selectedVpnCountry))
             return
 
         pendingVpnCountry = countryCode
@@ -27,14 +35,19 @@ PageType {
         TunnelCoreController.selectVpnCountry(countryCode)
     }
 
-    function goToConnection() {
-        if (TunnelCoreController.busy || pendingVpnCountry.length > 0)
+    function connectSelectedLocation() {
+        if (TunnelCoreController.busy || pendingVpnCountry.length > 0 || importingProfile)
             return
 
-        if (ServersUiController.getServersCount() > 0) {
-            PageController.goToPageHome()
-        } else if (TunnelCoreController.configs.length > 0) {
-            TunnelCoreController.selectConfig(0)
+        if (ConnectionController.isConnected || ConnectionController.isConnectionInProgress) {
+            ConnectionController.connectButtonClicked()
+            return
+        }
+        if (ImportController.activateTunnelCoreProfile(TunnelCoreController.selectedProfileKey)) {
+            ConnectionController.connectButtonClicked()
+        } else {
+            connectAfterImport = true
+            TunnelCoreController.selectCurrentConfig()
         }
     }
 
@@ -95,9 +108,29 @@ PageType {
         function onConfigReady(data, fileName) {
             if (!root.visible)
                 return
-            if (ImportController.extractTunnelCoreConfigFromData(data, fileName)) {
-                PageController.goToPage(PageEnum.PageSetupWizardViewConfig)
+            root.importingProfile = true
+            ImportController.importTunnelCoreConfig(data, fileName, TunnelCoreController.selectedProfileKey)
+        }
+        function onChanged() {
+            if (TunnelCoreController.error.length > 0 || !TunnelCoreController.authenticated)
+                root.connectAfterImport = false
+        }
+    }
+
+    Connections {
+        target: ImportController
+        function onImportFinished() {
+            if (!root.importingProfile)
+                return
+            root.importingProfile = false
+            if (root.connectAfterImport) {
+                root.connectAfterImport = false
+                ConnectionController.connectButtonClicked()
             }
+        }
+        function onImportErrorOccurred(error, goToPageHome) {
+            root.importingProfile = false
+            root.connectAfterImport = false
         }
     }
 
@@ -133,6 +166,7 @@ PageType {
 
             Image {
                 source: "qrc:/images/icon.png"
+                visible: !TunnelCoreController.authenticated
                 Layout.alignment: Qt.AlignHCenter
                 Layout.preferredWidth: 88
                 Layout.preferredHeight: 88
@@ -263,6 +297,32 @@ PageType {
                 visible: TunnelCoreController.authenticated
                 spacing: 16
 
+                ConnectButton {
+                    objectName: "accountConnectButton"
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.topMargin: 16
+                    Layout.bottomMargin: 16
+                    enabled: !TunnelCoreController.busy && !root.importingProfile
+                             && root.pendingVpnCountry.length === 0
+                    clickedFunc: root.connectSelectedLocation
+                }
+                BasicButtonType {
+                    objectName: "accountSplitTunnelingButton"
+                    enabled: !TunnelCoreController.busy && !root.importingProfile
+                             && root.pendingVpnCountry.length === 0
+                    Layout.fillWidth: true
+                    readonly property bool splitEnabled: IpSplitTunnelingController.isSplitTunnelingEnabled
+                            || AppSplitTunnelingController.isSplitTunnelingEnabled
+                            || ServersUiController.isDefaultServerDefaultContainerHasSplitTunneling
+                    text: splitEnabled ? qsTranslate("PageHome", "Split tunneling enabled")
+                                       : qsTranslate("PageHome", "Split tunneling disabled")
+                    leftImageSource: "qrc:/images/controls/split-tunneling.svg"
+                    rightImageSource: "qrc:/images/controls/chevron-down.svg"
+                    defaultColor: AmneziaStyle.color.charcoalGray
+                    textColor: AmneziaStyle.color.paleGray
+                    clickedFunc: function() { splitTunnelingDrawer.openTriggered() }
+                }
+
                 SmallTextType {
                     Layout.fillWidth: true
                     visible: TunnelCoreController.busy || root.pendingVpnCountry.length > 0
@@ -303,17 +363,6 @@ PageType {
                     SmallTextType {
                         Layout.fillWidth: true
                         text: qsTr("Automatic selects an available VPN server. Choosing a country moves your VPN access to that country.")
-                    }
-                    BasicButtonType {
-                        Layout.fillWidth: true
-                        visible: ServersUiController.getServersCount() > 0
-                                 || TunnelCoreController.configs.length > 0
-                        text: qsTr("Go to connection")
-                        enabled: !TunnelCoreController.busy
-                                 && root.pendingVpnCountry.length === 0
-                        defaultColor: AmneziaStyle.color.goldenApricot
-                        hoveredColor: AmneziaStyle.color.goldenApricot
-                        clickedFunc: root.goToConnection
                     }
                     BasicButtonType {
                         Layout.fillWidth: true
@@ -360,12 +409,19 @@ PageType {
                     Layout.fillWidth: true
                     text: qsTr("Refresh")
                     enabled: !TunnelCoreController.busy && root.pendingVpnCountry.length === 0
+                             && !ConnectionController.isConnected && !ConnectionController.isConnectionInProgress
                     clickedFunc: function() { TunnelCoreController.refresh() }
                 }
                 BasicButtonType {
                     Layout.fillWidth: true
                     text: qsTr("Sign out")
-                    clickedFunc: function() { TunnelCoreController.logout() }
+                    enabled: !TunnelCoreController.busy && !root.importingProfile
+                             && root.pendingVpnCountry.length === 0
+                    clickedFunc: function() {
+                        if (ConnectionController.isConnected || ConnectionController.isConnectionInProgress)
+                            ConnectionController.closeConnection()
+                        TunnelCoreController.logout()
+                    }
                 }
                 SmallTextType {
                     Layout.fillWidth: true
@@ -423,22 +479,10 @@ PageType {
                 textFormat: Text.PlainText
                 color: AmneziaStyle.color.vibrantRed
             }
-            BasicButtonType {
-                Layout.fillWidth: true
-                visible: TunnelCoreController.authenticated
-                         && TunnelCoreController.vpnCountries.length === 0
-                         && (ServersUiController.getServersCount() > 0
-                             || TunnelCoreController.configs.length > 0)
-                text: qsTr("Go to connection")
-                enabled: !TunnelCoreController.busy
-                clickedFunc: root.goToConnection
-            }
-            BasicButtonType {
-                Layout.fillWidth: true
-                text: qsTr("Import configuration")
-                enabled: !TunnelCoreController.busy
-                clickedFunc: function() { PageController.goToPage(PageEnum.PageSetupWizardConfigSource) }
-            }
         }
+    }
+    HomeSplitTunnelingDrawer {
+        id: splitTunnelingDrawer
+        parent: root
     }
 }

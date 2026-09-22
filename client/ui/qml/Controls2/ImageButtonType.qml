@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import Qt5Compat.GraphicalEffects
 
 import Style 1.0
 
@@ -26,52 +25,12 @@ Button {
 
     hoverEnabled: true
 
-    // Avoid the broken IconImage tint path on Qt 6.10/Android. Control-icon
-    // URLs resolve to pre-rasterized transparent resources, so a plain Image
-    // is reliable there.
-    icon.source: Qt.platform.os === "android" ? "" : image
-    icon.color: root.enabled ? imageColor : disableImageColor
-
-    contentItem: Item {
-        readonly property real imageWidth: root.icon.width > 0 ? root.icon.width : 24
-        readonly property real imageHeight: root.icon.height > 0 ? root.icon.height : 24
-
-        // A custom contentItem must expose an implicit size. Without it,
-        // Button can collapse the icon area to 0x0 (notably on Android).
-        implicitWidth: imageWidth
-        implicitHeight: imageHeight
-
-        Image {
-            id: androidImage
-            anchors.centerIn: parent
-            width: parent.imageWidth
-            height: parent.imageHeight
-            visible: Qt.platform.os === "android"
-            source: root.image
-            sourceSize.width: width
-            sourceSize.height: height
-            fillMode: Image.PreserveAspectFit
-            opacity: root.enabled ? 1.0 : 0.45
-        }
-
-        Image {
-            id: desktopImageMask
-            anchors.centerIn: parent
-            width: parent.imageWidth
-            height: parent.imageHeight
-            visible: false
-            source: root.image
-            sourceSize.width: width
-            sourceSize.height: height
-            fillMode: Image.PreserveAspectFit
-        }
-
-        ColorOverlay {
-            anchors.fill: desktopImageMask
-            visible: Qt.platform.os !== "android"
-            source: desktopImageMask
-            color: root.enabled ? root.imageColor : root.disableImageColor
-        }
+    icon.source: ""
+    contentItem: IconImageType {
+        implicitWidth: root.icon.width > 0 ? root.icon.width : 24
+        implicitHeight: root.icon.height > 0 ? root.icon.height : 24
+        source: root.image
+        tint: root.enabled ? root.imageColor : root.disableImageColor
     }
 
     property bool isFocusable: true

@@ -2,7 +2,6 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
-import Qt5Compat.GraphicalEffects
 
 import Style 1.0
 
@@ -185,29 +184,17 @@ Popup {
                         radius: width / 2
                         color: AmneziaStyle.color.charcoalGray
 
-                        Image {
+                        IconImageType {
                             id: refreshIcon
 
                             anchors.centerIn: parent
                             width: 26
                             height: 26
-                            fillMode: Image.PreserveAspectFit
                             smooth: true
-                            mipmap: true
                             antialiasing: true
                             source: "qrc:/images/controls/refresh-cw.svg"
                             // Rasterize SVG at high resolution, then scale down — avoids blocky edges on HiDPI.
-                            readonly property real _dpr: (Window.window && Window.window.screen)
-                                ? Window.window.screen.devicePixelRatio : 2.0
-                            readonly property int _raster: Math.ceil(64 * Math.min(Math.max(_dpr, 1.0), 4.0))
-                            sourceSize: Qt.size(_raster, _raster)
-
-                            layer.enabled: Qt.platform.os !== "android"
-                            layer.smooth: true
-                            layer.textureSize: Qt.size(_raster, _raster)
-                            layer.effect: ColorOverlay {
-                                color: AmneziaStyle.color.goldenApricot
-                            }
+                            tint: AmneziaStyle.color.goldenApricot
                         }
 
                         MouseArea {

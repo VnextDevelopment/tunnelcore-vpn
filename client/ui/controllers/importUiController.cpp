@@ -105,6 +105,19 @@ bool ImportUiController::extractTunnelCoreConfigFromData(QString data, QString c
     return true;
 }
 
+void ImportUiController::importTunnelCoreConfig(QString data, QString configFileName, QString profileKey)
+{
+    if (!extractTunnelCoreConfigFromData(std::move(data), std::move(configFileName)))
+        return;
+    m_config.insert(amnezia::configKey::managedProfileKey, profileKey);
+    importConfig();
+}
+
+bool ImportUiController::activateTunnelCoreProfile(const QString &profileKey)
+{
+    return m_importController->activateTunnelCoreProfile(profileKey);
+}
+
 bool ImportUiController::extractConfigFromQr(const QByteArray &data)
 {
     auto result = m_importController->extractConfigFromQr(data);

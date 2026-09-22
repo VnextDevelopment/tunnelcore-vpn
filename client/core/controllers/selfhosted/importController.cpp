@@ -383,6 +383,21 @@ int ImportController::qrChunksTotal() const
     return m_totalQrCodeChunksCount;
 }
 
+bool ImportController::activateTunnelCoreProfile(const QString &profileKey)
+{
+    if (profileKey.isEmpty())
+        return false;
+    for (const auto &id : m_serversRepository->orderedServerIds()) {
+        const auto config = m_serversRepository->nativeConfig(id);
+        if (config && config->managedProfileId == QStringLiteral("tunnelcore-vpn")
+            && config->managedProfileKey == profileKey && config->hasContainers()) {
+            m_serversRepository->setDefaultServer(id);
+            return true;
+        }
+    }
+    return false;
+}
+
 void ImportController::importConfig(const QJsonObject &config)
 {
     ServerCredentials credentials;

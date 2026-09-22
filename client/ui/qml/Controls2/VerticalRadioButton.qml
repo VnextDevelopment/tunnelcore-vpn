@@ -99,7 +99,7 @@ RadioButton {
             PropertyAnimation { duration: 200 }
         }
 
-        Image {
+        IconImageType {
             source: {
                 if (showImage) {
                     return imageSource
@@ -119,7 +119,7 @@ RadioButton {
             height: 24
         }
 
-        Image {
+        IconImageType {
             source: {
                 if (showImage) {
                     return ""
@@ -194,5 +194,4 @@ RadioButton {
         enabled: false
     }
 }
-
 

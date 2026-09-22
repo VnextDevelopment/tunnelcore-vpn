@@ -24,18 +24,12 @@ PageType {
         target: PageController
 
         function onGoToPageHome() {
-            if (PageController.isStartPageVisible()) {
-                tabBar.visible = false
-                tabBarStackView.goToTabBarPage(PageEnum.PageTunnelCoreAccount)
-            } else {
-                tabBar.visible = true
-                tabBar.setCurrentIndex(0)
-                tabBarStackView.goToTabBarPage(PageEnum.PageHome)
-            }
+            tabBar.setCurrentIndex(0)
+            tabBarStackView.goToTabBarPage(PageEnum.PageTunnelCoreAccount)
         }
 
         function onGoToPageSettings() {
-            tabBar.setCurrentIndex(2)
+            tabBar.setCurrentIndex(1)
             tabBarStackView.goToTabBarPage(PageEnum.PageSettings)
         }
 
@@ -111,10 +105,7 @@ PageType {
         target: ConnectionController
 
         function onNoInstalledContainers() {
-            PageController.setTriggeredByConnectButton(true)
-
-            ServersUiController.setProcessedServerId(ServersUiController.defaultServerId)
-            PageController.goToPage(PageEnum.PageSetupWizardEasy)
+            PageController.showNotificationMessage(qsTr("Refresh your VPN location and try again."))
         }
     }
 
@@ -278,23 +269,15 @@ PageType {
         enabled: !root.isControlsDisabled
 
         function goToTabBarPage(page) {
-            var pagePath = PageController.getPagePath(page)
+            var pagePath = PageController.getPagePath(page === PageEnum.PageHome
+                                                      ? PageEnum.PageTunnelCoreAccount : page)
             tabBarStackView.clear(StackView.Immediate)
             tabBarStackView.replace(pagePath, { "objectName" : pagePath }, StackView.Immediate)
         }
 
         Component.onCompleted: {
-            var pagePath
-            if (PageController.isStartPageVisible()) {
-                tabBar.visible = false
-                pagePath = PageController.getPagePath(PageEnum.PageTunnelCoreAccount)
-            } else {
-                tabBar.visible = true
-                pagePath = PageController.getPagePath(PageEnum.PageHome)
-                ServersUiController.setProcessedServerId(ServersUiController.defaultServerId)
-            }
-
-            tabBarStackView.push(pagePath, { "objectName" : pagePath })
+            var pagePath = PageController.getPagePath(PageEnum.PageTunnelCoreAccount)
+            tabBarStackView.push(pagePath, { "objectName": pagePath })
         }
 
         Keys.onPressed: function(event) {
@@ -334,7 +317,8 @@ PageType {
 
         height: visible ? homeTabButton.implicitHeight + tabBar.topPadding + tabBar.bottomPadding : 0
 
-        enabled: !root.isControlsDisabled && !root.isTabBarDisabled
+        visible: TunnelCoreController.authenticated
+        enabled: !root.isControlsDisabled && !root.isTabBarDisabled && !TunnelCoreController.busy
 
         background: Shape {
             objectName: "backgroundShape"
@@ -371,37 +355,10 @@ PageType {
         }
 
         TabImageButtonType {
-            id: shareTabButton
-            objectName: "shareTabButton"
-
-            Connections {
-                target: ServersModel
-
-                function onModelReset() {
-                    if (!SettingsController.isOnTv()) {
-                        var hasServerWithWriteAccess = ServersUiController.hasServerWithWriteAccess()
-                        shareTabButton.visible = hasServerWithWriteAccess
-                        shareTabButton.width = hasServerWithWriteAccess ? undefined : 0
-                    }
-                }
-            }
-
-            visible: !SettingsController.isOnTv() && ServersUiController.hasServerWithWriteAccess()
-            width: !SettingsController.isOnTv() && ServersUiController.hasServerWithWriteAccess() ? undefined : 0
-
-            isSelected: tabBar.currentIndex === 1
-            image: "qrc:/images/controls/share-2.svg"
-            clickedFunc: function () {
-                tabBarStackView.goToTabBarPage(PageEnum.PageShare)
-                tabBar.currentIndex = 1
-            }
-        }
-
-        TabImageButtonType {
             id: settingsTabButton
             objectName: "settingsTabButton"
 
-            isSelected: tabBar.currentIndex === 2
+            isSelected: tabBar.currentIndex === 1
             image: (ServersUiController.hasServersFromGatewayApi && NewsModel.hasUnread && SettingsController.isNewsNotificationsEnabled()) ? "qrc:/images/controls/settings-news.svg" : "qrc:/images/controls/settings.svg"
             Binding {
                 target: settingsTabButton
@@ -411,20 +368,9 @@ PageType {
             }
             clickedFunc: function () {
                 tabBarStackView.goToTabBarPage(PageEnum.PageSettings)
-                tabBar.currentIndex = 2
+                tabBar.currentIndex = 1
             }
         }
 
-        TabImageButtonType {
-            id: plusTabButton
-            objectName: "plusTabButton"
-
-            isSelected: tabBar.currentIndex === 3
-            image: "qrc:/images/controls/plus.svg"
-            clickedFunc: function () {
-                tabBarStackView.goToTabBarPage(PageEnum.PageSetupWizardConfigSource)
-                tabBar.currentIndex = 3
-            }
-        }
     }
 }

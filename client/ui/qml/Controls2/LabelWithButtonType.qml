@@ -139,20 +139,14 @@ Item {
                 PropertyAnimation { duration: 200 }
             }
 
-            Image {
+            IconImageType {
                 id: leftImage
 
                 anchors.centerIn: parent
                 source: leftImageSource
-                visible: Qt.platform.os === "android" || leftImageColor === ""
+                tint: root.leftImageColor
             }
 
-            ColorOverlay {
-                anchors.fill: leftImage
-                source: leftImage
-                color: leftImageColor
-                visible: Qt.platform.os !== "android" && leftImageColor !== ""
-            }
         }
 
         ColumnLayout {
@@ -239,20 +233,14 @@ Item {
             radius: 12
             color: AmneziaStyle.color.transparent
 
-            Image {
+            IconImageType {
                 id: rightWarningImage
 
                 anchors.centerIn: parent
                 source: rightWarningImageSource
-                visible: Qt.platform.os === "android"
+                tint: root.rightWarningImageColor
             }
 
-            ColorOverlay {
-                anchors.fill: rightWarningImage
-                source: rightWarningImage
-                color: rightWarningImageColor
-                visible: Qt.platform.os !== "android"
-            }
         }
 
         ImageButtonType {

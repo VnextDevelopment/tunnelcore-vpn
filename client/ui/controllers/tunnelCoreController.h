@@ -37,6 +37,7 @@ class TunnelCoreController : public QObject
     Q_PROPERTY(QString vpnCountryMode READ vpnCountryMode NOTIFY changed)
     Q_PROPERTY(QString selectedVpnCountry READ selectedVpnCountry NOTIFY changed)
     Q_PROPERTY(QString effectiveVpnCountry READ effectiveVpnCountry NOTIFY changed)
+    Q_PROPERTY(QString selectedProfileKey READ selectedProfileKey NOTIFY changed)
     Q_PROPERTY(QVariantList geoRoutingCountries READ geoRoutingCountries NOTIFY changed)
     Q_PROPERTY(QString geoRoutingCountry READ geoRoutingCountry NOTIFY changed)
 
@@ -55,6 +56,7 @@ public:
     QString vpnCountryMode() const { return m_vpnCountryMode; }
     QString selectedVpnCountry() const { return m_selectedVpnCountry; }
     QString effectiveVpnCountry() const { return m_effectiveVpnCountry; }
+    QString selectedProfileKey() const;
     QVariantList geoRoutingCountries() const { return m_geoRoutingCountries; }
     QString geoRoutingCountry() const { return m_geoRoutingCountry; }
 
@@ -69,6 +71,7 @@ public:
     Q_INVOKABLE void logout();
     Q_INVOKABLE void refresh();
     Q_INVOKABLE void selectConfig(int index);
+    Q_INVOKABLE void selectCurrentConfig();
     Q_INVOKABLE void selectVpnCountry(const QString &countryCode);
     Q_INVOKABLE QString vpnCountryDisplayName(const QString &countryCode) const;
     Q_INVOKABLE void selectGeoRoutingCountry(const QString &countryCode);
@@ -104,6 +107,7 @@ private:
     QString m_selectedVpnCountry;
     QString m_effectiveVpnCountry;
     qint64 m_pendingConfigId = 0;
+    qint64 m_selectedConfigId = 0;
     QVariantList m_geoRoutingCountries;
     QString m_geoRoutingCountry;
     TunnelCoreSessionStorage m_sessionStorage;

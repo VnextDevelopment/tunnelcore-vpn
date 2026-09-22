@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Controls
-import Qt5Compat.GraphicalEffects
 
 import Style 1.0
 
@@ -48,49 +47,12 @@ TabButton {
 
     hoverEnabled: true
 
-    // Qt 6.10's Android IconImage colorization renders transparent SVG pixels
-    // as an opaque rectangle on some graphics backends. Keep the regular
-    // tinted control icon on desktop and use the raster resource on Android.
-    icon.source: Qt.platform.os === "android" ? "" : image
-    icon.color: isSelected ? selectedColor : defaultColor
-
-    contentItem: Item {
-        // Keep the tab's implicit geometry non-zero after replacing the
-        // style-provided IconImage with a custom Android-safe renderer.
-        implicitWidth: 24
-        implicitHeight: 24
-
-        Image {
-            id: androidImage
-            anchors.centerIn: parent
-            width: 24
-            height: 24
-            visible: Qt.platform.os === "android"
-            source: root.image
-            sourceSize.width: width
-            sourceSize.height: height
-            fillMode: Image.PreserveAspectFit
-            opacity: root.isSelected ? 1.0 : 0.72
-        }
-
-        Image {
-            id: desktopImageMask
-            anchors.centerIn: parent
-            width: 24
-            height: 24
-            visible: false
-            source: root.image
-            sourceSize.width: width
-            sourceSize.height: height
-            fillMode: Image.PreserveAspectFit
-        }
-
-        ColorOverlay {
-            anchors.fill: desktopImageMask
-            visible: Qt.platform.os !== "android"
-            source: desktopImageMask
-            color: root.isSelected ? root.selectedColor : root.defaultColor
-        }
+    icon.source: ""
+    contentItem: IconImageType {
+        implicitWidth: root.icon.width > 0 ? root.icon.width : 24
+        implicitHeight: root.icon.height > 0 ? root.icon.height : 24
+        source: root.image
+        tint: root.isSelected ? root.selectedColor : root.defaultColor
     }
 
     background: Rectangle {

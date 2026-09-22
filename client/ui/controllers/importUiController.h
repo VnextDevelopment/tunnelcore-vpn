@@ -24,6 +24,8 @@ public slots:
     bool extractConfigFromData(QString data);
     bool extractConfigFromData(QString data, QString configFileName);
     bool extractTunnelCoreConfigFromData(QString data, QString configFileName);
+    void importTunnelCoreConfig(QString data, QString configFileName, QString profileKey);
+    bool activateTunnelCoreProfile(const QString &profileKey);
     bool extractConfigFromQr(const QByteArray &data);
     QString getConfig();
     QString getConfigFileName();
