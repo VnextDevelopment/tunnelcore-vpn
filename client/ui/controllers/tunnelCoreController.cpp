@@ -7,6 +7,8 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QOperatingSystemVersion>
+#include <QUrlQuery>
+#include <QUuid>
 
 namespace {
 const QString apiBase = QStringLiteral("https://tlsdmd.isgood.host/api/vpn/v1/");
@@ -22,6 +24,12 @@ TunnelCoreController::TunnelCoreController(QObject *parent, QNetworkAccessManage
 {
     if (m_sessionStorage.loadGeoRoutingCountry)
         m_geoRoutingCountry = m_sessionStorage.loadGeoRoutingCountry().trimmed().toUpper();
+    if (m_sessionStorage.loadDeviceId) {
+        const auto storedDeviceId = m_sessionStorage.loadDeviceId().trimmed();
+        const QUuid uuid(storedDeviceId);
+        if (!uuid.isNull())
+            m_deviceId = uuid.toString(QUuid::WithoutBraces);
+    }
     if (!m_sessionStorage.load)
         return;
 
@@ -37,13 +45,73 @@ TunnelCoreController::TunnelCoreController(QObject *parent, QNetworkAccessManage
     m_username = username;
     m_emailAccount = emailAccount;
     m_telegramLinked = telegramLinked;
-    refresh();
+    registerDevice();
 }
 
 void TunnelCoreController::saveSession()
 {
     if (m_sessionStorage.save)
         m_sessionStorage.save(m_token, m_username, m_emailAccount, m_telegramLinked);
+}
+
+QString TunnelCoreController::ensureDeviceId()
+{
+    if (m_deviceId.isEmpty()) {
+        m_deviceId = QUuid::createUuid().toString(QUuid::WithoutBraces);
+        if (m_sessionStorage.saveDeviceId)
+            m_sessionStorage.saveDeviceId(m_deviceId);
+    }
+    return m_deviceId;
+}
+
+QString TunnelCoreController::deviceRequestPath(const QString &path) const
+{
+    if (m_deviceId.isEmpty())
+        return path;
+
+    QUrl url(path);
+    QUrlQuery query(url);
+    query.addQueryItem(QStringLiteral("device_id"), m_deviceId);
+    url.setQuery(query);
+    return url.toString(QUrl::FullyEncoded);
+}
+
+void TunnelCoreController::registerDevice(bool emitSignedIn)
+{
+    QJsonObject body {
+        {QStringLiteral("device_id"), ensureDeviceId()},
+        {QStringLiteral("platform"), routingPlatform()},
+    };
+    request(QStringLiteral("devices/register/"), body, [this, emitSignedIn](const QJsonObject &object) {
+        const auto device = object.value(QStringLiteral("device")).toObject();
+        if (device.value(QStringLiteral("device_id")).toString() != m_deviceId) {
+            fail(tr("The server returned invalid device registration data."));
+            return;
+        }
+        if (emitSignedIn)
+            emit signedIn();
+        refresh();
+    }, true, [this, emitSignedIn](int status, const QJsonObject &object) {
+        const auto apiError = object.value(QStringLiteral("error")).toString();
+        if (status == 401) {
+            logout();
+            fail(tr("Your session has ended. Sign in again."));
+        } else if (status == 409 && apiError == QStringLiteral("device_limit_reached")) {
+            if (emitSignedIn)
+                emit signedIn();
+            fail(tr("The device limit for this subscription has been reached. Remove another device and try again."));
+        } else if (status == 409 && apiError == QStringLiteral("vpn_subscription_required")) {
+            if (emitSignedIn)
+                emit signedIn();
+            fail(tr("An active VPN subscription is required to register this device."));
+        } else if (status == 503 && apiError == QStringLiteral("vpn_node_unavailable")) {
+            fail(tr("No VPN server is currently available for this device. Try again later."));
+        } else if (status == 502 && apiError == QStringLiteral("device_provisioning_failed")) {
+            fail(tr("Could not prepare a VPN configuration for this device. Try again later."));
+        } else {
+            fail(tr("Could not register this device. Try again."));
+        }
+    }, true);
 }
 
 void TunnelCoreController::fail(const QString &message)
@@ -263,8 +331,7 @@ void TunnelCoreController::authenticate(const QString &path, const QJsonObject &
         m_emailAccount = emailAccount;
         m_telegramLinked = false;
         saveSession();
-        emit signedIn();
-        refresh();
+        registerDevice(true);
     }, true, [this, path](int status, const QJsonObject &object) {
         const auto apiError = object.value("error").toString();
         if (path == "auth/register/") {
@@ -342,7 +409,7 @@ bool TunnelCoreController::applyVpnCountrySelection(const QJsonObject &object)
 
 void TunnelCoreController::refreshConfigs()
 {
-    request("configs/", {}, [this](const QJsonObject &object) {
+    request(deviceRequestPath(QStringLiteral("configs/")), {}, [this](const QJsonObject &object) {
         if (!object.value("configs").isArray()) {
             fail(tr("The server returned an invalid configuration list."));
             return;
@@ -379,7 +446,7 @@ QString TunnelCoreController::routingPlatform() const
 #elif defined(Q_OS_LINUX)
     return QStringLiteral("linux");
 #else
-    return QStringLiteral("all");
+    return QStringLiteral("other");
 #endif
 }
 
@@ -530,7 +597,7 @@ void TunnelCoreController::refresh()
             return;
         }
         m_subscriptions = object.value("subscriptions").toArray().toVariantList();
-        request("country-selection/", {}, [this](const QJsonObject &countryObject) {
+        request(deviceRequestPath(QStringLiteral("country-selection/")), {}, [this](const QJsonObject &countryObject) {
             if (!applyVpnCountrySelection(countryObject)) {
                 fail(tr("The server returned an invalid VPN country list."));
                 return;
@@ -612,6 +679,7 @@ void TunnelCoreController::selectVpnCountry(const QString &countryCode)
     }
 
     QJsonObject body;
+    body.insert(QStringLiteral("device_id"), ensureDeviceId());
     if (autoMode) {
         body.insert("mode", "auto");
     } else {
@@ -700,7 +768,7 @@ void TunnelCoreController::selectConfig(int index)
         return;
     }
 
-    request(QStringLiteral("configs/%1/").arg(configId), {},
+    request(deviceRequestPath(QStringLiteral("configs/%1/").arg(configId)), {},
             [this, suggestedFileName](const QJsonObject &object) {
         const auto downloadedConfig = object.value("config").toString().trimmed();
         if (downloadedConfig.isEmpty()) {

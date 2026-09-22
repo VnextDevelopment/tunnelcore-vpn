@@ -242,6 +242,13 @@ void CoreController::initControllers()
             m_settings->setValue(QStringLiteral("TunnelCore/geoRoutingCountry"), countryCode);
         m_settings->sync();
     };
+    tunnelCoreSessionStorage.loadDeviceId = [this]() {
+        return m_settings->value(QStringLiteral("TunnelCore/deviceId")).toString();
+    };
+    tunnelCoreSessionStorage.saveDeviceId = [this](const QString &deviceId) {
+        m_settings->setValue(QStringLiteral("TunnelCore/deviceId"), deviceId);
+        m_settings->sync();
+    };
     tunnelCoreSessionStorage.applyRouting = [this](const QJsonObject &routing, QString &errorMessage) {
         const auto rulesValue = routing.value(QStringLiteral("rules"));
         if (!rulesValue.isArray()) {

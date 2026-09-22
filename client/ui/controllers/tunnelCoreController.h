@@ -20,6 +20,8 @@ struct TunnelCoreSessionStorage
     std::function<bool(const QJsonObject &, QString &)> applyRouting;
     std::function<QString()> loadGeoRoutingCountry;
     std::function<void(const QString &)> saveGeoRoutingCountry;
+    std::function<QString()> loadDeviceId;
+    std::function<void(const QString &)> saveDeviceId;
 };
 
 class TunnelCoreController : public QObject
@@ -88,6 +90,9 @@ private:
                  std::function<void(int, const QJsonObject &)> failure = {},
                  bool authenticatedRequest = false);
     void saveSession();
+    void registerDevice(bool emitSignedIn = false);
+    QString ensureDeviceId();
+    QString deviceRequestPath(const QString &path) const;
     bool applyVpnCountrySelection(const QJsonObject &object);
     void refreshConfigs();
     void refreshRouting();
@@ -110,6 +115,7 @@ private:
     qint64 m_selectedConfigId = 0;
     QVariantList m_geoRoutingCountries;
     QString m_geoRoutingCountry;
+    QString m_deviceId;
     TunnelCoreSessionStorage m_sessionStorage;
     bool m_busy = false;
     bool m_emailAccount = false;

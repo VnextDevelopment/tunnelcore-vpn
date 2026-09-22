@@ -4,7 +4,7 @@ The client uses `https://tlsdmd.isgood.host/api/vpn/v1/`, not the Django
 administration at `/admin/` or the internal `/api/bot/` API.
 
 Contract verified against `VnextDevelopment/tunnelcore`, main commit
-`f97cc9b`:
+`f97cc9b`, including device API PR #17 head `99b1737`:
 
 - `POST auth/login/`: JSON `username`, `password` (bot credentials), or
   `email`, `password` (email login); response `ok`,
@@ -16,9 +16,13 @@ Contract verified against `VnextDevelopment/tunnelcore`, main commit
 - `POST auth/telegram/link/`: Bearer token plus JSON `code`; links a Telegram
   profile to an email account and migrates its subscriptions and payments.
 - `GET me/`: Bearer token; response `user`, `subscriptions`.
-- `GET configs/`: Bearer token; response contains safe configuration metadata
+- `POST devices/register/`: Bearer token plus a stable application-generated
+  UUID in `device_id` and the client `platform`. Registration is idempotent for
+  the same account and device; `device_limit_reached` (409) means the tariff's
+  device allowance is exhausted.
+- `GET configs/?device_id=<uuid>`: Bearer token; response contains safe configuration metadata
   (`id`, `name`, `location`, `protocol`, `expires_at`) without a private URL.
-- `GET configs/<id>/`: Bearer token; consumes the application-specific one-time
+- `GET configs/<id>/?device_id=<uuid>`: Bearer token; consumes the application-specific one-time
   copy and returns `id`, `name`, `filename`, `protocol`, `config`. The client
   passes `filename` into the import flow and uses its safe basename (without
   `.conf`) as the imported AWG/WireGuard connection name.
@@ -34,6 +38,13 @@ are persisted through the application's encrypted `SecureQSettings` storage.
 On startup the client validates the restored session by refreshing account data.
 A rejected token is removed automatically. Login codes and passwords are never
 persisted.
+
+The generated device UUID is stored separately from the account session and is
+not removed on logout. After every new or restored login the client registers
+that UUID before requesting account configuration data. The same `device_id` is
+sent when reading or changing the VPN country and when listing or downloading a
+configuration, so the server can enforce tariff device limits and isolate each
+device's peer.
 
 ## Email login
 
