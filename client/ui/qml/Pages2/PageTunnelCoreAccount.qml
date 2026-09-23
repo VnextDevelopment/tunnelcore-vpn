@@ -375,7 +375,9 @@ PageType {
                             Layout.fillWidth: true
                             text: TunnelCoreController.usesAppleBilling
                                   ? qsTr("Renew in App Store")
-                                  : qsTr("Renew in Telegram")
+                                  : (TunnelCoreController.emailAccount && !TunnelCoreController.telegramLinked
+                                     ? qsTr("Link Telegram to renew")
+                                     : qsTr("Renew in Telegram"))
                             enabled: !TunnelCoreController.busy
                             defaultColor: TunnelCoreController.subscriptionExpired
                                           ? AmneziaStyle.color.vibrantRed
