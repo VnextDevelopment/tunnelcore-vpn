@@ -2,6 +2,7 @@
 #define TUNNELCOREOBFUSCATION_H
 
 #include <QByteArray>
+#include <QList>
 #include <QRandomGenerator>
 #include <QString>
 #include <QStringList>
@@ -61,7 +62,10 @@ inline QString dnsQueryExpression(const QString &domain, bool ipv6, int paddingB
 
     return QStringLiteral(
         "<r 2><b 0x01000001000000000001%1%2000100002904d000000000%3000c%4><r %5>")
-        .arg(qname, queryType, rdLength, paddingLength)
+        .arg(qname)
+        .arg(queryType)
+        .arg(rdLength)
+        .arg(paddingLength)
         .arg(paddingBytes);
 }
 
