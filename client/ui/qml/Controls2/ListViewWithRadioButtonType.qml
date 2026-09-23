@@ -15,6 +15,7 @@ ListViewType {
 
     property int textMaximumLineCount: 2
     property int textElide: Qt.ElideRight
+    property color textColor: AmneziaStyle.color.paleGray
 
     property string imageSource: "qrc:/images/controls/check.svg"
 
@@ -116,6 +117,7 @@ ListViewType {
                     Layout.bottomMargin: 20
 
                     text: name
+                    color: root.textColor
                     maximumLineCount: root.textMaximumLineCount
                     elide: root.textElide
 
