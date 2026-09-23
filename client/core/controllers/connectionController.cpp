@@ -1,6 +1,7 @@
 #include "connectionController.h"
 
 #include <QJsonDocument>
+#include <QRegularExpression>
 
 #include "core/configurators/configuratorBase.h"
 #include "core/utils/protocolEnum.h"
@@ -9,6 +10,7 @@
 #include "core/utils/payloadSender.h"
 #include "core/utils/utilities.h"
 #include "core/utils/serverConfigUtils.h"
+#include "core/utils/tunnelCoreObfuscation.h"
 #include "version.h"
 #include "core/utils/containerEnum.h"
 #include "core/utils/containers/containerUtils.h"
@@ -18,6 +20,70 @@
 
 using namespace amnezia;
 using namespace ProtocolUtils;
+
+namespace
+{
+const QString tunnelCoreManagedProfileId = QStringLiteral("tunnelcore-vpn");
+
+void replaceAwgNativeParameter(QString &nativeConfig, const QString &key, const QString &value)
+{
+    if (nativeConfig.isEmpty() || value.isEmpty())
+        return;
+
+    const QRegularExpression expression(
+        QStringLiteral("(?im)^\\s*%1\\s*=.*$").arg(QRegularExpression::escape(key)));
+    auto match = expression.match(nativeConfig);
+    const auto replacement = QStringLiteral("%1 = %2").arg(key, value);
+    if (match.hasMatch()) {
+        nativeConfig.replace(expression, replacement);
+        return;
+    }
+
+    const QRegularExpression peerSection(QStringLiteral("(?im)^\\s*\\[Peer\\]\\s*$"));
+    match = peerSection.match(nativeConfig);
+    if (match.hasMatch()) {
+        nativeConfig.insert(match.capturedStart(), replacement + QLatin1Char('\n'));
+    } else {
+        if (!nativeConfig.endsWith(QLatin1Char('\n')))
+            nativeConfig.append(QLatin1Char('\n'));
+        nativeConfig.append(replacement + QLatin1Char('\n'));
+    }
+}
+
+bool applyTunnelCoreDynamicObfuscation(ContainerConfig &containerConfig, const QString &requestedProfile)
+{
+    auto *awg = containerConfig.getAwgProtocolConfig();
+    if (!awg || !awg->clientConfig.has_value())
+        return false;
+
+    const auto generated = TunnelCoreObfuscation::generate(requestedProfile);
+    if (generated.packets.size() != 5
+        || std::any_of(generated.packets.cbegin(), generated.packets.cend(),
+                       [](const QString &packet) { return packet.isEmpty(); })) {
+        return false;
+    }
+
+    auto &client = awg->clientConfig.value();
+    client.specialJunk1 = generated.packets.at(0);
+    client.specialJunk2 = generated.packets.at(1);
+    client.specialJunk3 = generated.packets.at(2);
+    client.specialJunk4 = generated.packets.at(3);
+    client.specialJunk5 = generated.packets.at(4);
+
+    replaceAwgNativeParameter(client.nativeConfig, QStringLiteral("I1"), client.specialJunk1);
+    replaceAwgNativeParameter(client.nativeConfig, QStringLiteral("I2"), client.specialJunk2);
+    replaceAwgNativeParameter(client.nativeConfig, QStringLiteral("I3"), client.specialJunk3);
+    replaceAwgNativeParameter(client.nativeConfig, QStringLiteral("I4"), client.specialJunk4);
+    replaceAwgNativeParameter(client.nativeConfig, QStringLiteral("I5"), client.specialJunk5);
+
+    qInfo().noquote()
+        << "[TunnelCore] generated AWG I1-I5 profile"
+        << generated.profile
+        << "source"
+        << generated.sourceDomain;
+    return true;
+}
+} // namespace
 
 ConnectionController::ConnectionController(SecureServersRepository* serversRepository,
                                          SecureAppSettingsRepository* appSettingsRepository,
@@ -173,6 +239,17 @@ ErrorCode ConnectionController::prepareConnection(const QString &serverId,
         if (!cfg.has_value()) return ErrorCode::InternalError;
         container = cfg->defaultContainer;
         containerConfigModel = cfg->containerConfig(container);
+
+        if (cfg->managedProfileId == tunnelCoreManagedProfileId
+            && cfg->managedObfuscationMode.compare(
+                   QStringLiteral("client_dynamic"), Qt::CaseInsensitive) == 0
+            && ContainerUtils::isAwgContainer(container)) {
+            if (!applyTunnelCoreDynamicObfuscation(
+                    containerConfigModel, cfg->managedObfuscationProfile)) {
+                qWarning() << "[TunnelCore] failed to generate dynamic AWG I1-I5; using static fallback";
+            }
+        }
+
         dns = cfg->getDnsPair(primaryDns, secondaryDns);
         hostName = cfg->hostName;
         description = cfg->description;
