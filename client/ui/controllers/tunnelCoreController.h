@@ -93,7 +93,8 @@ public:
 signals:
     void changed();
     void signedIn();
-    void configReady(const QString &data, const QString &fileName);
+    void configReady(const QString &data, const QString &fileName,
+                     const QString &obfuscationMode, const QString &obfuscationProfile);
 
 private:
     void authenticate(const QString &path, const QJsonObject &credentials, bool emailAccount = false);
@@ -110,7 +111,8 @@ private:
     void refreshRouting();
     void refreshGeoRoutingCountries();
     QString routingPlatform() const;
-    void deliverConfig(const QString &data, const QString &fileName = {});
+    void deliverConfig(const QString &data, const QString &fileName,
+                       const QString &obfuscationMode, const QString &obfuscationProfile);
     void updateSubscriptionState(const QJsonObject &accountObject);
     void maybeNotifySubscription();
     void fail(const QString &message);
