@@ -231,6 +231,10 @@ void TunnelCoreController::renewSubscription()
             });
     });
 #else
+    if (m_emailAccount && !m_telegramLinked) {
+        fail(tr("Link Telegram to this account before renewing in the bot."));
+        return;
+    }
     const QUrl botUrl(QStringLiteral("https://t.me/tunnelcoree_bot?start=renew_vpn"));
     if (!QDesktopServices::openUrl(botUrl))
         fail(tr("Could not open the TunnelCore bot."));
