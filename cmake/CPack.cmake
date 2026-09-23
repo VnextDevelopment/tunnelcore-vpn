@@ -1,14 +1,23 @@
-set(CPACK_PACKAGE_VENDOR            AmneziaVPN)
+set(CPACK_PACKAGE_VENDOR            TunnelCore)
+set(CPACK_PACKAGE_NAME              "TunnelCore VPN")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "TunnelCore VPN")
 set(CPACK_PACKAGE_VERSION           ${AMNEZIAVPN_VERSION})
 if(WIN32)
-    set(CPACK_PACKAGE_FILE_NAME "AmneziaVPN_${AMNEZIAVPN_VERSION}_windows_x64")
+    set(CPACK_PACKAGE_FILE_NAME "TunnelCoreVPN_${AMNEZIAVPN_VERSION}_windows_x64")
 elseif(APPLE AND NOT IOS AND NOT MACOS_NE)
     set(CPACK_PACKAGE_FILE_NAME "AmneziaVPN_${AMNEZIAVPN_VERSION}_macos_x64")
 elseif(LINUX AND NOT ANDROID)
     set(CPACK_PACKAGE_FILE_NAME "AmneziaVPN_${AMNEZIAVPN_VERSION}_linux_x64")
 endif()
-set(CPACK_PACKAGE_INSTALL_DIRECTORY AmneziaVPN)
-set(CPACK_PACKAGE_EXECUTABLES       AmneziaVPN AmneziaVPN)
+if(WIN32)
+    set(CPACK_PACKAGE_INSTALL_DIRECTORY "TunnelCore VPN")
+    # The Windows client target is branded as TunnelCoreVPN.exe. Keep the
+    # shortcut target in sync with the actual installed executable name.
+    set(CPACK_PACKAGE_EXECUTABLES       TunnelCoreVPN "TunnelCore VPN")
+else()
+    set(CPACK_PACKAGE_INSTALL_DIRECTORY AmneziaVPN)
+    set(CPACK_PACKAGE_EXECUTABLES       AmneziaVPN AmneziaVPN)
+endif()
 set(CPACK_PRE_BUILD_SCRIPTS         ${CMAKE_CURRENT_LIST_DIR}/sign_binaries.cmake)
 set(CPACK_POST_BUILD_SCRIPTS        ${CMAKE_CURRENT_LIST_DIR}/sign_packages.cmake)
 set(CPACK_PROJECT_CONFIG_FILE       ${CMAKE_CURRENT_LIST_DIR}/CPackOptions.cmake)
@@ -23,8 +32,13 @@ else()
 endif()
 
 # === CPack IFW generator settings ===
-set(CPACK_IFW_PACKAGE_NAME                          AmneziaVPN)
-set(CPACK_IFW_PACKAGE_TITLE                         AmneziaVPN)
+if(WIN32)
+    set(CPACK_IFW_PACKAGE_NAME                      TunnelCoreVPN)
+    set(CPACK_IFW_PACKAGE_TITLE                     "TunnelCore VPN")
+else()
+    set(CPACK_IFW_PACKAGE_NAME                      AmneziaVPN)
+    set(CPACK_IFW_PACKAGE_TITLE                     AmneziaVPN)
+endif()
 set(CPACK_IFW_PACKAGE_WIZARD_DEFAULT_WIDTH          600)
 set(CPACK_IFW_PACKAGE_WIZARD_DEFAULT_HEIGHT         380)
 set(CPACK_IFW_PACKAGE_WIZARD_STYLE                  Modern)
@@ -66,6 +80,13 @@ if(LINUX AND NOT ANDROID)
 endif()
 
 if(WIN32)
+    # Give shortcuts their own icon path instead of reusing a cached EXE icon.
+    install(FILES "${CMAKE_SOURCE_DIR}/client/images/app.ico"
+        DESTINATION "."
+        RENAME TunnelCoreVPN.ico
+        COMPONENT AmneziaVPN
+    )
+
     install(FILES
         ${CMAKE_SOURCE_DIR}/deploy/data/windows/post_install.cmd
         ${CMAKE_SOURCE_DIR}/deploy/data/windows/post_uninstall.cmd
@@ -102,8 +123,13 @@ cpack_ifw_configure_component(AmneziaVPN
 )
 
 include(CPack)
+if(WIN32)
+    set(_UNINSTALL_DISPLAY_NAME "Uninstall TunnelCore VPN")
+else()
+    set(_UNINSTALL_DISPLAY_NAME "Uninstall AmneziaVPN")
+endif()
 cpack_add_component(Uninstall
-    DISPLAY_NAME "Uninstall AmneziaVPN"
+    DISPLAY_NAME "${_UNINSTALL_DISPLAY_NAME}"
     REQUIRES_ADMIN_RIGHTS
     DISABLED
 )

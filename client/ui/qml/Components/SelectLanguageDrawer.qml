@@ -142,7 +142,7 @@ DrawerType2 {
                                 text: languageName
                             }
 
-                            Image {
+                            IconImageType {
                                 source: "qrc:/images/controls/check.svg"
                                 visible: radioButton.checked
 

@@ -36,7 +36,7 @@ Rectangle {
 
         spacing: 0
 
-        Image {
+        IconImageType {
             Layout.alignment: Qt.AlignTop
 
             width: iconWidth
@@ -44,12 +44,7 @@ Rectangle {
 
             source: iconPath
 
-            layer {
-                enabled: true
-                effect: ColorOverlay {
-                    color: imageColor
-                }
-            }
+            tint: root.imageColor
         }
 
         CaptionTextType {

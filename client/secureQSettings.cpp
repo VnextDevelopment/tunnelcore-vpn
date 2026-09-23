@@ -24,7 +24,9 @@ namespace {
 }
 
 SecureQSettings::SecureQSettings(const QString &organization, const QString &application, QObject *parent, bool enableEncryption)
-    : QObject { parent }, m_settings(organization, application, parent), encryptedKeys({ "Servers/serversList" }), m_encryptionEnabled(enableEncryption)
+    : QObject { parent }, m_settings(organization, application, parent),
+      encryptedKeys({ "Servers/serversList", "TunnelCore/accessToken" }),
+      m_encryptionEnabled(enableEncryption)
 {
     bool encrypted = m_settings.value("Conf/encrypted").toBool();
 
@@ -116,6 +118,12 @@ void SecureQSettings::remove(const QString &key)
 
     m_settings.remove(key);
     m_cache.remove(key);
+}
+
+void SecureQSettings::sync()
+{
+    QMutexLocker locker(&m_mutex);
+    m_settings.sync();
 }
 
 QByteArray SecureQSettings::backupAppConfig() const

@@ -47,8 +47,13 @@ TabButton {
 
     hoverEnabled: true
 
-    icon.source: image
-    icon.color: isSelected ? selectedColor : defaultColor
+    icon.source: ""
+    contentItem: IconImageType {
+        implicitWidth: root.icon.width > 0 ? root.icon.width : 24
+        implicitHeight: root.icon.height > 0 ? root.icon.height : 24
+        source: root.image
+        tint: root.isSelected ? root.selectedColor : root.defaultColor
+    }
 
     background: Rectangle {
         id: background

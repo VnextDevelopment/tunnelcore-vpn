@@ -25,8 +25,13 @@ Button {
 
     hoverEnabled: true
 
-    icon.source: image
-    icon.color: root.enabled ? imageColor : disableImageColor
+    icon.source: ""
+    contentItem: IconImageType {
+        implicitWidth: root.icon.width > 0 ? root.icon.width : 24
+        implicitHeight: root.icon.height > 0 ? root.icon.height : 24
+        source: root.image
+        tint: root.enabled ? root.imageColor : root.disableImageColor
+    }
 
     property bool isFocusable: true
 

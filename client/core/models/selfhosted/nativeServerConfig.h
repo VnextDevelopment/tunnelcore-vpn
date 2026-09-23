@@ -23,6 +23,8 @@ struct NativeServerConfig {
     DockerContainer defaultContainer;
     QString dns1;
     QString dns2;
+    QString managedProfileId;
+    QString managedProfileKey;
     
     bool hasContainers() const;
     ContainerConfig containerConfig(DockerContainer container) const;
@@ -38,4 +40,3 @@ struct NativeServerConfig {
 } // namespace amnezia
 
 #endif // NATIVESERVERCONFIG_H
-

@@ -1,6 +1,9 @@
 #include "coreController.h"
 
 #include <QDirIterator>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QMap>
 #include <QTranslator>
 #include <QTimer>
 
@@ -11,6 +14,7 @@
 #include "logger.h"
 #include "secureQSettings.h"
 #include "core/utils/appUiConfig.h"
+#include "ui/controllers/tunnelCoreController.h"
 
 #if defined(Q_OS_ANDROID)
     #include "core/utils/installedAppsImageProvider.h"
@@ -205,6 +209,103 @@ void CoreController::initControllers()
 
     m_pageController = new PageController(m_serversController, m_settingsController, this);
     setQmlContextProperty("PageController", m_pageController);
+    TunnelCoreSessionStorage tunnelCoreSessionStorage;
+    tunnelCoreSessionStorage.load = [this]() {
+        return std::make_tuple(
+                m_settings->value(QStringLiteral("TunnelCore/accessToken")).toByteArray(),
+                m_settings->value(QStringLiteral("TunnelCore/username")).toString(),
+                m_settings->value(QStringLiteral("TunnelCore/emailAccount"), false).toBool(),
+                m_settings->value(QStringLiteral("TunnelCore/telegramLinked"), false).toBool());
+    };
+    tunnelCoreSessionStorage.save = [this](const QByteArray &token, const QString &username,
+                                           bool emailAccount, bool telegramLinked) {
+        m_settings->setValue(QStringLiteral("TunnelCore/accessToken"), token);
+        m_settings->setValue(QStringLiteral("TunnelCore/username"), username);
+        m_settings->setValue(QStringLiteral("TunnelCore/emailAccount"), emailAccount);
+        m_settings->setValue(QStringLiteral("TunnelCore/telegramLinked"), telegramLinked);
+        m_settings->sync();
+    };
+    tunnelCoreSessionStorage.clear = [this]() {
+        m_settings->remove(QStringLiteral("TunnelCore/accessToken"));
+        m_settings->remove(QStringLiteral("TunnelCore/username"));
+        m_settings->remove(QStringLiteral("TunnelCore/emailAccount"));
+        m_settings->remove(QStringLiteral("TunnelCore/telegramLinked"));
+        m_settings->sync();
+    };
+    tunnelCoreSessionStorage.loadGeoRoutingCountry = [this]() {
+        return m_settings->value(QStringLiteral("TunnelCore/geoRoutingCountry")).toString();
+    };
+    tunnelCoreSessionStorage.saveGeoRoutingCountry = [this](const QString &countryCode) {
+        if (countryCode.isEmpty())
+            m_settings->remove(QStringLiteral("TunnelCore/geoRoutingCountry"));
+        else
+            m_settings->setValue(QStringLiteral("TunnelCore/geoRoutingCountry"), countryCode);
+        m_settings->sync();
+    };
+    tunnelCoreSessionStorage.loadDeviceId = [this]() {
+        return m_settings->value(QStringLiteral("TunnelCore/deviceId")).toString();
+    };
+    tunnelCoreSessionStorage.saveDeviceId = [this](const QString &deviceId) {
+        m_settings->setValue(QStringLiteral("TunnelCore/deviceId"), deviceId);
+        m_settings->sync();
+    };
+    tunnelCoreSessionStorage.applyRouting = [this](const QJsonObject &routing, QString &errorMessage) {
+        const auto rulesValue = routing.value(QStringLiteral("rules"));
+        if (!rulesValue.isArray()) {
+            errorMessage = tr("The server returned an invalid VPN routing rule list.");
+            return false;
+        }
+
+        QMap<QString, QStringList> directSites;
+        QMap<QString, QStringList> vpnSites;
+        const auto rules = rulesValue.toArray();
+        for (const auto &value : rules) {
+            if (!value.isObject()) {
+                errorMessage = tr("The server returned an invalid VPN routing rule.");
+                return false;
+            }
+
+            const auto rule = value.toObject();
+            const auto type = rule.value(QStringLiteral("type")).toString().trimmed().toLower();
+            const auto route = rule.value(QStringLiteral("route")).toString().trimmed().toLower();
+            const auto ruleValue = rule.value(QStringLiteral("value")).toString().trimmed().toLower();
+            if ((type != QStringLiteral("domain") && type != QStringLiteral("ip"))
+                || (route != QStringLiteral("direct") && route != QStringLiteral("vpn"))
+                || ruleValue.isEmpty()) {
+                errorMessage = tr("The server returned an unsupported VPN routing rule.");
+                return false;
+            }
+
+            auto &target = route == QStringLiteral("direct") ? directSites : vpnSites;
+            target.insert(ruleValue, {});
+        }
+
+        // Amnezia's cross-platform site split-tunneling format has one global
+        // route direction. Never silently lose half of a mixed server policy.
+        if (!directSites.isEmpty() && !vpnSites.isEmpty()) {
+            errorMessage = tr("The server returned mixed direct and VPN routing rules, which this client version cannot apply safely.");
+            return false;
+        }
+
+        if (directSites.isEmpty() && vpnSites.isEmpty()) {
+            m_ipSplitTunnelingController->toggleSplitTunneling(false);
+            m_ipSplitTunnelingModel->updateModel(m_ipSplitTunnelingController->getCurrentSites());
+            return true;
+        }
+
+        const auto mode = !directSites.isEmpty()
+                              ? amnezia::RouteMode::VpnAllExceptSites
+                              : amnezia::RouteMode::VpnOnlyForwardSites;
+        const auto &sites = !directSites.isEmpty() ? directSites : vpnSites;
+
+        m_ipSplitTunnelingController->setRouteMode(mode);
+        m_ipSplitTunnelingController->addSites(sites, true);
+        m_ipSplitTunnelingController->toggleSplitTunneling(true);
+        m_ipSplitTunnelingModel->updateModel(m_ipSplitTunnelingController->getCurrentSites());
+        return true;
+    };
+    setQmlContextProperty("TunnelCoreController",
+                          new TunnelCoreController(this, nullptr, std::move(tunnelCoreSessionStorage)));
 
     m_serversUiController = new ServersUiController(m_serversController, m_settingsController, m_serversModel, m_containersModel, m_defaultServerContainersModel, this);
     setQmlContextProperty("ServersUiController", m_serversUiController);

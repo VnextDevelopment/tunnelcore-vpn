@@ -116,10 +116,11 @@ Rectangle {
                 }
             }
 
-            Image {
+            IconImageType {
                 anchors.centerIn: parent
                 source: "qrc:/images/controls/chevron-right.svg"
-                sourceSize: Qt.size(24, 24)
+                width: 24
+                height: 24
             }
         }
     }

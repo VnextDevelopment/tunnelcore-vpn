@@ -60,7 +60,7 @@ QMap<Proto, QString> ProtocolUtils::protocolHumanNames()
 {
     return { { Proto::OpenVpn, "OpenVPN" },
              { Proto::WireGuard, "WireGuard" },
-             { Proto::Awg, "AmneziaWG" },
+             { Proto::Awg, "TunnelCore VPN" },
              { Proto::Ikev2, "IKEv2" },
              { Proto::Xray, "XRay" },
              { Proto::SSXray, "Shadowsocks"},
@@ -215,4 +215,3 @@ QString ProtocolUtils::key_proto_config_path(Proto p)
 {
     return protoToString(p) + "_config_path";
 }
-

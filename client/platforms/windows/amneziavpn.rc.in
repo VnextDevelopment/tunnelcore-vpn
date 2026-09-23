@@ -1,7 +1,7 @@
 #include <windows.h>
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 
-IDI_ICON1               ICON                    "../../images/app.ico"
+IDI_ICON1               ICON                    "@CLIENT_WINDOWS_ICON_FILE@"
 
 #define VER_COMPANYNAME_STR         "TunnelCore"
 #define VER_FILEDESCRIPTION_STR     "TunnelCore VPN"
@@ -9,9 +9,7 @@ IDI_ICON1               ICON                    "../../images/app.ico"
 #define VER_LEGALCOPYRIGHT_STR      "TunnelCore VPN contributors"
 #define VER_LEGALTRADEMARKS1_STR    ""
 #define VER_LEGALTRADEMARKS2_STR    VER_LEGALTRADEMARKS1_STR
-// Executable target still uses the legacy filename until packaging/service
-// target migration is completed.
-#define VER_ORIGINALFILENAME_STR    "AmneziaVPN.exe"
+#define VER_ORIGINALFILENAME_STR    "TunnelCoreVPN.exe"
 #define VER_PRODUCTNAME_STR         "TunnelCore VPN"
 
 VS_VERSION_INFO VERSIONINFO

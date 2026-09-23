@@ -21,17 +21,12 @@ ColumnLayout {
         Layout.fillWidth: true
         spacing: 8
 
-        Image {
+        IconImageType {
             Layout.preferredWidth: 18
             Layout.preferredHeight: 18
 
             source: root.iconSource
-            sourceSize: Qt.size(18, 18)
-
-            layer.enabled: true
-            layer.effect: ColorOverlay {
-                color: AmneziaStyle.color.accentSuccess
-            }
+            tint: AmneziaStyle.color.accentSuccess
         }
 
         AppH3EmphasizedTextType {

@@ -1,0 +1,216 @@
+name: 'Test workflow'
+
+on:
+  push:
+    branches:
+      - 'feature/tunnelcore-branding'
+  workflow_dispatch:
+
+env:
+  QT_MIRROR: https://mirrors.ocf.berkeley.edu/qt/
+
+jobs:
+  Test-Windows:
+    runs-on: windows-latest
+
+    env:
+      QT_VERSION: 6.10.1
+      PROD_AGW_PUBLIC_KEY: ${{ secrets.PROD_AGW_PUBLIC_KEY }}
+      PROD_S3_ENDPOINT: ${{ secrets.PROD_S3_ENDPOINT }}
+      FALLBACK_S3_ENDPOINT: ${{ secrets.FALLBACK_S3_ENDPOINT }}
+      DEV_AGW_PUBLIC_KEY: ${{ secrets.DEV_AGW_PUBLIC_KEY }}
+      DEV_AGW_ENDPOINT: ${{ secrets.DEV_AGW_ENDPOINT }}
+      DEV_S3_ENDPOINT: ${{ secrets.DEV_S3_ENDPOINT }}
+      FREE_V2_ENDPOINT: ${{ secrets.FREE_V2_ENDPOINT }}
+      PREM_V1_ENDPOINT: ${{ secrets.PREM_V1_ENDPOINT }}
+
+    steps:
+    - name: 'Get sources'
+      uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+        fetch-depth: 10
+
+    - name: 'Install Qt'
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: ${{ env.QT_VERSION }}
+        host: 'windows'
+        target: 'desktop'
+        arch: 'win64_msvc2022_64'
+        modules: 'qtremoteobjects qt5compat qtshadertools'
+        dir: ${{ runner.temp }}
+        setup-python: 'true'
+        tools: 'tools_ifw'
+        set-env: 'true'
+        aqtversion: '==3.3.0'
+        py7zrversion: '==0.22.*'
+        extra: '--base ${{ env.QT_MIRROR }}'
+
+    - name: 'Setup MSVC'
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: 'x64'
+
+    - name: 'Setup .NET SDK'
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: 'Install WiX Toolset'
+      shell: powershell
+      run: |
+        dotnet tool install --global wix --version 4.0.6
+        wix extension add -g WixToolset.UI.wixext/4.0.6
+        wix extension add -g WixToolset.Util.wixext/4.0.6
+        wix extension list -g
+        $wixBinDir = Join-Path $env:USERPROFILE ".dotnet\tools"
+        echo "WIX_BIN_DIR=$wixBinDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+    - name: 'Setup Python'
+      uses: actions/setup-python@v6
+      with:
+        python-version: 3.14
+
+    - name: 'Install Conan'
+      run: pip install "conan==2.28.0"
+
+    - name: 'Build project'
+      shell: cmd
+      env:
+        QT_INSTALL_DIR: ${{ runner.temp }}
+      run: |
+        set WIX_ROOT_PATH="${{ env.USERPROFILE }}\.dotnet\tools"
+        deploy\build.bat --installer all
+
+    - name: 'Upload WIX installer artifact'
+      uses: actions/upload-artifact@v7
+      with:
+        name: TunnelCoreVPN-Windows-MSI
+        path: deploy/build/TunnelCoreVPN_*_windows_x64.msi
+        archive: false
+        retention-days: 7
+
+    - name: 'Upload IFW installer artifact'
+      uses: actions/upload-artifact@v7
+      with:
+        name: TunnelCoreVPN-Windows-EXE
+        path: deploy/build/TunnelCoreVPN_*_windows_x64.exe
+        archive: false
+        retention-days: 7
+
+  Test-Android:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - abi: arm64-v8a
+            qt_arch: android_arm64_v8a
+            artifact: arm64
+          # Intel/AMD emulators must not depend on ARM native translation.
+          - abi: x86_64
+            qt_arch: android_x86_64
+            artifact: x86_64
+
+    env:
+      ANDROID_PLATFORM: android-28
+      NDK_VERSION: 27.0.11718014
+      QT_VERSION: 6.10.1
+      QT_DESKTOP_MODULES: 'qtremoteobjects qt5compat qtimageformats qtshadertools'
+      QT_ANDROID_MODULES: 'qtremoteobjects qt5compat qtshadertools'
+      QT_ANDROID_KEYSTORE_PATH: /tmp/tunnelcore-test.keystore
+      QT_ANDROID_KEYSTORE_STORE_PASS: tunnelcore-test
+      QT_ANDROID_KEYSTORE_ALIAS: tunnelcore-test
+      PROD_AGW_PUBLIC_KEY: ${{ secrets.PROD_AGW_PUBLIC_KEY }}
+      PROD_S3_ENDPOINT: ${{ secrets.PROD_S3_ENDPOINT }}
+      FALLBACK_S3_ENDPOINT: ${{ secrets.FALLBACK_S3_ENDPOINT }}
+      DEV_AGW_PUBLIC_KEY: ${{ secrets.DEV_AGW_PUBLIC_KEY }}
+      DEV_AGW_ENDPOINT: ${{ secrets.DEV_AGW_ENDPOINT }}
+      DEV_S3_ENDPOINT: ${{ secrets.DEV_S3_ENDPOINT }}
+      FREE_V2_ENDPOINT: ${{ secrets.FREE_V2_ENDPOINT }}
+      PREM_V1_ENDPOINT: ${{ secrets.PREM_V1_ENDPOINT }}
+
+    steps:
+    - name: 'Get sources'
+      uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+        fetch-depth: 10
+
+    - name: 'Install desktop Qt'
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: ${{ env.QT_VERSION }}
+        host: 'linux'
+        target: 'desktop'
+        arch: 'linux_gcc_64'
+        modules: ${{ env.QT_DESKTOP_MODULES }}
+        dir: ${{ runner.temp }}
+        py7zrversion: '==0.22.*'
+        extra: '--base ${{ env.QT_MIRROR }}'
+
+    - name: 'Install Android Qt ${{ matrix.abi }}'
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: ${{ env.QT_VERSION }}
+        # Qt 6.7+ Android packages live in the shared all_os repository.
+        # Version discovery runs before install-qt can normalize the host.
+        host: 'all_os'
+        target: 'android'
+        arch: ${{ matrix.qt_arch }}
+        modules: ${{ env.QT_ANDROID_MODULES }}
+        dir: ${{ runner.temp }}
+        py7zrversion: '==0.22.*'
+        extra: '--base ${{ env.QT_MIRROR }}'
+
+    - name: 'Setup Java'
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: 'Create test Android keystore'
+      shell: bash
+      run: |
+        keytool -genkeypair -v \
+          -keystore "$QT_ANDROID_KEYSTORE_PATH" \
+          -storepass "$QT_ANDROID_KEYSTORE_STORE_PASS" \
+          -keypass "$QT_ANDROID_KEYSTORE_STORE_PASS" \
+          -alias "$QT_ANDROID_KEYSTORE_ALIAS" \
+          -keyalg RSA \
+          -keysize 2048 \
+          -validity 3650 \
+          -dname "CN=TunnelCore VPN Test, OU=CI, O=VnextDevelopment, L=CI, ST=CI, C=DE"
+
+    - name: 'Setup Android SDK'
+      uses: android-actions/setup-android@v4
+      with:
+        packages: "platforms;${{ env.ANDROID_PLATFORM }} ndk;${{ env.NDK_VERSION }}"
+
+    - name: 'Setup Python'
+      uses: actions/setup-python@v6
+      with:
+        python-version: 3.14
+
+    - name: 'Install Conan'
+      run: pip install "conan==2.28.0"
+
+    - name: 'Build ${{ matrix.abi }} APK'
+      shell: bash
+      env:
+        QT_INSTALL_DIR: ${{ runner.temp }}
+      run: |
+        deploy/build.sh -t android --abi ${{ matrix.abi }} --build ./deploy/build/android-${{ matrix.abi }}
+        mkdir -p deploy/artifacts
+        VERSION=$(grep CMAKE_PROJECT_VERSION:STATIC deploy/build/android-${{ matrix.abi }}/CMakeCache.txt | cut -d= -f2)
+        cp deploy/build/android-${{ matrix.abi }}/client/android-build/build/outputs/apk/android-build-release-unsigned.apk \
+           deploy/artifacts/TunnelCoreVPN_${VERSION}_${{ matrix.abi }}.apk
+
+    - name: 'Upload Android APK'
+      uses: actions/upload-artifact@v7
+      with:
+        name: TunnelCoreVPN-Android-${{ matrix.artifact }}
+        path: deploy/artifacts/TunnelCoreVPN_*_${{ matrix.abi }}.apk
+        archive: false
+        retention-days: 7

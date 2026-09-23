@@ -64,6 +64,7 @@ public:
     int qrChunksTotal() const;
 
     void importConfig(const QJsonObject &config);
+    bool activateTunnelCoreProfile(const QString &profileKey);
     QJsonObject processNativeWireGuardConfig(const QJsonObject &config);
 
 signals:

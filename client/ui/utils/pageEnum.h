@@ -91,6 +91,7 @@ namespace PageLoader
         PageSettingsLanguage,
 
         PageUpdate,
+        PageTunnelCoreAccount,
     };
     Q_ENUM_NS(PageEnum)
 

@@ -78,6 +78,10 @@ QJsonObject NativeServerConfig::toJson() const
     if (!dns2.isEmpty()) {
         obj[configKey::dns2] = dns2;
     }
+    if (!managedProfileId.isEmpty()) {
+        obj[configKey::managedProfileId] = managedProfileId;
+        obj[configKey::managedProfileKey] = managedProfileKey;
+    }
     
     return obj;
 }
@@ -105,6 +109,8 @@ NativeServerConfig NativeServerConfig::fromJson(const QJsonObject& json)
     
     config.dns1 = json.value(configKey::dns1).toString();
     config.dns2 = json.value(configKey::dns2).toString();
+    config.managedProfileId = json.value(configKey::managedProfileId).toString();
+    config.managedProfileKey = json.value(configKey::managedProfileKey).toString();
     
     if (config.displayName.isEmpty()) {
         config.displayName = config.description.isEmpty() ? config.hostName : config.description;
@@ -114,4 +120,3 @@ NativeServerConfig NativeServerConfig::fromJson(const QJsonObject& json)
 }
 
 } // namespace amnezia
-

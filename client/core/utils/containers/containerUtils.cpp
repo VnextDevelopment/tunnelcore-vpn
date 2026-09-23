@@ -67,8 +67,8 @@ QMap<DockerContainer, QString> ContainerUtils::containerHumanNames()
              { DockerContainer::ShadowSocks, "OpenVPN over SS" },
              { DockerContainer::Cloak, "OpenVPN over Cloak" },
              { DockerContainer::WireGuard, "WireGuard" },
-             { DockerContainer::Awg, "AmneziaWG" },
-             { DockerContainer::Awg2, "AmneziaWG" },
+             { DockerContainer::Awg, "TunnelCore VPN" },
+             { DockerContainer::Awg2, "TunnelCore VPN" },
              { DockerContainer::Xray, "XRay" },
              { DockerContainer::Ipsec, QObject::tr("IPsec") },
              { DockerContainer::SSXray, "Shadowsocks"},
@@ -97,10 +97,14 @@ QMap<DockerContainer, QString> ContainerUtils::containerDescriptions()
                            "consumption.") },
              { DockerContainer::Awg,
                QObject::tr("AmneziaWG is a special protocol from Amnezia based on WireGuard. "
-                           "It provides high connection speed and ensures stable operation even in the most challenging network conditions.") },
+                           "It provides high connection speed and ensures stable operation even in the most challenging network conditions.")
+                   .replace(QStringLiteral("AmneziaWG"), QStringLiteral("TunnelCore VPN"))
+                   .replace(QStringLiteral("Amnezia"), QStringLiteral("TunnelCore")) },
              { DockerContainer::Awg2,
                QObject::tr("AmneziaWG is a special protocol from Amnezia based on WireGuard. "
-                           "It provides high connection speed and ensures stable operation even in the most challenging network conditions.") },
+                           "It provides high connection speed and ensures stable operation even in the most challenging network conditions.")
+                   .replace(QStringLiteral("AmneziaWG"), QStringLiteral("TunnelCore VPN"))
+                   .replace(QStringLiteral("Amnezia"), QStringLiteral("TunnelCore")) },
              { DockerContainer::Xray,
                QObject::tr("XRay with REALITY masks VPN traffic as web traffic and protects against active probing. "
                            "It is highly resistant to detection and offers high speed.") },
@@ -158,7 +162,9 @@ QMap<DockerContainer, QString> ContainerUtils::containerDetailedDescriptions()
                       "* Low battery consumption on mobile devices\n"
                       "* Minimal settings required\n"
                       "* Undetectable by traffic analysis systems (DPI)\n"
-                      "* Operates over UDP protocol") },
+                      "* Operates over UDP protocol")
+              .replace(QStringLiteral("AmneziaWG"), QStringLiteral("TunnelCore VPN"))
+              .replace(QStringLiteral("AmneziaVPN"), QStringLiteral("TunnelCore VPN")) },
         { DockerContainer::Xray,
           QObject::tr("REALITY is an innovative protocol developed by the creators of XRay, designed specifically to combat high levels of internet censorship. "
                       "REALITY identifies censorship systems during the TLS handshake, "
@@ -345,8 +351,10 @@ QString ContainerUtils::easySetupHeader(DockerContainer container)
 QString ContainerUtils::easySetupDescription(DockerContainer container)
 {
     switch (container) {
-    case DockerContainer::Awg2: return QObject::tr("AmneziaWG protocol will be installed. "
-                                         "It provides high connection speed and ensures stable operation even in the most challenging network conditions.");
+    case DockerContainer::Awg2:
+        return QObject::tr("AmneziaWG protocol will be installed. "
+                           "It provides high connection speed and ensures stable operation even in the most challenging network conditions.")
+            .replace(QStringLiteral("AmneziaWG"), QStringLiteral("TunnelCore VPN"));
     default: return "";
     }
 }
@@ -413,4 +421,3 @@ int ContainerUtils::installPageOrder(DockerContainer container)
     default: return 0;
     }
 }
-

@@ -3,9 +3,9 @@
     <CPackWiXFragment Id="#PRODUCT">
         <!-- Требует расширение WixToolset.Util.wixext и xmlns util -->
         <util:CloseApplication
-                Id="CloseAmneziaClient"
-                Target="AmneziaVPN.exe"
-                Description="Closing AmneziaVPN client"
+                Id="CloseTunnelCoreClient"
+                Target="TunnelCoreVPN.exe"
+                Description="Closing TunnelCore VPN client"
                 TerminateProcess="1"
                 RebootPrompt="no" />
     </CPackWiXFragment>

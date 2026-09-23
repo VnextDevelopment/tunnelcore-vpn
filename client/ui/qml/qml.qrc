@@ -42,6 +42,7 @@
         <file>Controls2/HeaderTypeWithSwitcher.qml</file>
         <file>Controls2/HorizontalRadioButton.qml</file>
         <file>Controls2/ImageButtonType.qml</file>
+        <file>Controls2/IconImageType.qml</file>
         <file>Controls2/LabelWithButtonType.qml</file>
         <file>Controls2/LabelWithImageType.qml</file>
         <file>Controls2/ListViewWithLabelsType.qml</file>
@@ -106,6 +107,7 @@
         <file>Pages2/PageServiceSocksProxySettings.qml</file>
         <file>Pages2/PageServiceTorWebsiteSettings.qml</file>
         <file>Pages2/PageSettings.qml</file>
+        <file>Pages2/PageTunnelCoreAccount.qml</file>
         <file>Pages2/PageSettingsAbout.qml</file>
         <file>Pages2/PageSettingsApiAvailableCountries.qml</file>
         <file>Pages2/PageSettingsApiServerInfo.qml</file>
@@ -158,4 +160,3 @@
         <file>Components/SmartScroll.qml</file>
     </qresource>
 </RCC>
-

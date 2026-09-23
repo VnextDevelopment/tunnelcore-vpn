@@ -58,7 +58,7 @@ PageType {
                 Layout.leftMargin: 16
 
                 headerText: qsTr("Configuration Files")
-                descriptionText: qsTr("For router setup or the AmneziaWG app")
+                descriptionText: qsTr("For router setup or the AmneziaWG app").replace("AmneziaWG", "TunnelCore VPN")
             }
         }
 

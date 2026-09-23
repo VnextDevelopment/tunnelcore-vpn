@@ -104,11 +104,14 @@ Button {
 
                 Layout.fillWidth: true
 
-                Image {
+                IconImageType {
                     id: leftImage
                     source: leftImageSource
 
                     visible: leftImageSource !== ""
+
+                    Layout.preferredWidth: 40
+                    Layout.preferredHeight: 40
 
                     Layout.alignment: Qt.AlignLeft | Qt.AlignTop
                     Layout.topMargin: 24

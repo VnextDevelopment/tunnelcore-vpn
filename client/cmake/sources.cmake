@@ -53,6 +53,7 @@ set(HEADERS ${HEADERS}
     ${CLIENT_ROOT_DIR}/core/repositories/secureAppSettingsRepository.h
     ${CLIENT_ROOT_DIR}/core/protocols/qmlRegisterProtocols.h
     ${CLIENT_ROOT_DIR}/ui/utils/pages.h
+    ${CLIENT_ROOT_DIR}/ui/utils/pageEnum.h
     ${CLIENT_PAGE_ENUM_HEADER}
     ${CLIENT_ROOT_DIR}/ui/utils/qAutoStart.h
     ${CLIENT_ROOT_DIR}/ui/utils/mtProxyPublicHostInput.h
@@ -66,6 +67,7 @@ set(HEADERS ${HEADERS}
     ${CLIENT_ROOT_DIR}/../common/logger/logger.h
     ${CLIENT_ROOT_DIR}/../common/crypto/cryptoUtils.h
     ${CLIENT_ROOT_DIR}/ui/utils/qmlUtils.h
+    ${CLIENT_ROOT_DIR}/ui/utils/paintedIcon.h
     ${CLIENT_ROOT_DIR}/core/utils/api/apiUtils.h
     ${CLIENT_ROOT_DIR}/core/utils/api/gatewayPayloadBuilder.h
     ${CLIENT_ROOT_DIR}/core/utils/osSignalHandler.h
@@ -153,6 +155,7 @@ set(SOURCES ${SOURCES}
     ${CLIENT_ROOT_DIR}/../common/logger/logger.cpp
     ${CLIENT_ROOT_DIR}/../common/crypto/cryptoUtils.cpp
     ${CLIENT_ROOT_DIR}/ui/utils/qmlUtils.cpp
+    ${CLIENT_ROOT_DIR}/ui/utils/paintedIcon.cpp
     ${CLIENT_ROOT_DIR}/core/utils/api/apiUtils.cpp
     ${CLIENT_ROOT_DIR}/core/utils/api/gatewayPayloadBuilder.cpp
     ${CLIENT_ROOT_DIR}/core/utils/serverConfigUtils.cpp

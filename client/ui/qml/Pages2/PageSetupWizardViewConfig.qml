@@ -84,7 +84,7 @@ PageType {
 
                 visible: fileName.text !== ""
 
-                Image {
+                IconImageType {
                     source: "qrc:/images/controls/file-check-2.svg"
                 }
 
