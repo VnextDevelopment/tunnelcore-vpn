@@ -111,7 +111,7 @@ inline PacketSet generate(const QString &requestedProfile)
     int profileIndex = -1;
     if (!requested.isEmpty() && requested != QStringLiteral("auto")) {
         for (int i = 0; i < profiles.size(); ++i) {
-            if (requested == QLatin1String(profiles.at(i).key)) {
+            if (requested == QString::fromLatin1(profiles.at(i).key)) {
                 profileIndex = i;
                 break;
             }
@@ -126,8 +126,8 @@ inline PacketSet generate(const QString &requestedProfile)
     const int domainOffset = int(rng->bounded(quint32(profile.domains.size())));
 
     PacketSet result;
-    result.profile = QLatin1String(profile.key);
-    result.sourceDomain = QLatin1String(profile.sourceDomain);
+    result.profile = QString::fromLatin1(profile.key);
+    result.sourceDomain = QString::fromLatin1(profile.sourceDomain);
     result.packets.reserve(5);
 
     for (int i = 0; i < 5; ++i) {
