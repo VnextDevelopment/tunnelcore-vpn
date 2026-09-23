@@ -163,6 +163,7 @@ PageType {
             listView: ListViewWithRadioButtonType {
                 rootWidth: root.width
                 model: root.geoCountriesModel()
+                textColor: AmneziaStyle.color.paleGray
                 selectedIndex: root.geoCountryModelIndex()
 
                 clickedFunction: function() {
