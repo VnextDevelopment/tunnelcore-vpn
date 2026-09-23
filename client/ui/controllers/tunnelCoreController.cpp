@@ -27,6 +27,19 @@ namespace {
 const QString apiBase = QStringLiteral("https://tlsdmd.isgood.host/api/vpn/v1/");
 constexpr qint64 maxResponseSize = 2 * 1024 * 1024;
 constexpr qsizetype maxLoggedResponseSize = 2048;
+
+QPair<QString, QString> normalizeObfuscationPolicy(const QJsonObject &object)
+{
+    auto mode = object.value(QStringLiteral("mode")).toString().trimmed().toLower();
+    if (mode != QStringLiteral("client_dynamic"))
+        mode = QStringLiteral("static");
+
+    auto profile = object.value(QStringLiteral("profile")).toString().trimmed().toLower();
+    if (mode == QStringLiteral("client_dynamic") && profile.isEmpty())
+        profile = QStringLiteral("auto");
+
+    return {mode, profile};
+}
 }
 
 bool TunnelCoreController::usesAppleBilling() const
@@ -989,10 +1002,12 @@ void TunnelCoreController::selectConfig(int index)
     const auto listedFileName = config.value("filename").toString().trimmed();
     const auto listedName = config.value("name").toString().trimmed();
     const auto suggestedFileName = !listedFileName.isEmpty() ? listedFileName : listedName;
+    const auto listedPolicy = normalizeObfuscationPolicy(
+        QJsonObject::fromVariantMap(config.value("obfuscation").toMap()));
     if (!data.isEmpty()) {
         // Compatibility with servers that still return the configuration or
         // its one-time download URL directly in the list response.
-        deliverConfig(data, suggestedFileName);
+        deliverConfig(data, suggestedFileName, listedPolicy.first, listedPolicy.second);
         return;
     }
 
@@ -1015,7 +1030,9 @@ void TunnelCoreController::selectConfig(int index)
             fileName = object.value("name").toString().trimmed();
         if (fileName.isEmpty())
             fileName = suggestedFileName;
-        deliverConfig(downloadedConfig, fileName);
+        const auto policy = normalizeObfuscationPolicy(
+            object.value(QStringLiteral("obfuscation")).toObject());
+        deliverConfig(downloadedConfig, fileName, policy.first, policy.second);
     }, false, [this](int status, const QJsonObject &object) {
         const auto apiError = object.value("error").toString();
         if (status == 401) {
@@ -1031,11 +1048,13 @@ void TunnelCoreController::selectConfig(int index)
     });
 }
 
-void TunnelCoreController::deliverConfig(const QString &data, const QString &fileName)
+void TunnelCoreController::deliverConfig(const QString &data, const QString &fileName,
+                                         const QString &obfuscationMode,
+                                         const QString &obfuscationProfile)
 {
     const QUrl url(data);
     if (url.scheme() != "https") {
-        emit configReady(data, fileName);
+        emit configReady(data, fileName, obfuscationMode, obfuscationProfile);
         return;
     }
     if (url.host().isEmpty() || !url.userInfo().isEmpty()) {
@@ -1056,7 +1075,8 @@ void TunnelCoreController::deliverConfig(const QString &data, const QString &fil
         if (reply->bytesAvailable() > maxResponseSize)
             reply->abort();
     });
-    connect(reply, &QNetworkReply::finished, this, [this, reply, generation, fileName]() {
+    connect(reply, &QNetworkReply::finished, this,
+            [this, reply, generation, fileName, obfuscationMode, obfuscationProfile]() {
         reply->deleteLater();
         if (generation != m_generation)
             return;
@@ -1068,6 +1088,7 @@ void TunnelCoreController::deliverConfig(const QString &data, const QString &fil
         }
         m_busy = false;
         emit changed();
-        emit configReady(QString::fromUtf8(reply->readAll()), fileName);
+        emit configReady(QString::fromUtf8(reply->readAll()), fileName,
+                         obfuscationMode, obfuscationProfile);
     });
 }
