@@ -117,9 +117,18 @@ void TunnelCoreController::maybeNotifySubscription()
     if (!subscriptionWarningVisible())
         return;
 
-    const auto key = subscriptionExpired()
-        ? QStringLiteral("inactive")
-        : m_subscriptionExpiresAt.toString(Qt::ISODate);
+    QString reminderStage;
+    if (subscriptionExpired()) {
+        reminderStage = QStringLiteral("expired");
+    } else if (subscriptionDaysRemaining() <= 1) {
+        reminderStage = QStringLiteral("1d");
+    } else if (subscriptionDaysRemaining() <= 3) {
+        reminderStage = QStringLiteral("3d");
+    } else {
+        reminderStage = QStringLiteral("7d");
+    }
+    const auto key = m_subscriptionExpiresAt.toString(Qt::ISODate)
+                     + QStringLiteral(":") + reminderStage;
     if (key == m_lastSubscriptionNotificationKey)
         return;
 
