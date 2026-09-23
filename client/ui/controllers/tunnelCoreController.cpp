@@ -1,20 +1,230 @@
 #include "tunnelCoreController.h"
 
 #include <QDebug>
+#include <QDateTime>
+#include <QDesktopServices>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QLocale>
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QOperatingSystemVersion>
+#include <QUrl>
 #include <QUrlQuery>
 #include <QUuid>
+
+#if defined(Q_OS_ANDROID)
+#include "platforms/android/android_controller.h"
+#else
+#include "ui/utils/notificationHandler.h"
+#endif
+
+#if defined(Q_OS_IOS)
+#include "platforms/ios/ios_controller.h"
+#endif
 
 namespace {
 const QString apiBase = QStringLiteral("https://tlsdmd.isgood.host/api/vpn/v1/");
 constexpr qint64 maxResponseSize = 2 * 1024 * 1024;
 constexpr qsizetype maxLoggedResponseSize = 2048;
 }
+
+bool TunnelCoreController::usesAppleBilling() const
+{
+#if defined(Q_OS_IOS)
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool TunnelCoreController::subscriptionExpired() const
+{
+    if (!authenticated() || !m_subscriptionKnown)
+        return false;
+    return !m_subscriptionExpiresAt.isValid()
+           || m_subscriptionExpiresAt <= QDateTime::currentDateTimeUtc();
+}
+
+int TunnelCoreController::subscriptionDaysRemaining() const
+{
+    if (!m_subscriptionExpiresAt.isValid())
+        return 0;
+    const auto seconds = QDateTime::currentDateTimeUtc().secsTo(m_subscriptionExpiresAt);
+    if (seconds <= 0)
+        return 0;
+    return int((seconds + 86399) / 86400);
+}
+
+bool TunnelCoreController::subscriptionWarningVisible() const
+{
+    if (!authenticated() || !m_subscriptionKnown || m_subscriptionAutoRenew)
+        return false;
+    return subscriptionExpired() || subscriptionDaysRemaining() <= 7;
+}
+
+QString TunnelCoreController::subscriptionStatusText() const
+{
+    if (!m_subscriptionKnown)
+        return {};
+    if (subscriptionExpired())
+        return tr("VPN subscription is inactive. Renew it to keep using TunnelCore VPN.");
+
+    const auto days = subscriptionDaysRemaining();
+    if (days <= 0)
+        return tr("Your VPN subscription expires today.");
+    if (days == 1)
+        return tr("Your VPN subscription expires tomorrow.");
+    return tr("Your VPN subscription expires in %1 days.").arg(days);
+}
+
+void TunnelCoreController::updateSubscriptionState(const QJsonObject &accountObject)
+{
+    m_subscriptionKnown = true;
+    m_subscriptionAutoRenew = false;
+    m_subscriptionExpiresAt = {};
+
+    const auto entitlement = accountObject.value(QStringLiteral("entitlement")).toObject();
+    if (!entitlement.isEmpty()) {
+        m_subscriptionAutoRenew = entitlement.value(QStringLiteral("auto_renew")).toBool(false);
+        if (entitlement.value(QStringLiteral("active")).toBool(false)) {
+            const auto rawExpiry = entitlement.value(QStringLiteral("expires_at")).toString();
+            auto expiry = QDateTime::fromString(rawExpiry, Qt::ISODateWithMs);
+            if (!expiry.isValid())
+                expiry = QDateTime::fromString(rawExpiry, Qt::ISODate);
+            if (expiry.isValid())
+                m_subscriptionExpiresAt = expiry.toUTC();
+        }
+    }
+
+    // Compatibility with servers that return only the subscriptions array.
+    if (!m_subscriptionExpiresAt.isValid()) {
+        for (const auto &subscriptionValue : m_subscriptions) {
+            const auto rawExpiry = subscriptionValue.toMap().value(QStringLiteral("expires_at")).toString();
+            auto expiry = QDateTime::fromString(rawExpiry, Qt::ISODateWithMs);
+            if (!expiry.isValid())
+                expiry = QDateTime::fromString(rawExpiry, Qt::ISODate);
+            if (expiry.isValid() && (!m_subscriptionExpiresAt.isValid() || expiry > m_subscriptionExpiresAt))
+                m_subscriptionExpiresAt = expiry.toUTC();
+        }
+    }
+
+    maybeNotifySubscription();
+}
+
+void TunnelCoreController::maybeNotifySubscription()
+{
+    if (!subscriptionWarningVisible())
+        return;
+
+    const auto key = subscriptionExpired()
+        ? QStringLiteral("inactive")
+        : m_subscriptionExpiresAt.toString(Qt::ISODate);
+    if (key == m_lastSubscriptionNotificationKey)
+        return;
+
+    const auto message = subscriptionStatusText();
+#if defined(Q_OS_ANDROID)
+    AndroidController::instance()->showSubscriptionNotification(tr("TunnelCore VPN"), message);
+    m_lastSubscriptionNotificationKey = key;
+#else
+    if (auto *notificationHandler = NotificationHandler::instanceOrNull()) {
+        notificationHandler->subscriptionNotification(message);
+        m_lastSubscriptionNotificationKey = key;
+    }
+#endif
+}
+
+void TunnelCoreController::renewSubscription()
+{
+    if (m_busy || !authenticated())
+        return;
+
+#if defined(Q_OS_IOS)
+    request(QStringLiteral("billing/?platform=ios"), {}, [this](const QJsonObject &object) {
+        QString productId;
+        const auto billing = object.value(QStringLiteral("billing")).toObject();
+        const auto methods = billing.value(QStringLiteral("methods")).toArray();
+        for (const auto &methodValue : methods) {
+            const auto method = methodValue.toObject();
+            if (method.value(QStringLiteral("type")).toString() == QStringLiteral("app_store")) {
+                productId = method.value(QStringLiteral("product_id")).toString().trimmed();
+                break;
+            }
+        }
+        if (productId.isEmpty()) {
+            fail(tr("App Store renewal is not configured for this subscription."));
+            return;
+        }
+
+        m_busy = true;
+        m_error.clear();
+        emit changed();
+
+        IosController::Instance()->purchaseProduct(
+            productId,
+            [this](bool success,
+                   const QString &transactionId,
+                   const QString &purchasedProductId,
+                   const QString &originalTransactionId,
+                   const QString &storeEnvironment,
+                   const QString &errorString,
+                   IosController::StorePurchaseFailure failureReason) {
+                if (!success) {
+                    m_busy = false;
+                    if (failureReason == IosController::StorePurchaseFailure::Cancelled) {
+                        emit changed();
+                        return;
+                    }
+                    if (failureReason == IosController::StorePurchaseFailure::Pending) {
+                        fail(tr("The App Store purchase is pending approval."));
+                        return;
+                    }
+                    fail(errorString.isEmpty()
+                             ? tr("Could not complete the App Store purchase.")
+                             : tr("Could not complete the App Store purchase: %1").arg(errorString));
+                    return;
+                }
+
+                m_busy = false;
+                QJsonObject confirmation {
+                    {QStringLiteral("transaction_id"), transactionId},
+                    {QStringLiteral("product_id"), purchasedProductId},
+                    {QStringLiteral("original_transaction_id"), originalTransactionId},
+                    {QStringLiteral("environment"), storeEnvironment},
+                };
+                request(
+                    QStringLiteral("billing/apple/confirm/"),
+                    confirmation,
+                    [this, transactionId](const QJsonObject &) {
+                        IosController::Instance()->finishStoreTransaction(transactionId);
+                        m_lastSubscriptionNotificationKey.clear();
+                        refresh();
+                    },
+                    true,
+                    [this](int status, const QJsonObject &object) {
+                        const auto apiError = object.value(QStringLiteral("error")).toString();
+                        if (status == 401) {
+                            logout();
+                            fail(tr("Your session has ended. Sign in again."));
+                        } else if (status == 503) {
+                            fail(tr("App Store renewal is temporarily unavailable."));
+                        } else if (!apiError.isEmpty()) {
+                            fail(tr("The App Store purchase could not be verified by TunnelCore."));
+                        } else {
+                            fail(tr("Could not confirm the App Store purchase. Try again."));
+                        }
+                    },
+                    true);
+            });
+    });
+#else
+    const QUrl botUrl(QStringLiteral("https://t.me/tunnelcoree_bot?start=renew_vpn"));
+    if (!QDesktopServices::openUrl(botUrl))
+        fail(tr("Could not open the TunnelCore bot."));
+#endif
+}
+
 
 TunnelCoreController::TunnelCoreController(QObject *parent, QNetworkAccessManager *network,
                                            TunnelCoreSessionStorage sessionStorage)
@@ -103,6 +313,10 @@ void TunnelCoreController::registerDevice(bool emitSignedIn)
         } else if (status == 409 && apiError == QStringLiteral("vpn_subscription_required")) {
             if (emitSignedIn)
                 emit signedIn();
+            m_subscriptionKnown = true;
+            m_subscriptionAutoRenew = false;
+            m_subscriptionExpiresAt = {};
+            maybeNotifySubscription();
             fail(tr("An active VPN subscription is required to register this device."));
         } else if (status == 503 && apiError == QStringLiteral("vpn_node_unavailable")) {
             fail(tr("No VPN server is currently available for this device. Try again later."));
@@ -379,6 +593,10 @@ void TunnelCoreController::logout()
     m_busy = false;
     m_emailAccount = false;
     m_telegramLinked = false;
+    m_subscriptionKnown = false;
+    m_subscriptionAutoRenew = false;
+    m_subscriptionExpiresAt = {};
+    m_lastSubscriptionNotificationKey.clear();
     if (m_sessionStorage.clear)
         m_sessionStorage.clear();
     emit changed();
@@ -597,6 +815,7 @@ void TunnelCoreController::refresh()
             return;
         }
         m_subscriptions = object.value("subscriptions").toArray().toVariantList();
+        updateSubscriptionState(object);
         request(deviceRequestPath(QStringLiteral("country-selection/")), {}, [this](const QJsonObject &countryObject) {
             if (!applyVpnCountrySelection(countryObject)) {
                 fail(tr("The server returned an invalid VPN country list."));
