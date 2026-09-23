@@ -24,7 +24,9 @@ private const val TAG = "ServiceNotification"
 
 private const val OLD_NOTIFICATION_CHANNEL_ID: String = "org.amnezia.vpn.notification"
 private const val NOTIFICATION_CHANNEL_ID: String = "org.amnezia.vpn.notifications"
+private const val SUBSCRIPTION_NOTIFICATION_CHANNEL_ID: String = "org.amnezia.vpn.subscription"
 const val NOTIFICATION_ID = 1337
+private const val SUBSCRIPTION_NOTIFICATION_ID = 1338
 
 private const val GET_ACTIVITY_REQUEST_CODE = 0
 private const val CONNECT_REQUEST_CODE = 1
@@ -149,6 +151,36 @@ class ServiceNotification(private val context: Context) {
     }
 
     companion object {
+        @SuppressLint("MissingPermission")
+        fun showSubscriptionAlert(context: Context, title: String, message: String) {
+            if (!context.isNotificationPermissionGranted()) return
+
+            val manager = NotificationManagerCompat.from(context)
+            manager.createNotificationChannel(
+                Builder(SUBSCRIPTION_NOTIFICATION_CHANNEL_ID, NotificationManagerCompat.IMPORTANCE_DEFAULT)
+                    .setShowBadge(true)
+                    .setName("TunnelCore VPN subscription")
+                    .setDescription("Subscription expiry reminders")
+                    .build()
+            )
+            val contentIntent = PendingIntent.getActivity(
+                context,
+                GET_ACTIVITY_REQUEST_CODE,
+                Intent(context, AmneziaActivity::class.java),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+            val notification = NotificationCompat.Builder(context, SUBSCRIPTION_NOTIFICATION_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_amnezia_round)
+                .setContentTitle(title)
+                .setContentText(message)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setAutoCancel(true)
+                .setContentIntent(contentIntent)
+                .build()
+            manager.notify(SUBSCRIPTION_NOTIFICATION_ID, notification)
+        }
+
         fun createNotificationChannel(context: Context) {
             with(NotificationManagerCompat.from(context)) {
                 deleteNotificationChannel(OLD_NOTIFICATION_CHANNEL_ID)
