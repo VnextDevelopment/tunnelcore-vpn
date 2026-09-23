@@ -108,7 +108,28 @@ class TunnelCoreTests : public QObject
                "\"platform\":\"linux\",\"devices_used\":1,\"devices_limit\":3}}";
     }
 
-    static QByteArray accountResponse(const QDateTime &expiresAt, bool autoRenew)\n    {\n        QJsonObject subscription {\n            {QStringLiteral("id"), 1},\n            {QStringLiteral("tariff"), QStringLiteral("VPN")},\n            {QStringLiteral("tariff_code"), QStringLiteral("vpn-month")},\n            {QStringLiteral("expires_at"), expiresAt.toUTC().toString(Qt::ISODateWithMs)},\n        };\n        QJsonObject entitlement {\n            {QStringLiteral("active"), true},\n            {QStringLiteral("subscription_id"), 1},\n            {QStringLiteral("auto_renew"), autoRenew},\n            {QStringLiteral("expires_at"), expiresAt.toUTC().toString(Qt::ISODateWithMs)},\n        };\n        return QJsonDocument(QJsonObject {\n            {QStringLiteral("ok"), true},\n            {QStringLiteral("subscriptions"), QJsonArray {subscription}},\n            {QStringLiteral("entitlement"), entitlement},\n        }).toJson(QJsonDocument::Compact);\n    }\n\n    static void enqueueLoginWithAccount(Network &network, const QByteArray &account)
+    static QByteArray accountResponse(const QDateTime &expiresAt, bool autoRenew)
+    {
+        QJsonObject subscription {
+            {QStringLiteral("id"), 1},
+            {QStringLiteral("tariff"), QStringLiteral("VPN")},
+            {QStringLiteral("tariff_code"), QStringLiteral("vpn-month")},
+            {QStringLiteral("expires_at"), expiresAt.toUTC().toString(Qt::ISODateWithMs)},
+        };
+        QJsonObject entitlement {
+            {QStringLiteral("active"), true},
+            {QStringLiteral("subscription_id"), 1},
+            {QStringLiteral("auto_renew"), autoRenew},
+            {QStringLiteral("expires_at"), expiresAt.toUTC().toString(Qt::ISODateWithMs)},
+        };
+        return QJsonDocument(QJsonObject {
+            {QStringLiteral("ok"), true},
+            {QStringLiteral("subscriptions"), QJsonArray {subscription}},
+            {QStringLiteral("entitlement"), entitlement},
+        }).toJson(QJsonDocument::Compact);
+    }
+
+    static void enqueueLoginWithAccount(Network &network, const QByteArray &account)
     {
         network.responses.enqueue({"{\"ok\":true,\"access_token\":\"test-token\",\"token_type\":\"Bearer\",\"user\":{\"username\":\"client\"}}"});
         network.responses.enqueue({deviceRegistrationResponse()});
