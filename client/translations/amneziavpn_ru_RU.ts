@@ -6935,6 +6935,7 @@ Remove the server from the app to continue.</source>
     <message><source>This ends the account session on this device. Imported VPN configurations remain on the device.</source><translation>Сессия аккаунта на этом устройстве будет завершена. Импортированные VPN-конфигурации останутся на устройстве.</translation></message>
     <message><source>Cancel</source><translation>Отмена</translation></message>
     <message><source>Sign out is separated from VPN location controls to prevent accidental taps.</source><translation>Кнопка выхода отделена от выбора VPN-сервера, чтобы избежать случайного нажатия.</translation></message>
+    <message><source>Link Telegram to renew</source><translation>Привязать Telegram для продления</translation></message>
 </context>
 <context>
     <name>TunnelCoreController</name>
@@ -6979,5 +6980,6 @@ Remove the server from the app to continue.</source>
     <message><source>The App Store purchase could not be verified by TunnelCore.</source><translation>TunnelCore не удалось подтвердить покупку в App Store.</translation></message>
     <message><source>Could not confirm the App Store purchase. Try again.</source><translation>Не удалось подтвердить покупку в App Store. Повторите попытку.</translation></message>
     <message><source>Could not open the TunnelCore bot.</source><translation>Не удалось открыть бот TunnelCore.</translation></message>
+    <message><source>Link Telegram to this account before renewing in the bot.</source><translation>Перед продлением в боте привяжите Telegram к этому аккаунту.</translation></message>
 </context>
 </TS>
