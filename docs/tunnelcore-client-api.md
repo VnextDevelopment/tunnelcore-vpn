@@ -23,9 +23,14 @@ Contract verified against `VnextDevelopment/tunnelcore`, main commit
 - `GET configs/?device_id=<uuid>`: Bearer token; response contains safe configuration metadata
   (`id`, `name`, `location`, `protocol`, `expires_at`) without a private URL.
 - `GET configs/<id>/?device_id=<uuid>`: Bearer token; consumes the application-specific one-time
-  copy and returns `id`, `name`, `filename`, `protocol`, `config`. The client
-  passes `filename` into the import flow and uses its safe basename (without
-  `.conf`) as the imported AWG/WireGuard connection name.
+  copy and returns `id`, `name`, `filename`, `protocol`, `config`, and an optional
+  `obfuscation` policy. The client passes `filename` into the import flow and
+  uses its safe basename (without `.conf`) as the imported AWG/WireGuard
+  connection name. For `obfuscation.mode=client_dynamic`, the policy is stored
+  on the managed TunnelCore profile and a fresh coherent `I1-I5` set is
+  generated locally each time a new AWG connection is prepared. All five
+  packets use one selected profile/source; `static` keeps the values from the
+  downloaded configuration unchanged.
 
 Legacy HTTPS configuration URLs are fetched without the account Authorization header.
 Redirects are rejected; TLS verification stays enabled. Configuration contents
