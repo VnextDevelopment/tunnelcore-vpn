@@ -1,4 +1,5 @@
 #include "../../ui/controllers/tunnelCoreController.h"
+#include "../../core/utils/tunnelCoreObfuscation.h"
 
 #include <QDateTime>
 #include <QNetworkReply>
@@ -395,6 +396,8 @@ private slots:
         QTRY_COMPARE(config.size(), 1);
         QVERIFY(!network.requests.last().hasRawHeader("Authorization"));
         QCOMPARE(config.first().at(1).toString(), QString("VPN"));
+        QCOMPARE(config.first().at(2).toString(), QString("static"));
+        QVERIFY(config.first().at(3).toString().isEmpty());
         QCOMPARE(network.requests.last().attribute(QNetworkRequest::RedirectPolicyAttribute).toInt(),
                  int(QNetworkRequest::ManualRedirectPolicy));
     }
@@ -408,7 +411,7 @@ private slots:
         network.responses.enqueue({geoCountriesResponse()});
         network.responses.enqueue({routingResponse()});
         network.responses.enqueue({"{\"ok\":true,\"configs\":[{\"id\":17,\"name\":\"Germany\",\"protocol\":\"amneziawg\"}]}"});
-        network.responses.enqueue({"{\"ok\":true,\"id\":17,\"name\":\"tc42-d1\",\"filename\":\"tc42-d1.conf\",\"protocol\":\"amneziawg\",\"config\":\"[Interface]\\nPrivateKey = app-secret\"}"});
+        network.responses.enqueue({"{\"ok\":true,\"id\":17,\"name\":\"tc42-d1\",\"filename\":\"tc42-d1.conf\",\"protocol\":\"amneziawg\",\"obfuscation\":{\"mode\":\"client_dynamic\",\"profile\":\"mail_dns\",\"packet_count\":5,\"coherent_set\":true,\"rotate_on\":\"connection\",\"static_fallback\":true},\"config\":\"[Interface]\\nPrivateKey = app-secret\"}"});
         TunnelCoreController controller(nullptr, &network);
         controller.loginCode("012345");
         QTRY_VERIFY(!controller.busy());
@@ -425,6 +428,25 @@ private slots:
         QCOMPARE(QUrlQuery(network.requests.last().url()).queryItemValue("device_id"), deviceId);
         QCOMPARE(config.first().first().toString(), QString("[Interface]\nPrivateKey = app-secret"));
         QCOMPARE(config.first().at(1).toString(), QString("tc42-d1.conf"));
+        QCOMPARE(config.first().at(2).toString(), QString("client_dynamic"));
+        QCOMPARE(config.first().at(3).toString(), QString("mail_dns"));
+    }
+
+    void dynamicObfuscationGeneratesOneCoherentFivePacketSource()
+    {
+        const auto generated = TunnelCoreObfuscation::generate(QStringLiteral("mail_dns"));
+
+        QCOMPARE(generated.profile, QString("mail_dns"));
+        QCOMPARE(generated.sourceDomain, QString("mail.ru"));
+        QCOMPARE(generated.packets.size(), 5);
+
+        const QString mailRuSuffix = QStringLiteral("046d61696c02727500");
+        for (const auto &packet : generated.packets) {
+            QVERIFY(packet.startsWith(QStringLiteral("<r 2><b 0x01000001000000000001")));
+            QVERIFY(packet.contains(mailRuSuffix));
+            QVERIFY(packet.contains(QStringLiteral("00002904d000000000")));
+            QVERIFY(packet.endsWith(QLatin1Char('>')));
+        }
     }
     void currentLocationUsesMatchingConfigNotFirst()
     {
