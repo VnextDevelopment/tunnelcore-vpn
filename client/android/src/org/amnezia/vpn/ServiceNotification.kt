@@ -159,8 +159,8 @@ class ServiceNotification(private val context: Context) {
             manager.createNotificationChannel(
                 Builder(SUBSCRIPTION_NOTIFICATION_CHANNEL_ID, NotificationManagerCompat.IMPORTANCE_DEFAULT)
                     .setShowBadge(true)
-                    .setName("TunnelCore VPN subscription")
-                    .setDescription("Subscription expiry reminders")
+                    .setName(context.getString(R.string.subscriptionNotificationChannelName))
+                    .setDescription(context.getString(R.string.subscriptionNotificationChannelDescription))
                     .build()
             )
             val contentIntent = PendingIntent.getActivity(
