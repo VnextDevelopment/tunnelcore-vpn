@@ -1,5 +1,6 @@
 #include "../../ui/controllers/tunnelCoreController.h"
 
+#include <QDateTime>
 #include <QNetworkReply>
 #include <QQueue>
 #include <QSignalSpy>
@@ -107,7 +108,7 @@ class TunnelCoreTests : public QObject
                "\"platform\":\"linux\",\"devices_used\":1,\"devices_limit\":3}}";
     }
 
-    static void enqueueLogin(Network &network)
+    static QByteArray accountResponse(const QDateTime &expiresAt, bool autoRenew)\n    {\n        QJsonObject subscription {\n            {QStringLiteral("id"), 1},\n            {QStringLiteral("tariff"), QStringLiteral("VPN")},\n            {QStringLiteral("tariff_code"), QStringLiteral("vpn-month")},\n            {QStringLiteral("expires_at"), expiresAt.toUTC().toString(Qt::ISODateWithMs)},\n        };\n        QJsonObject entitlement {\n            {QStringLiteral("active"), true},\n            {QStringLiteral("subscription_id"), 1},\n            {QStringLiteral("auto_renew"), autoRenew},\n            {QStringLiteral("expires_at"), expiresAt.toUTC().toString(Qt::ISODateWithMs)},\n        };\n        return QJsonDocument(QJsonObject {\n            {QStringLiteral("ok"), true},\n            {QStringLiteral("subscriptions"), QJsonArray {subscription}},\n            {QStringLiteral("entitlement"), entitlement},\n        }).toJson(QJsonDocument::Compact);\n    }\n\n    static void enqueueLogin(Network &network)
     {
         network.responses.enqueue({"{\"ok\":true,\"access_token\":\"test-token\",\"token_type\":\"Bearer\",\"user\":{\"username\":\"client\"}}"});
         network.responses.enqueue({deviceRegistrationResponse()});
