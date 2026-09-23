@@ -497,7 +497,7 @@ PageType {
                 }
                 SmallTextType {
                     Layout.fillWidth: true
-                    text: qsTr("Sign out is separated from VPN location controls to prevent accidental taps.")
+                    text: qsTr("Signing out ends the account session. Imported VPN configurations remain on this device.")
                     color: AmneziaStyle.color.mutedGray
                 }
 
