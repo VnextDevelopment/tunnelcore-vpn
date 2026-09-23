@@ -105,11 +105,16 @@ PageType {
             confirmPasswordField.textField.text = ""
             Qt.inputMethod.hide()
         }
-        function onConfigReady(data, fileName) {
+        function onConfigReady(data, fileName, obfuscationMode, obfuscationProfile) {
             if (!root.visible)
                 return
             root.importingProfile = true
-            ImportController.importTunnelCoreConfig(data, fileName, TunnelCoreController.selectedProfileKey)
+            ImportController.importTunnelCoreConfig(
+                data,
+                fileName,
+                TunnelCoreController.selectedProfileKey,
+                obfuscationMode,
+                obfuscationProfile)
         }
         function onChanged() {
             if (TunnelCoreController.error.length > 0 || !TunnelCoreController.authenticated)
