@@ -2,6 +2,7 @@
 
 #include <QJsonDocument>
 #include <QRegularExpression>
+#include <algorithm>
 
 #include "core/configurators/configuratorBase.h"
 #include "core/utils/protocolEnum.h"
