@@ -42,6 +42,10 @@ class TunnelCoreController : public QObject
     Q_PROPERTY(QString selectedProfileKey READ selectedProfileKey NOTIFY changed)
     Q_PROPERTY(QVariantList geoRoutingCountries READ geoRoutingCountries NOTIFY changed)
     Q_PROPERTY(QString geoRoutingCountry READ geoRoutingCountry NOTIFY changed)
+    Q_PROPERTY(bool subscriptionWarningVisible READ subscriptionWarningVisible NOTIFY changed)
+    Q_PROPERTY(bool subscriptionExpired READ subscriptionExpired NOTIFY changed)
+    Q_PROPERTY(int subscriptionDaysRemaining READ subscriptionDaysRemaining NOTIFY changed)
+    Q_PROPERTY(QString subscriptionExpiresAt READ subscriptionExpiresAt NOTIFY changed)
 
 public:
     explicit TunnelCoreController(QObject *parent = nullptr, QNetworkAccessManager *network = nullptr,
@@ -61,6 +65,10 @@ public:
     QString selectedProfileKey() const;
     QVariantList geoRoutingCountries() const { return m_geoRoutingCountries; }
     QString geoRoutingCountry() const { return m_geoRoutingCountry; }
+    bool subscriptionWarningVisible() const { return m_subscriptionWarningVisible; }
+    bool subscriptionExpired() const { return m_subscriptionExpired; }
+    int subscriptionDaysRemaining() const { return m_subscriptionDaysRemaining; }
+    QString subscriptionExpiresAt() const { return m_subscriptionExpiresAt; }
 
     Q_INVOKABLE void loginCode(const QString &code);
     // Legacy login methods remain available during the server transition, but the
@@ -77,6 +85,7 @@ public:
     Q_INVOKABLE void selectVpnCountry(const QString &countryCode);
     Q_INVOKABLE QString vpnCountryDisplayName(const QString &countryCode) const;
     Q_INVOKABLE void selectGeoRoutingCountry(const QString &countryCode);
+    Q_INVOKABLE void renewSubscription();
 
 signals:
     void changed();
@@ -99,6 +108,12 @@ private:
     void refreshGeoRoutingCountries();
     QString routingPlatform() const;
     void deliverConfig(const QString &data, const QString &fileName = {});
+    void updateSubscriptionState();
+    void notifySubscriptionState();
+#if defined(Q_OS_IOS)
+    void refreshAppleBilling();
+    void startAppleRenewal(const QString &productId);
+#endif
     void fail(const QString &message);
     QNetworkAccessManager *m_network;
     QPointer<QNetworkReply> m_reply;
@@ -120,5 +135,13 @@ private:
     bool m_busy = false;
     bool m_emailAccount = false;
     bool m_telegramLinked = false;
+    bool m_subscriptionWarningVisible = false;
+    bool m_subscriptionExpired = false;
+    int m_subscriptionDaysRemaining = -1;
+    QString m_subscriptionExpiresAt;
+    QString m_lastSubscriptionNotificationKey;
+#if defined(Q_OS_IOS)
+    QString m_appleProductId;
+#endif
     unsigned int m_generation = 0;
 };
