@@ -16,6 +16,9 @@ ListViewType {
     property int textMaximumLineCount: 2
     property int textElide: Qt.ElideRight
     property color textColor: AmneziaStyle.color.paleGray
+    property color itemColor: AmneziaStyle.color.onyxBlack
+    property color itemHoveredColor: AmneziaStyle.color.slateGray
+    property color itemSelectedColor: itemColor
 
     property string imageSource: "qrc:/images/controls/check.svg"
 
@@ -84,7 +87,9 @@ ListViewType {
             indicator: Rectangle {
                 width: parent.width - 1
                 height: parent.height
-                color: radioButton.hovered ? AmneziaStyle.color.slateGray : AmneziaStyle.color.onyxBlack
+                color: radioButton.checked
+                       ? root.itemSelectedColor
+                       : (radioButton.hovered ? root.itemHoveredColor : root.itemColor)
                 border.color: radioButton.focus ? AmneziaStyle.color.paleGray : AmneziaStyle.color.transparent
                 border.width: radioButton.focus ? 1 : 0
 
