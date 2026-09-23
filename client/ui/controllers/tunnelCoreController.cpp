@@ -15,7 +15,7 @@
 
 #if defined(Q_OS_ANDROID)
 #include "platforms/android/android_controller.h"
-#else
+#elif !defined(TUNNELCORE_CONTROLLER_TESTS)
 #include "ui/utils/notificationHandler.h"
 #endif
 
@@ -124,7 +124,10 @@ void TunnelCoreController::maybeNotifySubscription()
         return;
 
     const auto message = subscriptionStatusText();
-#if defined(Q_OS_ANDROID)
+#if defined(TUNNELCORE_CONTROLLER_TESTS)
+    Q_UNUSED(message);
+    m_lastSubscriptionNotificationKey = key;
+#elif defined(Q_OS_ANDROID)
     AndroidController::instance()->showSubscriptionNotification(tr("TunnelCore VPN"), message);
     m_lastSubscriptionNotificationKey = key;
 #else
