@@ -194,6 +194,21 @@ private slots:
         QVERIFY(!controller.subscriptionStatusText().isEmpty());
     }
 
+    void autoRenewSubscriptionDoesNotShowExpiryWarning()
+    {
+        Network network;
+        const auto expiry = QDateTime::currentDateTimeUtc().addDays(2);
+        enqueueLoginWithAccount(network, accountResponse(expiry, true));
+
+        TunnelCoreController controller(nullptr, &network);
+        controller.loginCode("012345");
+
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(controller.authenticated());
+        QVERIFY(!controller.subscriptionWarningVisible());
+        QVERIFY(!controller.subscriptionExpired());
+    }
+
     void codeLoginRequiresSixDigits()
     {
         Network network;
