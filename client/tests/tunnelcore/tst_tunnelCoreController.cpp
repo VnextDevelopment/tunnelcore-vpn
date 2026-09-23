@@ -176,6 +176,24 @@ private slots:
         QCOMPARE(QUrlQuery(network.requests[3].url()).queryItemValue("device_id"), deviceId);
         QCOMPARE(QUrlQuery(network.requests[6].url()).queryItemValue("device_id"), deviceId);
     }
+    void subscriptionExpiryWarningIsExposed()
+    {
+        Network network;
+        const auto expiry = QDateTime::currentDateTimeUtc().addDays(2);
+        enqueueLoginWithAccount(network, accountResponse(expiry, false));
+
+        TunnelCoreController controller(nullptr, &network);
+        controller.loginCode("012345");
+
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(controller.authenticated());
+        QVERIFY(controller.subscriptionWarningVisible());
+        QVERIFY(!controller.subscriptionExpired());
+        QVERIFY(controller.subscriptionDaysRemaining() >= 1);
+        QVERIFY(controller.subscriptionDaysRemaining() <= 2);
+        QVERIFY(!controller.subscriptionStatusText().isEmpty());
+    }
+
     void codeLoginRequiresSixDigits()
     {
         Network network;
