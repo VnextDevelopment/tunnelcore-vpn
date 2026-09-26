@@ -204,6 +204,34 @@ private slots:
         QCOMPARE(QUrlQuery(network.requests[3].url()).queryItemValue("device_id"), deviceId);
         QCOMPARE(QUrlQuery(network.requests[6].url()).queryItemValue("device_id"), deviceId);
     }
+    void refreshReregistersMissingDevice()
+    {
+        Network network;
+        enqueueLogin(network);
+        TunnelCoreController controller(nullptr, &network);
+        controller.loginCode("012345");
+        QTRY_VERIFY(!controller.busy());
+
+        network.responses.enqueue({"{\"ok\":true,\"subscriptions\":[]}"});
+        network.responses.enqueue({"{\"ok\":false,\"error\":\"device_not_found\"}", 404});
+        network.responses.enqueue({deviceRegistrationResponse()});
+        network.responses.enqueue({"{\"ok\":true,\"subscriptions\":[]}"});
+        network.responses.enqueue({countrySelectionResponse()});
+        network.responses.enqueue({geoCountriesResponse()});
+        network.responses.enqueue({routingResponse()});
+        network.responses.enqueue({"{\"ok\":true,\"configs\":[]}"});
+
+        controller.refresh();
+
+        QTRY_VERIFY(!controller.busy());
+        QCOMPARE(network.requests.size(), 15);
+        QCOMPARE(network.requests[8].url().path(), QString("/api/vpn/v1/country-selection/"));
+        QCOMPARE(network.requests[9].url().path(), QString("/api/vpn/v1/devices/register/"));
+        QCOMPARE(network.requests[10].url().path(), QString("/api/vpn/v1/me/"));
+        QCOMPARE(network.requests[11].url().path(), QString("/api/vpn/v1/country-selection/"));
+        QCOMPARE(controller.vpnCountries().size(), 2);
+        QVERIFY(controller.error().isEmpty());
+    }
     void subscriptionExpiryWarningIsExposed()
     {
         Network network;

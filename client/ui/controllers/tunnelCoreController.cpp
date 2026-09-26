@@ -849,7 +849,12 @@ void TunnelCoreController::refresh()
                 return;
             }
             refreshGeoRoutingCountries();
-        }, false, [this](int status, const QJsonObject &) {
+        }, false, [this](int status, const QJsonObject &object) {
+            if (status == 404 && object.value(QStringLiteral("error")).toString()
+                                     == QStringLiteral("device_not_found")) {
+                registerDevice();
+                return;
+            }
             if (status == 404) {
                 // Compatibility with servers that have not deployed country selection yet.
                 m_vpnCountries.clear();
