@@ -105,11 +105,16 @@ PageType {
             confirmPasswordField.textField.text = ""
             Qt.inputMethod.hide()
         }
-        function onConfigReady(data, fileName) {
+        function onConfigReady(data, fileName, obfuscationMode, obfuscationProfile) {
             if (!root.visible)
                 return
             root.importingProfile = true
-            ImportController.importTunnelCoreConfig(data, fileName, TunnelCoreController.selectedProfileKey)
+            ImportController.importTunnelCoreConfig(
+                data,
+                fileName,
+                TunnelCoreController.selectedProfileKey,
+                obfuscationMode,
+                obfuscationProfile)
         }
         function onChanged() {
             if (TunnelCoreController.error.length > 0 || !TunnelCoreController.authenticated)
@@ -338,6 +343,55 @@ PageType {
                               + qsTr("Until %1").arg(Qt.formatDateTime(new Date(modelData.expires_at), "dd.MM.yyyy"))
                     }
                 }
+
+                Rectangle {
+                    id: accountSubscriptionWarning
+                    Layout.fillWidth: true
+                    implicitHeight: subscriptionWarningContent.implicitHeight + 32
+                    radius: 16
+                    visible: TunnelCoreController.subscriptionWarningVisible
+                    color: AmneziaStyle.color.translucentWhite
+                    border.width: 1
+                    border.color: TunnelCoreController.subscriptionExpired
+                                  ? AmneziaStyle.color.vibrantRed
+                                  : AmneziaStyle.color.accentWarning
+
+                    ColumnLayout {
+                        id: subscriptionWarningContent
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: 16
+                        spacing: 10
+
+                        Header2TextType {
+                            Layout.fillWidth: true
+                            text: TunnelCoreController.subscriptionExpired
+                                  ? qsTr("VPN subscription inactive")
+                                  : qsTr("VPN subscription expires soon")
+                        }
+                        SmallTextType {
+                            Layout.fillWidth: true
+                            textFormat: Text.PlainText
+                            text: TunnelCoreController.subscriptionStatusText
+                            color: AmneziaStyle.color.paleGray
+                        }
+                        BasicButtonType {
+                            Layout.fillWidth: true
+                            text: TunnelCoreController.usesAppleBilling
+                                  ? qsTr("Renew in App Store")
+                                  : (TunnelCoreController.emailAccount && !TunnelCoreController.telegramLinked
+                                     ? qsTr("Link Telegram to renew")
+                                     : qsTr("Renew in Telegram"))
+                            enabled: !TunnelCoreController.busy
+                            defaultColor: TunnelCoreController.subscriptionExpired
+                                          ? AmneziaStyle.color.vibrantRed
+                                          : AmneziaStyle.color.accentWarning
+                            hoveredColor: defaultColor
+                            clickedFunc: function() { TunnelCoreController.renewSubscription() }
+                        }
+                    }
+                }
                 ColumnLayout {
                     Layout.fillWidth: true
                     visible: TunnelCoreController.vpnCountries.length > 0
@@ -412,20 +466,46 @@ PageType {
                              && !ConnectionController.isConnected && !ConnectionController.isConnectionInProgress
                     clickedFunc: function() { TunnelCoreController.refresh() }
                 }
+                DividerType {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 28
+                }
+                Header2TextType {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 12
+                    text: qsTr("Account")
+                }
                 BasicButtonType {
                     Layout.fillWidth: true
-                    text: qsTr("Sign out")
+                    Layout.topMargin: 4
+                    text: qsTr("Sign out of account")
                     enabled: !TunnelCoreController.busy && !root.importingProfile
                              && root.pendingVpnCountry.length === 0
+                    defaultColor: AmneziaStyle.color.transparent
+                    hoveredColor: AmneziaStyle.color.translucentWhite
+                    pressedColor: AmneziaStyle.color.translucentWhite
+                    borderColor: AmneziaStyle.color.vibrantRed
+                    borderWidth: 1
+                    textColor: AmneziaStyle.color.vibrantRed
                     clickedFunc: function() {
-                        if (ConnectionController.isConnected || ConnectionController.isConnectionInProgress)
-                            ConnectionController.closeConnection()
-                        TunnelCoreController.logout()
+                        showQuestionDrawer(
+                            qsTr("Sign out of TunnelCore VPN?"),
+                            qsTr("This ends the account session on this device. Imported VPN configurations remain on the device."),
+                            qsTr("Sign out"),
+                            qsTr("Cancel"),
+                            function() {
+                                if (ConnectionController.isConnected || ConnectionController.isConnectionInProgress)
+                                    ConnectionController.closeConnection()
+                                TunnelCoreController.logout()
+                            },
+                            function() {}
+                        )
                     }
                 }
                 SmallTextType {
                     Layout.fillWidth: true
                     text: qsTr("Signing out ends the account session. Imported VPN configurations remain on this device.")
+                    color: AmneziaStyle.color.mutedGray
                 }
 
                 ColumnLayout {

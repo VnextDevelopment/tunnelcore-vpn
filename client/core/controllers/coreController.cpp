@@ -2,6 +2,7 @@
 
 #include <QDirIterator>
 #include <QJsonArray>
+#include <QJsonDocument>
 #include <QJsonObject>
 #include <QMap>
 #include <QTranslator>
@@ -242,6 +243,29 @@ void CoreController::initControllers()
             m_settings->setValue(QStringLiteral("TunnelCore/geoRoutingCountry"), countryCode);
         m_settings->sync();
     };
+    tunnelCoreSessionStorage.loadRoutingCache = [this](const QString &cacheKey) {
+        const auto data = m_settings->value(
+            QStringLiteral("TunnelCore/routingCache/") + cacheKey).toByteArray();
+        if (data.isEmpty())
+            return QJsonObject{};
+
+        QJsonParseError error;
+        const auto document = QJsonDocument::fromJson(data, &error);
+        if (error.error != QJsonParseError::NoError || !document.isObject())
+            return QJsonObject{};
+        return document.object();
+    };
+    tunnelCoreSessionStorage.saveRoutingCache = [this](const QString &cacheKey,
+                                                        const QJsonObject &routing) {
+        const auto settingsKey = QStringLiteral("TunnelCore/routingCache/") + cacheKey;
+        if (routing.isEmpty()) {
+            m_settings->remove(settingsKey);
+        } else {
+            m_settings->setValue(settingsKey,
+                                 QJsonDocument(routing).toJson(QJsonDocument::Compact));
+        }
+        m_settings->sync();
+    };
     tunnelCoreSessionStorage.loadDeviceId = [this]() {
         return m_settings->value(QStringLiteral("TunnelCore/deviceId")).toString();
     };
@@ -288,8 +312,11 @@ void CoreController::initControllers()
         }
 
         if (directSites.isEmpty() && vpnSites.isEmpty()) {
-            m_ipSplitTunnelingController->toggleSplitTunneling(false);
-            m_ipSplitTunnelingModel->updateModel(m_ipSplitTunnelingController->getCurrentSites());
+            if (m_ipSplitTunnelingController->isSplitTunnelingEnabled()) {
+                m_ipSplitTunnelingController->toggleSplitTunneling(false);
+                m_ipSplitTunnelingModel->updateModel(
+                    m_ipSplitTunnelingController->getCurrentSites());
+            }
             return true;
         }
 
@@ -298,10 +325,37 @@ void CoreController::initControllers()
                               : amnezia::RouteMode::VpnOnlyForwardSites;
         const auto &sites = !directSites.isEmpty() ? directSites : vpnSites;
 
-        m_ipSplitTunnelingController->setRouteMode(mode);
-        m_ipSplitTunnelingController->addSites(sites, true);
-        m_ipSplitTunnelingController->toggleSplitTunneling(true);
-        m_ipSplitTunnelingModel->updateModel(m_ipSplitTunnelingController->getCurrentSites());
+        const auto storedSites = m_appSettingsRepository->vpnSites(mode);
+        bool sameSites = storedSites.size() == sites.size();
+        if (sameSites) {
+            for (auto it = sites.constBegin(); it != sites.constEnd(); ++it) {
+                if (!storedSites.contains(it.key())
+                    || SecureAppSettingsRepository::siteIpList(storedSites.value(it.key()))
+                           != it.value()) {
+                    sameSites = false;
+                    break;
+                }
+            }
+        }
+
+        const bool sameMode = m_ipSplitTunnelingController->getRouteMode() == mode;
+        const bool alreadyEnabled = m_ipSplitTunnelingController->isSplitTunnelingEnabled();
+        if (sameMode && sameSites && alreadyEnabled) {
+            qInfo() << "[TunnelCore routing] split routes unchanged; settings write skipped"
+                    << "routes=" << sites.size();
+            return true;
+        }
+
+        if (!sameMode)
+            m_ipSplitTunnelingController->setRouteMode(mode);
+        if (!sameSites)
+            m_ipSplitTunnelingController->addSites(sites, true);
+        if (!alreadyEnabled)
+            m_ipSplitTunnelingController->toggleSplitTunneling(true);
+
+        if (!sameMode || !sameSites)
+            m_ipSplitTunnelingModel->updateModel(
+                m_ipSplitTunnelingController->getCurrentSites());
         return true;
     };
     setQmlContextProperty("TunnelCoreController",

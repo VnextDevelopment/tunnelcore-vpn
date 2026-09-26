@@ -17,16 +17,19 @@ class NotificationHandler : public QObject {
 public:
     enum Message {
         VpnState,
-        UnsecuredNetwork
+        UnsecuredNetwork,
+        SubscriptionExpiring
     };
 
     static NotificationHandler* create(QObject* parent);
 
     static NotificationHandler* instance();
+    static NotificationHandler* instanceOrNull();
 
     virtual ~NotificationHandler();
 
     void unsecuredNetworkNotification(const QString& networkName);
+    void subscriptionNotification(const QString& message);
 
     void messageClickHandle();
 

@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'feature/tunnelcore-branding'
+      - 'feature/subscription-renewal-ux'
   workflow_dispatch:
 
 env:

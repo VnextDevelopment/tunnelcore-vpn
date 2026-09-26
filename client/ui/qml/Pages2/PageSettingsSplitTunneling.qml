@@ -24,7 +24,13 @@ PageType {
     
     property bool pageEnabled
 
+    ListModel {
+        id: geoCountriesListModel
+    }
+
     Component.onCompleted: {
+        updateGeoCountriesModel()
+
         if (ConnectionController.isConnected) {
             PageController.showNotificationMessage(qsTr("Cannot change split tunneling settings during active connection"))
             root.pageEnabled = false
@@ -45,6 +51,14 @@ PageType {
 
         function onErrorOccurred(errorMessage) {
             PageController.showErrorMessage(errorMessage)
+        }
+    }
+
+    Connections {
+        target: TunnelCoreController
+
+        function onChanged() {
+            updateGeoCountriesModel()
         }
     }
 
@@ -80,16 +94,16 @@ PageType {
         }
     }
 
-    function geoCountriesModel() {
-        var result = [{ "name": qsTr("Standard rules"), "code": "" }]
+    function updateGeoCountriesModel() {
+        geoCountriesListModel.clear()
+        geoCountriesListModel.append({ "name": qsTr("Standard rules"), "code": "" })
         var countries = TunnelCoreController.geoRoutingCountries
         for (var i = 0; i < countries.length; ++i) {
-            result.push({
+            geoCountriesListModel.append({
                 "name": countries[i].name + " (" + countries[i].code + ")",
                 "code": countries[i].code
             })
         }
-        return result
     }
 
     function geoCountryModelIndex() {
@@ -105,9 +119,10 @@ PageType {
     }
 
     function geoCountryText() {
-        var model = geoCountriesModel()
         var index = geoCountryModelIndex()
-        return model[index].name
+        if (index >= 0 && index < geoCountriesListModel.count)
+            return geoCountriesListModel.get(index).name
+        return qsTr("Standard rules")
     }
 
     ColumnLayout {
@@ -162,13 +177,17 @@ PageType {
 
             listView: ListViewWithRadioButtonType {
                 rootWidth: root.width
-                model: root.geoCountriesModel()
+                model: geoCountriesListModel
+                textColor: AmneziaStyle.color.textPrimary
+                itemColor: AmneziaStyle.color.slateGray
+                itemHoveredColor: AmneziaStyle.color.charcoalGray
+                itemSelectedColor: AmneziaStyle.color.translucentRichBrown
                 selectedIndex: root.geoCountryModelIndex()
 
                 clickedFunction: function() {
                     countryBypassSelector.text = selectedText
                     countryBypassSelector.closeTriggered()
-                    var item = root.geoCountriesModel()[selectedIndex]
+                    var item = geoCountriesListModel.get(selectedIndex)
                     TunnelCoreController.selectGeoRoutingCountry(item.code)
                 }
 

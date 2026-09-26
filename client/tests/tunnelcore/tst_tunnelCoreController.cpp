@@ -1,7 +1,11 @@
 #include "../../ui/controllers/tunnelCoreController.h"
+#include "../../core/utils/tunnelCoreObfuscation.h"
 
+#include <QDateTime>
+#include <QDesktopServices>
 #include <QNetworkReply>
 #include <QQueue>
+#include <QRegularExpression>
 #include <QSignalSpy>
 #include <QTest>
 #include <QTimer>
@@ -77,6 +81,13 @@ protected:
 class TunnelCoreTests : public QObject
 {
     Q_OBJECT
+    QUrl m_openedUrl;
+
+    Q_INVOKABLE void captureUrl(const QUrl &url)
+    {
+        m_openedUrl = url;
+    }
+
     static QByteArray countrySelectionResponse()
     {
         return "{\"ok\":true,\"selection\":{\"mode\":\"auto\",\"country\":null,"
@@ -107,6 +118,38 @@ class TunnelCoreTests : public QObject
                "\"platform\":\"linux\",\"devices_used\":1,\"devices_limit\":3}}";
     }
 
+    static QByteArray accountResponse(const QDateTime &expiresAt, bool autoRenew)
+    {
+        QJsonObject subscription {
+            {QStringLiteral("id"), 1},
+            {QStringLiteral("tariff"), QStringLiteral("VPN")},
+            {QStringLiteral("tariff_code"), QStringLiteral("vpn-month")},
+            {QStringLiteral("expires_at"), expiresAt.toUTC().toString(Qt::ISODateWithMs)},
+        };
+        QJsonObject entitlement {
+            {QStringLiteral("active"), true},
+            {QStringLiteral("subscription_id"), 1},
+            {QStringLiteral("auto_renew"), autoRenew},
+            {QStringLiteral("expires_at"), expiresAt.toUTC().toString(Qt::ISODateWithMs)},
+        };
+        return QJsonDocument(QJsonObject {
+            {QStringLiteral("ok"), true},
+            {QStringLiteral("subscriptions"), QJsonArray {subscription}},
+            {QStringLiteral("entitlement"), entitlement},
+        }).toJson(QJsonDocument::Compact);
+    }
+
+    static void enqueueLoginWithAccount(Network &network, const QByteArray &account)
+    {
+        network.responses.enqueue({"{\"ok\":true,\"access_token\":\"test-token\",\"token_type\":\"Bearer\",\"user\":{\"username\":\"client\"}}"});
+        network.responses.enqueue({deviceRegistrationResponse()});
+        network.responses.enqueue({account});
+        network.responses.enqueue({countrySelectionResponse()});
+        network.responses.enqueue({geoCountriesResponse()});
+        network.responses.enqueue({routingResponse()});
+        network.responses.enqueue({"{\"ok\":true,\"configs\":[]}"});
+    }
+
     static void enqueueLogin(Network &network)
     {
         network.responses.enqueue({"{\"ok\":true,\"access_token\":\"test-token\",\"token_type\":\"Bearer\",\"user\":{\"username\":\"client\"}}"});
@@ -118,6 +161,25 @@ class TunnelCoreTests : public QObject
         network.responses.enqueue({"{\"ok\":true,\"configs\":[{\"name\":\"VPN\",\"config\":\"https://node.example/config/one-time\"}]}"});
     }
 private slots:
+    void emailAccountRenewalOpensBotForLinking()
+    {
+        Network network;
+        enqueueLogin(network);
+        TunnelCoreController controller(nullptr, &network);
+        controller.loginEmail("user@example.com", "Strong-pass-2026!");
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(controller.emailAccount());
+        QVERIFY(!controller.telegramLinked());
+
+        m_openedUrl.clear();
+        QDesktopServices::setUrlHandler("https", this, "captureUrl");
+        controller.renewSubscription();
+        QDesktopServices::unsetUrlHandler("https");
+
+        QCOMPARE(m_openedUrl, QUrl("https://t.me/tunnelcoree_bot"));
+        QVERIFY(controller.error().isEmpty());
+    }
+
     void codeLogin()
     {
         Network network;
@@ -143,6 +205,66 @@ private slots:
         QCOMPARE(QUrlQuery(network.requests[3].url()).queryItemValue("device_id"), deviceId);
         QCOMPARE(QUrlQuery(network.requests[6].url()).queryItemValue("device_id"), deviceId);
     }
+    void refreshReregistersMissingDevice()
+    {
+        Network network;
+        enqueueLogin(network);
+        TunnelCoreController controller(nullptr, &network);
+        controller.loginCode("012345");
+        QTRY_VERIFY(!controller.busy());
+
+        network.responses.enqueue({"{\"ok\":true,\"subscriptions\":[]}"});
+        network.responses.enqueue({"{\"ok\":false,\"error\":\"device_not_found\"}", 404});
+        network.responses.enqueue({deviceRegistrationResponse()});
+        network.responses.enqueue({"{\"ok\":true,\"subscriptions\":[]}"});
+        network.responses.enqueue({countrySelectionResponse()});
+        network.responses.enqueue({geoCountriesResponse()});
+        network.responses.enqueue({"{\"ok\":true,\"configs\":[]}"});
+
+        controller.refresh();
+
+        QTRY_VERIFY(!controller.busy());
+        QCOMPARE(network.requests.size(), 14);
+        QCOMPARE(network.requests[8].url().path(), QString("/api/vpn/v1/country-selection/"));
+        QCOMPARE(network.requests[9].url().path(), QString("/api/vpn/v1/devices/register/"));
+        QCOMPARE(network.requests[10].url().path(), QString("/api/vpn/v1/me/"));
+        QCOMPARE(network.requests[11].url().path(), QString("/api/vpn/v1/country-selection/"));
+        QCOMPARE(controller.vpnCountries().size(), 2);
+        QVERIFY(controller.error().isEmpty());
+    }
+    void subscriptionExpiryWarningIsExposed()
+    {
+        Network network;
+        const auto expiry = QDateTime::currentDateTimeUtc().addDays(2);
+        enqueueLoginWithAccount(network, accountResponse(expiry, false));
+
+        TunnelCoreController controller(nullptr, &network);
+        controller.loginCode("012345");
+
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(controller.authenticated());
+        QVERIFY(controller.subscriptionWarningVisible());
+        QVERIFY(!controller.subscriptionExpired());
+        QVERIFY(controller.subscriptionDaysRemaining() >= 1);
+        QVERIFY(controller.subscriptionDaysRemaining() <= 2);
+        QVERIFY(!controller.subscriptionStatusText().isEmpty());
+    }
+
+    void autoRenewSubscriptionDoesNotShowExpiryWarning()
+    {
+        Network network;
+        const auto expiry = QDateTime::currentDateTimeUtc().addDays(2);
+        enqueueLoginWithAccount(network, accountResponse(expiry, true));
+
+        TunnelCoreController controller(nullptr, &network);
+        controller.loginCode("012345");
+
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(controller.authenticated());
+        QVERIFY(!controller.subscriptionWarningVisible());
+        QVERIFY(!controller.subscriptionExpired());
+    }
+
     void codeLoginRequiresSixDigits()
     {
         Network network;
@@ -280,7 +402,6 @@ private slots:
         network.responses.enqueue({"{\"ok\":true,\"subscriptions\":[]}"});
         network.responses.enqueue({countrySelectionResponse()});
         network.responses.enqueue({geoCountriesResponse()});
-        network.responses.enqueue({routingResponse()});
         network.responses.enqueue({"{\"ok\":true,\"configs\":[]}"});
         controller.linkTelegram(" 012345 ");
 
@@ -329,6 +450,8 @@ private slots:
         QTRY_COMPARE(config.size(), 1);
         QVERIFY(!network.requests.last().hasRawHeader("Authorization"));
         QCOMPARE(config.first().at(1).toString(), QString("VPN"));
+        QCOMPARE(config.first().at(2).toString(), QString("static"));
+        QVERIFY(config.first().at(3).toString().isEmpty());
         QCOMPARE(network.requests.last().attribute(QNetworkRequest::RedirectPolicyAttribute).toInt(),
                  int(QNetworkRequest::ManualRedirectPolicy));
     }
@@ -342,7 +465,7 @@ private slots:
         network.responses.enqueue({geoCountriesResponse()});
         network.responses.enqueue({routingResponse()});
         network.responses.enqueue({"{\"ok\":true,\"configs\":[{\"id\":17,\"name\":\"Germany\",\"protocol\":\"amneziawg\"}]}"});
-        network.responses.enqueue({"{\"ok\":true,\"id\":17,\"name\":\"tc42-d1\",\"filename\":\"tc42-d1.conf\",\"protocol\":\"amneziawg\",\"config\":\"[Interface]\\nPrivateKey = app-secret\"}"});
+        network.responses.enqueue({"{\"ok\":true,\"id\":17,\"name\":\"tc42-d1\",\"filename\":\"tc42-d1.conf\",\"protocol\":\"amneziawg\",\"obfuscation\":{\"mode\":\"client_dynamic\",\"profile\":\"mail_dns\",\"packet_count\":5,\"coherent_set\":true,\"rotate_on\":\"connection\",\"static_fallback\":true},\"config\":\"[Interface]\\nPrivateKey = app-secret\"}"});
         TunnelCoreController controller(nullptr, &network);
         controller.loginCode("012345");
         QTRY_VERIFY(!controller.busy());
@@ -359,7 +482,58 @@ private slots:
         QCOMPARE(QUrlQuery(network.requests.last().url()).queryItemValue("device_id"), deviceId);
         QCOMPARE(config.first().first().toString(), QString("[Interface]\nPrivateKey = app-secret"));
         QCOMPARE(config.first().at(1).toString(), QString("tc42-d1.conf"));
+        QCOMPARE(config.first().at(2).toString(), QString("client_dynamic"));
+        QCOMPARE(config.first().at(3).toString(), QString("mail_dns"));
     }
+
+    void dynamicObfuscationGeneratesOneCoherentFivePacketSource()
+    {
+        QCOMPARE(
+            TunnelCoreObfuscation::dnsQueryExpression(QStringLiteral("mail.ru"), true, 24),
+            QStringLiteral("<r 2><b 0x01000001000000000001046d61696c02727500"
+                           "001c000100002904d000000000001c000c0018><r 24>"));
+
+        const auto generated = TunnelCoreObfuscation::generate(QStringLiteral("mail_dns"));
+
+        QCOMPARE(generated.profile, QString("mail_dns"));
+        QCOMPARE(generated.sourceDomain, QString("mail.ru"));
+        QCOMPARE(generated.packets.size(), 5);
+
+        const QString mailRuSuffix = QStringLiteral("046d61696c02727500");
+        for (const auto &packet : generated.packets) {
+            QVERIFY(packet.startsWith(QStringLiteral("<r 2><b 0x01000001000000000001")));
+            QVERIFY(packet.contains(mailRuSuffix));
+            QVERIFY(packet.contains(QStringLiteral("00002904d000000000")));
+            QVERIFY(!packet.contains(QLatin1Char('%')));
+            QVERIFY(QRegularExpression(QStringLiteral("<r [0-9]+>$")).match(packet).hasMatch());
+            QVERIFY(packet.endsWith(QLatin1Char('>')));
+        }
+    }
+    void automaticObfuscationKeepsProfileStableAcrossReconnects()
+    {
+        const QString stableProfileKey =
+            QStringLiteral("[\"client\",\"17\",\"DE\"]");
+
+        const auto first =
+            TunnelCoreObfuscation::generate(QStringLiteral("auto"), stableProfileKey);
+        QVERIFY(!first.profile.isEmpty());
+        QCOMPARE(first.packets.size(), 5);
+
+        for (int i = 0; i < 20; ++i) {
+            const auto reconnect =
+                TunnelCoreObfuscation::generate(QStringLiteral("auto"), stableProfileKey);
+            QCOMPARE(reconnect.profile, first.profile);
+            QCOMPARE(reconnect.sourceDomain, first.sourceDomain);
+            QCOMPARE(reconnect.packets.size(), 5);
+        }
+
+        // An explicit backend profile must always override the stable auto choice.
+        const auto explicitProfile =
+            TunnelCoreObfuscation::generate(QStringLiteral("vk_dns"), stableProfileKey);
+        QCOMPARE(explicitProfile.profile, QStringLiteral("vk_dns"));
+        QCOMPARE(explicitProfile.sourceDomain, QStringLiteral("vk.com"));
+    }
+
     void currentLocationUsesMatchingConfigNotFirst()
     {
         Network network;
@@ -379,7 +553,10 @@ private slots:
         QCOMPARE(network.requests.size(), 8);
         QCOMPARE(network.requests.last().url().path(), QString("/api/vpn/v1/configs/17/"));
         QCOMPARE(controller.selectedProfileKey(), profileKey);
+        network.responses.enqueue({"{\"ok\":true,\"devices_used\":0,\"devices_limit\":3}"});
         controller.logout();
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(!controller.authenticated());
         QVERIFY(controller.selectedProfileKey().isEmpty());
     }
 
@@ -516,6 +693,73 @@ private slots:
         QCOMPARE(network.requests[5].rawHeader("Authorization"), QByteArray("Bearer test-token"));
     }
 
+    void freshRoutingCacheSkipsRepeatedRoutingFetch()
+    {
+        Network network;
+        enqueueLogin(network);
+        int applyCount = 0;
+        TunnelCoreSessionStorage storage;
+        storage.applyRouting = [&applyCount](const QJsonObject &routing, QString &) {
+            ++applyCount;
+            return routing.value("version").toString() == "test-routing-v1"
+                   && routing.value("rules").isArray();
+        };
+
+        TunnelCoreController controller(nullptr, &network, std::move(storage));
+        controller.loginCode("012345");
+        QTRY_VERIFY(!controller.busy());
+        QCOMPARE(applyCount, 1);
+        QCOMPARE(network.requests.size(), 7);
+
+        network.responses.enqueue({"{\"ok\":true,\"subscriptions\":[{\"id\":1,\"tariff\":\"VPN\"}]}"});
+        network.responses.enqueue({countrySelectionResponse()});
+        network.responses.enqueue({geoCountriesResponse()});
+        network.responses.enqueue({"{\"ok\":true,\"configs\":[]}"});
+
+        controller.refresh();
+        QTRY_VERIFY(!controller.busy());
+
+        QCOMPARE(network.requests.size(), 11);
+        QCOMPARE(network.requests[7].url().path(), QString("/api/vpn/v1/me/"));
+        QCOMPARE(network.requests[8].url().path(), QString("/api/vpn/v1/country-selection/"));
+        QCOMPARE(network.requests[9].url().path(), QString("/api/vpn/v1/routing/countries/"));
+        QCOMPARE(network.requests[10].url().path(), QString("/api/vpn/v1/configs/"));
+        QCOMPARE(applyCount, 1);
+    }
+
+    void persistedFreshRoutingCacheIsUsedBeforeNetwork()
+    {
+        Network network;
+        network.responses.enqueue({"{\"ok\":true,\"access_token\":\"test-token\",\"token_type\":\"Bearer\",\"user\":{\"username\":\"client\"}}"});
+        network.responses.enqueue({deviceRegistrationResponse()});
+        network.responses.enqueue({"{\"ok\":true,\"subscriptions\":[{\"id\":1,\"tariff\":\"VPN\"}]}"});
+        network.responses.enqueue({countrySelectionResponse()});
+        network.responses.enqueue({geoCountriesResponse()});
+        network.responses.enqueue({"{\"ok\":true,\"configs\":[]}"});
+
+        auto cached = QJsonDocument::fromJson(routingResponse()).object();
+        cached.insert("_tunnelcore_cached_at",
+                      QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs));
+
+        int applyCount = 0;
+        TunnelCoreSessionStorage storage;
+        storage.loadRoutingCache = [cached](const QString &cacheKey) {
+            return cacheKey.startsWith(QStringLiteral("default:")) ? cached : QJsonObject{};
+        };
+        storage.applyRouting = [&applyCount](const QJsonObject &routing, QString &) {
+            ++applyCount;
+            return routing.value("rules").isArray();
+        };
+
+        TunnelCoreController controller(nullptr, &network, std::move(storage));
+        controller.loginCode("012345");
+        QTRY_VERIFY(!controller.busy());
+
+        QCOMPARE(applyCount, 1);
+        QCOMPARE(network.requests.size(), 6);
+        QCOMPARE(network.requests[5].url().path(), QString("/api/vpn/v1/configs/"));
+    }
+
     void selectGeoRoutingCountry()
     {
         Network network;
@@ -575,7 +819,6 @@ private slots:
                                    "\"countries\":[{\"code\":\"DE\",\"cities\":[\"Frankfurt\"]},"
                                    "{\"code\":\"NL\",\"cities\":[\"Amsterdam\"]}]},"
                                    "\"migration\":{\"migrated\":1,\"unchanged\":0,\"warnings\":[]}}"});
-        network.responses.enqueue({routingResponse()});
         network.responses.enqueue({"{\"ok\":true,\"configs\":[{\"id\":18,\"name\":\"Netherlands\",\"protocol\":\"amneziawg\"}]}"});
         network.responses.enqueue({"{\"ok\":true,\"id\":18,\"name\":\"Netherlands\","
                                    "\"filename\":\"netherlands.conf\",\"protocol\":\"amneziawg\","
@@ -597,9 +840,10 @@ private slots:
         const auto deviceId = QJsonDocument::fromJson(network.bodies[1]).object()
                                   .value("device_id").toString();
         QCOMPARE(body.value("device_id").toString(), deviceId);
-        QCOMPARE(network.requests[9].url().path(), QString("/api/vpn/v1/configs/"));
-        QCOMPARE(network.requests[10].url().path(), QString("/api/vpn/v1/configs/18/"));
-        QCOMPARE(QUrlQuery(network.requests[10].url()).queryItemValue("device_id"), deviceId);
+        QCOMPARE(network.requests.size(), 10);
+        QCOMPARE(network.requests[8].url().path(), QString("/api/vpn/v1/configs/"));
+        QCOMPARE(network.requests[9].url().path(), QString("/api/vpn/v1/configs/18/"));
+        QCOMPARE(QUrlQuery(network.requests[9].url()).queryItemValue("device_id"), deviceId);
         QCOMPARE(config.first().first().toString(),
                  QString("[Interface]\nPrivateKey = netherlands-secret"));
         QCOMPARE(config.first().at(1).toString(), QString("netherlands.conf"));
@@ -616,6 +860,31 @@ private slots:
         QVERIFY(!controller.error().isEmpty());
         QCOMPARE(network.requests.size(), 1);
     }
+    void logoutRevokesCurrentDevice()
+    {
+        Network network;
+        enqueueLogin(network);
+        TunnelCoreController controller(nullptr, &network);
+        controller.loginCode("012345");
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(controller.authenticated());
+
+        const auto registration = QJsonDocument::fromJson(network.bodies[1]).object();
+        const auto deviceId = registration.value(QStringLiteral("device_id")).toString();
+        QVERIFY(!deviceId.isEmpty());
+
+        network.responses.enqueue({"{\"ok\":true,\"devices_used\":0,\"devices_limit\":3}"});
+        controller.logout();
+
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(!controller.authenticated());
+        QCOMPARE(network.requests.size(), 8);
+        QCOMPARE(network.requests.last().url().path(), QString("/api/vpn/v1/devices/revoke/"));
+        QCOMPARE(network.requests.last().rawHeader("Authorization"), QByteArray("Bearer test-token"));
+        const auto revokeBody = QJsonDocument::fromJson(network.bodies.last()).object();
+        QCOMPARE(revokeBody.value(QStringLiteral("device_id")).toString(), deviceId);
+    }
+
     void expiredSession()
     {
         Network network;

@@ -31,6 +31,10 @@ NotificationHandler* NotificationHandler::instance() {
     return s_instance;
 }
 
+NotificationHandler* NotificationHandler::instanceOrNull() {
+    return s_instance;
+}
+
 NotificationHandler::NotificationHandler(QObject* parent) : QObject(parent) {
     Q_ASSERT(!s_instance);
     s_instance = this;
@@ -98,6 +102,11 @@ void NotificationHandler::notifyInternal(Message type, const QString& title,
 
     emit notificationShown(title, message);
     notify(type, title, message, timerMsec);
+}
+
+void NotificationHandler::subscriptionNotification(const QString& message) {
+    qDebug() << "Subscription notification shown";
+    notifyInternal(SubscriptionExpiring, tr("TunnelCore VPN"), message, 5000);
 }
 
 void NotificationHandler::messageClickHandle() {

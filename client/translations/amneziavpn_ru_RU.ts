@@ -6925,12 +6925,25 @@ Remove the server from the app to continue.</source>
     <message><source>Request a six-digit code in the TunnelCore bot and enter it here. Your Telegram subscriptions and payments will be transferred to this account.</source><translation>Запросите шестизначный код в боте TunnelCore и введите его здесь. Ваши подписки и платежи Telegram будут перенесены в этот аккаунт.</translation></message>
     <message><source>Telegram code</source><translation>Код Telegram</translation></message>
     <message><source>Telegram is linked to this account.</source><translation>Telegram привязан к этому аккаунту.</translation></message>
+    <message><source>VPN subscription inactive</source><translation>VPN-подписка неактивна</translation></message>
+    <message><source>VPN subscription expires soon</source><translation>Срок VPN-подписки скоро закончится</translation></message>
+    <message><source>Renew in App Store</source><translation>Продлить в App Store</translation></message>
+    <message><source>Renew in Telegram</source><translation>Продлить в Telegram</translation></message>
+    <message><source>Account</source><translation>Аккаунт</translation></message>
+    <message><source>Sign out of account</source><translation>Выйти из аккаунта</translation></message>
+    <message><source>Sign out of TunnelCore VPN?</source><translation>Выйти из TunnelCore VPN?</translation></message>
+    <message><source>This ends the account session on this device. Imported VPN configurations remain on the device.</source><translation>Сессия аккаунта на этом устройстве будет завершена. Импортированные VPN-конфигурации останутся на устройстве.</translation></message>
+    <message><source>Cancel</source><translation>Отмена</translation></message>
+    <message><source>Sign out is separated from VPN location controls to prevent accidental taps.</source><translation>Кнопка выхода отделена от выбора VPN-сервера, чтобы избежать случайного нажатия.</translation></message>
+    <message><source>Link Telegram to renew</source><translation>Привязать Telegram для продления</translation></message>
 </context>
 <context>
     <name>TunnelCoreController</name>
     <message><source>No configuration is available for the selected VPN location. Refresh and try again.</source><translation>Для выбранной локации VPN нет конфигурации. Обновите список и попробуйте снова.</translation></message>
     <message><source>The login details or password are incorrect.</source><translation>Неверные данные для входа или пароль.</translation></message>
     <message><source>Your session has ended. Sign in again.</source><translation>Сессия завершена. Войдите снова.</translation></message>
+    <message><source>Could not sign out because this device is not registered.</source><translation>Не удалось выйти: это устройство не зарегистрировано.</translation></message>
+    <message><source>Could not sign out and release this device. Check your connection and try again.</source><translation>Не удалось выйти и освободить слот этого устройства. Проверьте подключение и повторите попытку.</translation></message>
     <message><source>Enter a valid email and password.</source><translation>Введите корректный email и пароль.</translation></message>
     <message><source>The server rejected the login details. Check the sign-in method and API version.</source><translation>Сервер не принял данные для входа. Проверьте способ входа и версию API.</translation></message>
     <message><source>The server rejected the login details.</source><translation>Сервер не принял данные для входа.</translation></message>
@@ -6957,5 +6970,18 @@ Remove the server from the app to continue.</source>
     <message><source>An account with this email already exists. Sign in instead.</source><translation>Аккаунт с этим email уже существует. Войдите в него.</translation></message>
     <message><source>The password does not meet the security requirements.</source><translation>Пароль не соответствует требованиям безопасности.</translation></message>
     <message><source>Could not create the account. Try again.</source><translation>Не удалось создать аккаунт. Повторите попытку.</translation></message>
+    <message><source>VPN subscription is inactive. Renew it to keep using TunnelCore VPN.</source><translation>VPN-подписка неактивна. Продлите её, чтобы продолжить пользоваться TunnelCore VPN.</translation></message>
+    <message><source>Your VPN subscription expires today.</source><translation>Срок вашей VPN-подписки заканчивается сегодня.</translation></message>
+    <message><source>Your VPN subscription expires tomorrow.</source><translation>Срок вашей VPN-подписки заканчивается завтра.</translation></message>
+    <message><source>Your VPN subscription expires in %1 days.</source><translation>Срок вашей VPN-подписки закончится через %1 дн.</translation></message>
+    <message><source>App Store renewal is not configured for this subscription.</source><translation>Продление через App Store для этой подписки не настроено.</translation></message>
+    <message><source>The App Store purchase is pending approval.</source><translation>Покупка в App Store ожидает подтверждения.</translation></message>
+    <message><source>Could not complete the App Store purchase.</source><translation>Не удалось завершить покупку в App Store.</translation></message>
+    <message><source>Could not complete the App Store purchase: %1</source><translation>Не удалось завершить покупку в App Store: %1</translation></message>
+    <message><source>App Store renewal is temporarily unavailable.</source><translation>Продление через App Store временно недоступно.</translation></message>
+    <message><source>The App Store purchase could not be verified by TunnelCore.</source><translation>TunnelCore не удалось подтвердить покупку в App Store.</translation></message>
+    <message><source>Could not confirm the App Store purchase. Try again.</source><translation>Не удалось подтвердить покупку в App Store. Повторите попытку.</translation></message>
+    <message><source>Could not open the TunnelCore bot.</source><translation>Не удалось открыть бот TunnelCore.</translation></message>
+    <message><source>Link Telegram to this account before renewing in the bot.</source><translation>Перед продлением в боте привяжите Telegram к этому аккаунту.</translation></message>
 </context>
 </TS>

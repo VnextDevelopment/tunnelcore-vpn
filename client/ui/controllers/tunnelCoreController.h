@@ -1,10 +1,13 @@
 #pragma once
 
+#include <QDateTime>
+#include <QHash>
 #include <QJsonObject>
 #include <QNetworkAccessManager>
 #include <QObject>
 #include <QPointer>
 #include <QPair>
+#include <QSet>
 #include <QVariantList>
 #include <functional>
 #include <tuple>
@@ -20,6 +23,8 @@ struct TunnelCoreSessionStorage
     std::function<bool(const QJsonObject &, QString &)> applyRouting;
     std::function<QString()> loadGeoRoutingCountry;
     std::function<void(const QString &)> saveGeoRoutingCountry;
+    std::function<QJsonObject(const QString &)> loadRoutingCache;
+    std::function<void(const QString &, const QJsonObject &)> saveRoutingCache;
     std::function<QString()> loadDeviceId;
     std::function<void(const QString &)> saveDeviceId;
 };
@@ -42,6 +47,11 @@ class TunnelCoreController : public QObject
     Q_PROPERTY(QString selectedProfileKey READ selectedProfileKey NOTIFY changed)
     Q_PROPERTY(QVariantList geoRoutingCountries READ geoRoutingCountries NOTIFY changed)
     Q_PROPERTY(QString geoRoutingCountry READ geoRoutingCountry NOTIFY changed)
+    Q_PROPERTY(bool subscriptionWarningVisible READ subscriptionWarningVisible NOTIFY changed)
+    Q_PROPERTY(bool subscriptionExpired READ subscriptionExpired NOTIFY changed)
+    Q_PROPERTY(int subscriptionDaysRemaining READ subscriptionDaysRemaining NOTIFY changed)
+    Q_PROPERTY(QString subscriptionStatusText READ subscriptionStatusText NOTIFY changed)
+    Q_PROPERTY(bool usesAppleBilling READ usesAppleBilling CONSTANT)
 
 public:
     explicit TunnelCoreController(QObject *parent = nullptr, QNetworkAccessManager *network = nullptr,
@@ -61,6 +71,11 @@ public:
     QString selectedProfileKey() const;
     QVariantList geoRoutingCountries() const { return m_geoRoutingCountries; }
     QString geoRoutingCountry() const { return m_geoRoutingCountry; }
+    bool subscriptionWarningVisible() const;
+    bool subscriptionExpired() const;
+    int subscriptionDaysRemaining() const;
+    QString subscriptionStatusText() const;
+    bool usesAppleBilling() const;
 
     Q_INVOKABLE void loginCode(const QString &code);
     // Legacy login methods remain available during the server transition, but the
@@ -77,11 +92,13 @@ public:
     Q_INVOKABLE void selectVpnCountry(const QString &countryCode);
     Q_INVOKABLE QString vpnCountryDisplayName(const QString &countryCode) const;
     Q_INVOKABLE void selectGeoRoutingCountry(const QString &countryCode);
+    Q_INVOKABLE void renewSubscription();
 
 signals:
     void changed();
     void signedIn();
-    void configReady(const QString &data, const QString &fileName);
+    void configReady(const QString &data, const QString &fileName,
+                     const QString &obfuscationMode, const QString &obfuscationProfile);
 
 private:
     void authenticate(const QString &path, const QJsonObject &credentials, bool emailAccount = false);
@@ -98,7 +115,20 @@ private:
     void refreshRouting();
     void refreshGeoRoutingCountries();
     QString routingPlatform() const;
-    void deliverConfig(const QString &data, const QString &fileName = {});
+    QString routingCacheKey(const QString &countryCode) const;
+    QJsonObject cachedRouting(const QString &cacheKey);
+    void storeRoutingCache(const QString &cacheKey, const QJsonObject &routing);
+    bool routingCacheIsFresh(const QJsonObject &routing) const;
+    QString routingRevision(const QJsonObject &routing) const;
+    bool normalizeRoutingResponse(const QString &countryCode, const QJsonObject &object,
+                                  QJsonObject &routing, QString &errorMessage) const;
+    bool applyRouting(const QString &cacheKey, const QJsonObject &routing, bool reportError = true);
+    void refreshRoutingCacheInBackground(const QString &cacheKey, const QString &countryCode);
+    void deliverConfig(const QString &data, const QString &fileName,
+                       const QString &obfuscationMode, const QString &obfuscationProfile);
+    void updateSubscriptionState(const QJsonObject &accountObject);
+    void maybeNotifySubscription();
+    void clearSession();
     void fail(const QString &message);
     QNetworkAccessManager *m_network;
     QPointer<QNetworkReply> m_reply;
@@ -115,10 +145,18 @@ private:
     qint64 m_selectedConfigId = 0;
     QVariantList m_geoRoutingCountries;
     QString m_geoRoutingCountry;
+    QHash<QString, QJsonObject> m_routingCache;
+    QSet<QString> m_routingRefreshInFlight;
+    QString m_lastAppliedRoutingCacheKey;
+    QString m_lastAppliedRoutingRevision;
     QString m_deviceId;
     TunnelCoreSessionStorage m_sessionStorage;
     bool m_busy = false;
     bool m_emailAccount = false;
     bool m_telegramLinked = false;
+    bool m_subscriptionKnown = false;
+    bool m_subscriptionAutoRenew = false;
+    QDateTime m_subscriptionExpiresAt;
+    QString m_lastSubscriptionNotificationKey;
     unsigned int m_generation = 0;
 };

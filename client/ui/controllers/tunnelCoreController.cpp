@@ -1,20 +1,260 @@
 #include "tunnelCoreController.h"
 
 #include <QDebug>
+#include <QCryptographicHash>
+#include <QDateTime>
+#include <QDesktopServices>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QLocale>
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QOperatingSystemVersion>
+#include <QUrl>
 #include <QUrlQuery>
 #include <QUuid>
+
+#if defined(Q_OS_ANDROID)
+#include "platforms/android/android_controller.h"
+#elif !defined(TUNNELCORE_CONTROLLER_TESTS)
+#include "ui/utils/notificationHandler.h"
+#endif
+
+#if defined(Q_OS_IOS)
+#include "platforms/ios/ios_controller.h"
+#endif
 
 namespace {
 const QString apiBase = QStringLiteral("https://tlsdmd.isgood.host/api/vpn/v1/");
 constexpr qint64 maxResponseSize = 2 * 1024 * 1024;
 constexpr qsizetype maxLoggedResponseSize = 2048;
+constexpr qint64 routingCacheRefreshIntervalSecs = 6 * 60 * 60;
+const QString routingCacheTimestampKey = QStringLiteral("_tunnelcore_cached_at");
+
+QPair<QString, QString> normalizeObfuscationPolicy(const QJsonObject &object)
+{
+    auto mode = object.value(QStringLiteral("mode")).toString().trimmed().toLower();
+    if (mode != QStringLiteral("client_dynamic"))
+        mode = QStringLiteral("static");
+
+    auto profile = object.value(QStringLiteral("profile")).toString().trimmed().toLower();
+    if (mode == QStringLiteral("client_dynamic") && profile.isEmpty())
+        profile = QStringLiteral("auto");
+
+    return {mode, profile};
 }
+}
+
+bool TunnelCoreController::usesAppleBilling() const
+{
+#if defined(Q_OS_IOS)
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool TunnelCoreController::subscriptionExpired() const
+{
+    if (!authenticated() || !m_subscriptionKnown)
+        return false;
+    return !m_subscriptionExpiresAt.isValid()
+           || m_subscriptionExpiresAt <= QDateTime::currentDateTimeUtc();
+}
+
+int TunnelCoreController::subscriptionDaysRemaining() const
+{
+    if (!m_subscriptionExpiresAt.isValid())
+        return 0;
+    const auto seconds = QDateTime::currentDateTimeUtc().secsTo(m_subscriptionExpiresAt);
+    if (seconds <= 0)
+        return 0;
+    return int((seconds + 86399) / 86400);
+}
+
+bool TunnelCoreController::subscriptionWarningVisible() const
+{
+    if (!authenticated() || !m_subscriptionKnown || m_subscriptionAutoRenew)
+        return false;
+    return subscriptionExpired() || subscriptionDaysRemaining() <= 7;
+}
+
+QString TunnelCoreController::subscriptionStatusText() const
+{
+    if (!m_subscriptionKnown)
+        return {};
+    if (subscriptionExpired())
+        return tr("VPN subscription is inactive. Renew it to keep using TunnelCore VPN.");
+
+    const auto days = subscriptionDaysRemaining();
+    if (days <= 0)
+        return tr("Your VPN subscription expires today.");
+    if (days == 1)
+        return tr("Your VPN subscription expires tomorrow.");
+    return tr("Your VPN subscription expires in %1 days.").arg(days);
+}
+
+void TunnelCoreController::updateSubscriptionState(const QJsonObject &accountObject)
+{
+    m_subscriptionKnown = true;
+    m_subscriptionAutoRenew = false;
+    m_subscriptionExpiresAt = {};
+
+    const auto entitlement = accountObject.value(QStringLiteral("entitlement")).toObject();
+    if (!entitlement.isEmpty()) {
+        m_subscriptionAutoRenew = entitlement.value(QStringLiteral("auto_renew")).toBool(false);
+        if (entitlement.value(QStringLiteral("active")).toBool(false)) {
+            const auto rawExpiry = entitlement.value(QStringLiteral("expires_at")).toString();
+            auto expiry = QDateTime::fromString(rawExpiry, Qt::ISODateWithMs);
+            if (!expiry.isValid())
+                expiry = QDateTime::fromString(rawExpiry, Qt::ISODate);
+            if (expiry.isValid())
+                m_subscriptionExpiresAt = expiry.toUTC();
+        }
+    }
+
+    // Compatibility with servers that return only the subscriptions array.
+    if (!m_subscriptionExpiresAt.isValid()) {
+        for (const auto &subscriptionValue : m_subscriptions) {
+            const auto rawExpiry = subscriptionValue.toMap().value(QStringLiteral("expires_at")).toString();
+            auto expiry = QDateTime::fromString(rawExpiry, Qt::ISODateWithMs);
+            if (!expiry.isValid())
+                expiry = QDateTime::fromString(rawExpiry, Qt::ISODate);
+            if (expiry.isValid() && (!m_subscriptionExpiresAt.isValid() || expiry > m_subscriptionExpiresAt))
+                m_subscriptionExpiresAt = expiry.toUTC();
+        }
+    }
+
+    maybeNotifySubscription();
+}
+
+void TunnelCoreController::maybeNotifySubscription()
+{
+    if (!subscriptionWarningVisible())
+        return;
+
+    QString reminderStage;
+    if (subscriptionExpired()) {
+        reminderStage = QStringLiteral("expired");
+    } else if (subscriptionDaysRemaining() <= 1) {
+        reminderStage = QStringLiteral("1d");
+    } else if (subscriptionDaysRemaining() <= 3) {
+        reminderStage = QStringLiteral("3d");
+    } else {
+        reminderStage = QStringLiteral("7d");
+    }
+    const auto key = m_subscriptionExpiresAt.toString(Qt::ISODate)
+                     + QStringLiteral(":") + reminderStage;
+    if (key == m_lastSubscriptionNotificationKey)
+        return;
+
+    const auto message = subscriptionStatusText();
+#if defined(TUNNELCORE_CONTROLLER_TESTS)
+    Q_UNUSED(message);
+    m_lastSubscriptionNotificationKey = key;
+#elif defined(Q_OS_ANDROID)
+    AndroidController::instance()->showSubscriptionNotification(tr("TunnelCore VPN"), message);
+    m_lastSubscriptionNotificationKey = key;
+#else
+    if (auto *notificationHandler = NotificationHandler::instanceOrNull()) {
+        notificationHandler->subscriptionNotification(message);
+        m_lastSubscriptionNotificationKey = key;
+    }
+#endif
+}
+
+void TunnelCoreController::renewSubscription()
+{
+    if (m_busy || !authenticated())
+        return;
+
+#if defined(Q_OS_IOS)
+    request(QStringLiteral("billing/?platform=ios"), {}, [this](const QJsonObject &object) {
+        QString productId;
+        const auto billing = object.value(QStringLiteral("billing")).toObject();
+        const auto methods = billing.value(QStringLiteral("methods")).toArray();
+        for (const auto &methodValue : methods) {
+            const auto method = methodValue.toObject();
+            if (method.value(QStringLiteral("type")).toString() == QStringLiteral("app_store")) {
+                productId = method.value(QStringLiteral("product_id")).toString().trimmed();
+                break;
+            }
+        }
+        if (productId.isEmpty()) {
+            fail(tr("App Store renewal is not configured for this subscription."));
+            return;
+        }
+
+        m_busy = true;
+        m_error.clear();
+        emit changed();
+
+        IosController::Instance()->purchaseProduct(
+            productId,
+            [this](bool success,
+                   const QString &transactionId,
+                   const QString &purchasedProductId,
+                   const QString &originalTransactionId,
+                   const QString &storeEnvironment,
+                   const QString &errorString,
+                   IosController::StorePurchaseFailure failureReason) {
+                if (!success) {
+                    m_busy = false;
+                    if (failureReason == IosController::StorePurchaseFailure::Cancelled) {
+                        emit changed();
+                        return;
+                    }
+                    if (failureReason == IosController::StorePurchaseFailure::Pending) {
+                        fail(tr("The App Store purchase is pending approval."));
+                        return;
+                    }
+                    fail(errorString.isEmpty()
+                             ? tr("Could not complete the App Store purchase.")
+                             : tr("Could not complete the App Store purchase: %1").arg(errorString));
+                    return;
+                }
+
+                m_busy = false;
+                QJsonObject confirmation {
+                    {QStringLiteral("transaction_id"), transactionId},
+                    {QStringLiteral("product_id"), purchasedProductId},
+                    {QStringLiteral("original_transaction_id"), originalTransactionId},
+                    {QStringLiteral("environment"), storeEnvironment},
+                };
+                request(
+                    QStringLiteral("billing/apple/confirm/"),
+                    confirmation,
+                    [this, transactionId](const QJsonObject &) {
+                        IosController::Instance()->finishStoreTransaction(transactionId);
+                        m_lastSubscriptionNotificationKey.clear();
+                        refresh();
+                    },
+                    true,
+                    [this](int status, const QJsonObject &object) {
+                        const auto apiError = object.value(QStringLiteral("error")).toString();
+                        if (status == 401) {
+                            clearSession();
+                            fail(tr("Your session has ended. Sign in again."));
+                        } else if (status == 503) {
+                            fail(tr("App Store renewal is temporarily unavailable."));
+                        } else if (!apiError.isEmpty()) {
+                            fail(tr("The App Store purchase could not be verified by TunnelCore."));
+                        } else {
+                            fail(tr("Could not confirm the App Store purchase. Try again."));
+                        }
+                    },
+                    true);
+            });
+    });
+#else
+    const QUrl botUrl(m_emailAccount && !m_telegramLinked
+                          ? QStringLiteral("https://t.me/tunnelcoree_bot")
+                          : QStringLiteral("https://t.me/tunnelcoree_bot?start=renew_vpn"));
+    if (!QDesktopServices::openUrl(botUrl))
+        fail(tr("Could not open the TunnelCore bot."));
+#endif
+}
+
 
 TunnelCoreController::TunnelCoreController(QObject *parent, QNetworkAccessManager *network,
                                            TunnelCoreSessionStorage sessionStorage)
@@ -94,7 +334,7 @@ void TunnelCoreController::registerDevice(bool emitSignedIn)
     }, true, [this, emitSignedIn](int status, const QJsonObject &object) {
         const auto apiError = object.value(QStringLiteral("error")).toString();
         if (status == 401) {
-            logout();
+            clearSession();
             fail(tr("Your session has ended. Sign in again."));
         } else if (status == 409 && apiError == QStringLiteral("device_limit_reached")) {
             if (emitSignedIn)
@@ -103,6 +343,10 @@ void TunnelCoreController::registerDevice(bool emitSignedIn)
         } else if (status == 409 && apiError == QStringLiteral("vpn_subscription_required")) {
             if (emitSignedIn)
                 emit signedIn();
+            m_subscriptionKnown = true;
+            m_subscriptionAutoRenew = false;
+            m_subscriptionExpiresAt = {};
+            maybeNotifySubscription();
             fail(tr("An active VPN subscription is required to register this device."));
         } else if (status == 503 && apiError == QStringLiteral("vpn_node_unavailable")) {
             fail(tr("No VPN server is currently available for this device. Try again later."));
@@ -193,7 +437,7 @@ void TunnelCoreController::request(const QString &path, const QJsonObject &body,
         }
         if (status == 401) {
             if (!post)
-                logout();
+                clearSession();
             fail(post ? tr("The login details or password are incorrect.") : tr("Your session has ended. Sign in again."));
             return;
         }
@@ -298,7 +542,7 @@ void TunnelCoreController::linkTelegram(const QString &code)
         if (status == 401 && apiError == "invalid_or_expired_code") {
             fail(tr("The Telegram code is invalid or has expired. Request a new code in the bot."));
         } else if (status == 401 && apiError == "unauthorized") {
-            logout();
+            clearSession();
             fail(tr("Your session has ended. Sign in again."));
         } else if (status == 403 && apiError == "email_account_required") {
             fail(tr("Telegram can only be linked to an email account."));
@@ -358,7 +602,7 @@ void TunnelCoreController::authenticate(const QString &path, const QJsonObject &
     });
 }
 
-void TunnelCoreController::logout()
+void TunnelCoreController::clearSession()
 {
     ++m_generation;
     if (m_reply) {
@@ -379,9 +623,58 @@ void TunnelCoreController::logout()
     m_busy = false;
     m_emailAccount = false;
     m_telegramLinked = false;
+    m_subscriptionKnown = false;
+    m_subscriptionAutoRenew = false;
+    m_subscriptionExpiresAt = {};
+    m_lastSubscriptionNotificationKey.clear();
+    m_lastAppliedRoutingCacheKey.clear();
+    m_lastAppliedRoutingRevision.clear();
     if (m_sessionStorage.clear)
         m_sessionStorage.clear();
     emit changed();
+}
+
+void TunnelCoreController::logout()
+{
+    // A login request may still be in flight and there is no authenticated
+    // device to revoke yet. Preserve the old "cancel sign-in" behaviour.
+    if (!authenticated()) {
+        clearSession();
+        return;
+    }
+
+    // A successful explicit logout must release the tariff device slot and
+    // revoke the device peer before the bearer token is discarded locally.
+    if (m_deviceId.isEmpty()) {
+        fail(tr("Could not sign out because this device is not registered."));
+        return;
+    }
+
+    const QJsonObject body {
+        {QStringLiteral("device_id"), m_deviceId},
+    };
+    request(QStringLiteral("devices/revoke/"), body,
+            [this](const QJsonObject &) {
+                clearSession();
+            },
+            true,
+            [this](int status, const QJsonObject &object) {
+                const auto apiError = object.value(QStringLiteral("error")).toString();
+                if (status == 401) {
+                    // The token can no longer authorize a revoke. Clear the
+                    // unusable local session without recursively starting logout.
+                    clearSession();
+                    fail(tr("Your session has ended. Sign in again."));
+                    return;
+                }
+                if (status == 404 && apiError == QStringLiteral("device_not_found")) {
+                    // The server already considers the slot free.
+                    clearSession();
+                    return;
+                }
+                fail(tr("Could not sign out and release this device. Check your connection and try again."));
+            },
+            true);
 }
 
 bool TunnelCoreController::applyVpnCountrySelection(const QJsonObject &object)
@@ -495,7 +788,7 @@ void TunnelCoreController::refreshGeoRoutingCountries()
             return;
         }
         if (status == 401) {
-            logout();
+            clearSession();
             fail(tr("Your session has ended. Sign in again."));
             return;
         }
@@ -503,60 +796,270 @@ void TunnelCoreController::refreshGeoRoutingCountries()
     });
 }
 
-void TunnelCoreController::refreshRouting()
+QString TunnelCoreController::routingCacheKey(const QString &countryCode) const
 {
-    const auto applyAndContinue = [this](const QJsonObject &routing) {
-        if (m_sessionStorage.applyRouting) {
-            QString errorMessage;
-            if (!m_sessionStorage.applyRouting(routing, errorMessage)) {
+    const auto country = countryCode.trimmed().toUpper();
+    if (country.isEmpty())
+        return QStringLiteral("default:%1").arg(routingPlatform());
+    return QStringLiteral("country:%1:%2").arg(country, routingPlatform());
+}
+
+QJsonObject TunnelCoreController::cachedRouting(const QString &cacheKey)
+{
+    const auto cached = m_routingCache.constFind(cacheKey);
+    if (cached != m_routingCache.constEnd())
+        return cached.value();
+
+    if (!m_sessionStorage.loadRoutingCache)
+        return {};
+
+    const auto stored = m_sessionStorage.loadRoutingCache(cacheKey);
+    if (!stored.value(QStringLiteral("rules")).isArray())
+        return {};
+
+    m_routingCache.insert(cacheKey, stored);
+    return stored;
+}
+
+void TunnelCoreController::storeRoutingCache(const QString &cacheKey, const QJsonObject &routing)
+{
+    if (!routing.value(QStringLiteral("rules")).isArray())
+        return;
+
+    auto stored = routing;
+    stored.insert(routingCacheTimestampKey,
+                  QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs));
+    m_routingCache.insert(cacheKey, stored);
+    if (m_sessionStorage.saveRoutingCache)
+        m_sessionStorage.saveRoutingCache(cacheKey, stored);
+}
+
+bool TunnelCoreController::routingCacheIsFresh(const QJsonObject &routing) const
+{
+    const auto rawTimestamp = routing.value(routingCacheTimestampKey).toString();
+    auto cachedAt = QDateTime::fromString(rawTimestamp, Qt::ISODateWithMs);
+    if (!cachedAt.isValid())
+        cachedAt = QDateTime::fromString(rawTimestamp, Qt::ISODate);
+    if (!cachedAt.isValid())
+        return false;
+
+    const auto age = cachedAt.toUTC().secsTo(QDateTime::currentDateTimeUtc());
+    return age >= 0 && age < routingCacheRefreshIntervalSecs;
+}
+
+QString TunnelCoreController::routingRevision(const QJsonObject &routing) const
+{
+    const auto version = routing.value(QStringLiteral("version")).toString().trimmed();
+    if (!version.isEmpty())
+        return version;
+
+    auto canonical = routing;
+    canonical.remove(routingCacheTimestampKey);
+    return QString::fromLatin1(
+        QCryptographicHash::hash(
+            QJsonDocument(canonical).toJson(QJsonDocument::Compact),
+            QCryptographicHash::Sha256).toHex());
+}
+
+bool TunnelCoreController::normalizeRoutingResponse(const QString &countryCode,
+                                                    const QJsonObject &object,
+                                                    QJsonObject &routing,
+                                                    QString &errorMessage) const
+{
+    const auto country = countryCode.trimmed().toUpper();
+    if (country.isEmpty()) {
+        if (!object.value(QStringLiteral("rules")).isArray()) {
+            errorMessage = tr("The server returned an invalid VPN routing rule list.");
+            return false;
+        }
+        routing = object;
+        return true;
+    }
+
+    if (object.value(QStringLiteral("mode")).toString() != QStringLiteral("country_direct")
+        || object.value(QStringLiteral("default_route")).toString() != QStringLiteral("vpn")
+        || object.value(QStringLiteral("country_route")).toString() != QStringLiteral("direct")
+        || !object.value(QStringLiteral("ipv4")).isArray()) {
+        errorMessage = tr("The server returned invalid country routing data.");
+        return false;
+    }
+
+    QJsonArray rules;
+    for (const auto &value : object.value(QStringLiteral("ipv4")).toArray()) {
+        const auto subnet = value.toString().trimmed();
+        if (subnet.isEmpty())
+            continue;
+        rules.append(QJsonObject{
+            {QStringLiteral("type"), QStringLiteral("ip")},
+            {QStringLiteral("value"), subnet},
+            {QStringLiteral("route"), QStringLiteral("direct")},
+            {QStringLiteral("priority"), 0},
+        });
+    }
+
+    routing = QJsonObject{
+        {QStringLiteral("ok"), true},
+        {QStringLiteral("version"), object.value(QStringLiteral("version"))},
+        {QStringLiteral("platform"), routingPlatform()},
+        {QStringLiteral("country"), country},
+        {QStringLiteral("rules"), rules},
+    };
+
+    qInfo() << "[TunnelCore routing] prepared GeoIP direct country"
+            << country << "IPv4 routes=" << rules.size()
+            << "IPv6 routes kept inside VPN="
+            << object.value(QStringLiteral("ipv6")).toArray().size();
+    return true;
+}
+
+bool TunnelCoreController::applyRouting(const QString &cacheKey, const QJsonObject &routing,
+                                        bool reportError)
+{
+    if (!routing.value(QStringLiteral("rules")).isArray()) {
+        if (reportError)
+            fail(tr("The server returned an invalid VPN routing rule list."));
+        return false;
+    }
+
+    const auto revision = routingRevision(routing);
+    if (cacheKey == m_lastAppliedRoutingCacheKey
+        && revision == m_lastAppliedRoutingRevision) {
+        qInfo() << "[TunnelCore routing] unchanged routing already applied"
+                << cacheKey << revision;
+        return true;
+    }
+
+    if (m_sessionStorage.applyRouting) {
+        QString errorMessage;
+        if (!m_sessionStorage.applyRouting(routing, errorMessage)) {
+            if (reportError) {
                 fail(errorMessage.isEmpty()
                          ? tr("Could not apply the VPN routing rules.")
                          : errorMessage);
-                return;
+            } else {
+                qWarning() << "[TunnelCore routing] cached routing could not be applied"
+                           << cacheKey << errorMessage;
             }
+            return false;
         }
+    }
+
+    m_lastAppliedRoutingCacheKey = cacheKey;
+    m_lastAppliedRoutingRevision = revision;
+    return true;
+}
+
+void TunnelCoreController::refreshRoutingCacheInBackground(const QString &cacheKey,
+                                                           const QString &countryCode)
+{
+    if (!authenticated() || m_routingRefreshInFlight.contains(cacheKey))
+        return;
+
+    const auto country = countryCode.trimmed().toUpper();
+    const auto path = country.isEmpty()
+                          ? QStringLiteral("routing/?platform=%1").arg(routingPlatform())
+                          : QStringLiteral("routing/countries/%1/").arg(country);
+    QNetworkRequest networkRequest { QUrl(apiBase + path) };
+    networkRequest.setTransferTimeout(30000);
+    networkRequest.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                                QNetworkRequest::ManualRedirectPolicy);
+    networkRequest.setRawHeader("Accept", "application/json");
+    networkRequest.setRawHeader("Authorization", "Bearer " + m_token);
+
+    qInfo().noquote() << "[TunnelCore routing] background refresh GET"
+                      << networkRequest.url().toString(QUrl::FullyEncoded);
+
+    auto *reply = m_network->get(networkRequest);
+    m_routingRefreshInFlight.insert(cacheKey);
+    const auto generation = m_generation;
+
+    connect(reply, &QNetworkReply::readyRead, this, [reply]() {
+        if (reply->bytesAvailable() > maxResponseSize)
+            reply->abort();
+    });
+    connect(reply, &QNetworkReply::finished, this,
+            [this, reply, generation, cacheKey, country]() {
+        reply->deleteLater();
+        m_routingRefreshInFlight.remove(cacheKey);
+        if (generation != m_generation)
+            return;
+
+        const auto status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        const auto responseBody = reply->readAll();
+        if (reply->error() != QNetworkReply::NoError || status < 200 || status >= 300) {
+            qWarning() << "[TunnelCore routing] background refresh failed"
+                       << cacheKey << "status=" << status << reply->errorString();
+            return;
+        }
+
+        QJsonParseError parseError;
+        const auto document = QJsonDocument::fromJson(responseBody, &parseError);
+        if (parseError.error != QJsonParseError::NoError || !document.isObject()
+            || !document.object().value(QStringLiteral("ok")).toBool()) {
+            qWarning() << "[TunnelCore routing] background refresh returned invalid JSON"
+                       << cacheKey;
+            return;
+        }
+
+        QJsonObject routing;
+        QString errorMessage;
+        if (!normalizeRoutingResponse(country, document.object(), routing, errorMessage)) {
+            qWarning() << "[TunnelCore routing] background refresh returned invalid routing"
+                       << cacheKey << errorMessage;
+            return;
+        }
+
+        const auto previousRevision = routingRevision(cachedRouting(cacheKey));
+        const auto nextRevision = routingRevision(routing);
+        storeRoutingCache(cacheKey, routing);
+        qInfo() << "[TunnelCore routing]"
+                << (previousRevision == nextRevision ? "cache validated" : "cache updated")
+                << cacheKey << nextRevision;
+    });
+}
+
+void TunnelCoreController::refreshRouting()
+{
+    const auto country = m_geoRoutingCountry.trimmed().toUpper();
+    const auto cacheKey = routingCacheKey(country);
+    const auto cached = cachedRouting(cacheKey);
+
+    if (!cached.isEmpty() && cached.value(QStringLiteral("rules")).isArray()) {
+        if (!applyRouting(cacheKey, cached))
+            return;
+
+        const bool fresh = routingCacheIsFresh(cached);
+        qInfo() << "[TunnelCore routing] cache hit"
+                << cacheKey << "revision=" << routingRevision(cached)
+                << "fresh=" << fresh;
+
+        refreshConfigs();
+        if (!fresh)
+            refreshRoutingCacheInBackground(cacheKey, country);
+        return;
+    }
+
+    const auto applyAndContinue = [this, cacheKey](const QJsonObject &routing) {
+        storeRoutingCache(cacheKey, routing);
+        if (!applyRouting(cacheKey, routing))
+            return;
         refreshConfigs();
     };
 
-    if (!m_geoRoutingCountry.isEmpty()) {
-        const auto path = QStringLiteral("routing/countries/%1/").arg(m_geoRoutingCountry);
-        request(path, {}, [this, applyAndContinue](const QJsonObject &object) {
-            if (object.value("mode").toString() != QStringLiteral("country_direct")
-                || object.value("default_route").toString() != QStringLiteral("vpn")
-                || object.value("country_route").toString() != QStringLiteral("direct")
-                || !object.value("ipv4").isArray()) {
-                fail(tr("The server returned invalid country routing data."));
+    if (!country.isEmpty()) {
+        const auto path = QStringLiteral("routing/countries/%1/").arg(country);
+        request(path, {}, [this, country, applyAndContinue](const QJsonObject &object) {
+            QJsonObject routing;
+            QString errorMessage;
+            if (!normalizeRoutingResponse(country, object, routing, errorMessage)) {
+                fail(errorMessage);
                 return;
             }
-
-            QJsonArray rules;
-            for (const auto &value : object.value("ipv4").toArray()) {
-                const auto subnet = value.toString().trimmed();
-                if (subnet.isEmpty())
-                    continue;
-                rules.append(QJsonObject{
-                    {QStringLiteral("type"), QStringLiteral("ip")},
-                    {QStringLiteral("value"), subnet},
-                    {QStringLiteral("route"), QStringLiteral("direct")},
-                    {QStringLiteral("priority"), 0},
-                });
-            }
-
-            QJsonObject routing{
-                {QStringLiteral("ok"), true},
-                {QStringLiteral("version"), object.value("version")},
-                {QStringLiteral("platform"), routingPlatform()},
-                {QStringLiteral("rules"), rules},
-            };
-            qInfo() << "[TunnelCore routing] applying GeoIP direct country"
-                    << m_geoRoutingCountry << "IPv4 routes=" << rules.size()
-                    << "IPv6 routes kept inside VPN="
-                    << object.value("ipv6").toArray().size();
             applyAndContinue(routing);
         }, false, [this](int status, const QJsonObject &object) {
             const auto apiError = object.value("error").toString();
             if (status == 401) {
-                logout();
+                clearSession();
                 fail(tr("Your session has ended. Sign in again."));
             } else if (status == 404 || apiError == "country_disabled") {
                 fail(tr("This split-tunneling country is no longer available."));
@@ -570,14 +1073,21 @@ void TunnelCoreController::refreshRouting()
     }
 
     const auto path = QStringLiteral("routing/?platform=%1").arg(routingPlatform());
-    request(path, {}, applyAndContinue, false, [this](int status, const QJsonObject &) {
+    request(path, {}, [this, applyAndContinue](const QJsonObject &object) {
+        QJsonObject routing;
+        QString errorMessage;
+        if (!normalizeRoutingResponse(QString(), object, routing, errorMessage)) {
+            fail(errorMessage);
+            return;
+        }
+        applyAndContinue(routing);
+    }, false, [this](int status, const QJsonObject &) {
         if (status == 404) {
-            // Compatibility with servers that have not deployed server-managed routing yet.
             refreshConfigs();
             return;
         }
         if (status == 401) {
-            logout();
+            clearSession();
             fail(tr("Your session has ended. Sign in again."));
             return;
         }
@@ -597,13 +1107,19 @@ void TunnelCoreController::refresh()
             return;
         }
         m_subscriptions = object.value("subscriptions").toArray().toVariantList();
+        updateSubscriptionState(object);
         request(deviceRequestPath(QStringLiteral("country-selection/")), {}, [this](const QJsonObject &countryObject) {
             if (!applyVpnCountrySelection(countryObject)) {
                 fail(tr("The server returned an invalid VPN country list."));
                 return;
             }
             refreshGeoRoutingCountries();
-        }, false, [this](int status, const QJsonObject &) {
+        }, false, [this](int status, const QJsonObject &object) {
+            if (status == 404 && object.value(QStringLiteral("error")).toString()
+                                     == QStringLiteral("device_not_found")) {
+                registerDevice();
+                return;
+            }
             if (status == 404) {
                 // Compatibility with servers that have not deployed country selection yet.
                 m_vpnCountries.clear();
@@ -615,7 +1131,7 @@ void TunnelCoreController::refresh()
                 return;
             }
             if (status == 401) {
-                logout();
+                clearSession();
                 fail(tr("Your session has ended. Sign in again."));
                 return;
             }
@@ -702,7 +1218,7 @@ void TunnelCoreController::selectVpnCountry(const QString &countryCode)
     }, true, [this](int status, const QJsonObject &object) {
         const auto apiError = object.value("error").toString();
         if (status == 401) {
-            logout();
+            clearSession();
             fail(tr("Your session has ended. Sign in again."));
         } else if (status == 409 || apiError == "country_unavailable") {
             fail(tr("This VPN country is temporarily unavailable. Choose another country or Automatic."));
@@ -754,10 +1270,12 @@ void TunnelCoreController::selectConfig(int index)
     const auto listedFileName = config.value("filename").toString().trimmed();
     const auto listedName = config.value("name").toString().trimmed();
     const auto suggestedFileName = !listedFileName.isEmpty() ? listedFileName : listedName;
+    const auto listedPolicy = normalizeObfuscationPolicy(
+        QJsonObject::fromVariantMap(config.value("obfuscation").toMap()));
     if (!data.isEmpty()) {
         // Compatibility with servers that still return the configuration or
         // its one-time download URL directly in the list response.
-        deliverConfig(data, suggestedFileName);
+        deliverConfig(data, suggestedFileName, listedPolicy.first, listedPolicy.second);
         return;
     }
 
@@ -780,11 +1298,13 @@ void TunnelCoreController::selectConfig(int index)
             fileName = object.value("name").toString().trimmed();
         if (fileName.isEmpty())
             fileName = suggestedFileName;
-        deliverConfig(downloadedConfig, fileName);
+        const auto policy = normalizeObfuscationPolicy(
+            object.value(QStringLiteral("obfuscation")).toObject());
+        deliverConfig(downloadedConfig, fileName, policy.first, policy.second);
     }, false, [this](int status, const QJsonObject &object) {
         const auto apiError = object.value("error").toString();
         if (status == 401) {
-            logout();
+            clearSession();
             fail(tr("Your session has ended. Sign in again."));
         } else if (status == 404 || apiError == "config_not_found") {
             fail(tr("This configuration has already been retrieved or is no longer available. Refresh the list."));
@@ -796,11 +1316,13 @@ void TunnelCoreController::selectConfig(int index)
     });
 }
 
-void TunnelCoreController::deliverConfig(const QString &data, const QString &fileName)
+void TunnelCoreController::deliverConfig(const QString &data, const QString &fileName,
+                                         const QString &obfuscationMode,
+                                         const QString &obfuscationProfile)
 {
     const QUrl url(data);
     if (url.scheme() != "https") {
-        emit configReady(data, fileName);
+        emit configReady(data, fileName, obfuscationMode, obfuscationProfile);
         return;
     }
     if (url.host().isEmpty() || !url.userInfo().isEmpty()) {
@@ -821,7 +1343,8 @@ void TunnelCoreController::deliverConfig(const QString &data, const QString &fil
         if (reply->bytesAvailable() > maxResponseSize)
             reply->abort();
     });
-    connect(reply, &QNetworkReply::finished, this, [this, reply, generation, fileName]() {
+    connect(reply, &QNetworkReply::finished, this,
+            [this, reply, generation, fileName, obfuscationMode, obfuscationProfile]() {
         reply->deleteLater();
         if (generation != m_generation)
             return;
@@ -833,6 +1356,7 @@ void TunnelCoreController::deliverConfig(const QString &data, const QString &fil
         }
         m_busy = false;
         emit changed();
-        emit configReady(QString::fromUtf8(reply->readAll()), fileName);
+        emit configReady(QString::fromUtf8(reply->readAll()), fileName,
+                         obfuscationMode, obfuscationProfile);
     });
 }
