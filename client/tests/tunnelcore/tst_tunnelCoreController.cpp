@@ -5,6 +5,7 @@
 #include <QDesktopServices>
 #include <QNetworkReply>
 #include <QQueue>
+#include <QRegularExpression>
 #include <QSignalSpy>
 #include <QTest>
 #include <QTimer>
@@ -489,6 +490,11 @@ private slots:
 
     void dynamicObfuscationGeneratesOneCoherentFivePacketSource()
     {
+        QCOMPARE(
+            TunnelCoreObfuscation::dnsQueryExpression(QStringLiteral("mail.ru"), true, 24),
+            QStringLiteral("<r 2><b 0x01000001000000000001046d61696c02727500"
+                           "001c000100002904d000000000001c000c0018><r 24>"));
+
         const auto generated = TunnelCoreObfuscation::generate(QStringLiteral("mail_dns"));
 
         QCOMPARE(generated.profile, QString("mail_dns"));
@@ -500,6 +506,8 @@ private slots:
             QVERIFY(packet.startsWith(QStringLiteral("<r 2><b 0x01000001000000000001")));
             QVERIFY(packet.contains(mailRuSuffix));
             QVERIFY(packet.contains(QStringLiteral("00002904d000000000")));
+            QVERIFY(!packet.contains(QLatin1Char('%')));
+            QVERIFY(QRegularExpression(QStringLiteral("<r [0-9]+>$")).match(packet).hasMatch());
             QVERIFY(packet.endsWith(QLatin1Char('>')));
         }
     }

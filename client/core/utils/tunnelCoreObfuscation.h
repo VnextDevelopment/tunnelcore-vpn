@@ -60,13 +60,18 @@ inline QString dnsQueryExpression(const QString &domain, bool ipv6, int paddingB
     const auto rdLength = hexU16(4 + paddingBytes);
     const auto paddingLength = hexU16(paddingBytes);
 
-    return QStringLiteral(
-        "<r 2><b 0x01000001000000000001%1%2000100002904d000000000%3000c%4><r %5>")
-        .arg(qname)
-        .arg(queryType)
-        .arg(rdLength)
-        .arg(paddingLength)
-        .arg(paddingBytes);
+    // Do not use numbered QString::arg() placeholders next to the hexadecimal
+    // digits below: e.g. "%2" followed by "0001" is parsed as "%20".
+    return QStringLiteral("<r 2><b 0x01000001000000000001")
+        + qname
+        + queryType
+        + QStringLiteral("000100002904d000000000")
+        + rdLength
+        + QStringLiteral("000c")
+        + paddingLength
+        + QStringLiteral("><r ")
+        + QString::number(paddingBytes)
+        + QLatin1Char('>');
 }
 
 inline PacketSet generate(const QString &requestedProfile)
