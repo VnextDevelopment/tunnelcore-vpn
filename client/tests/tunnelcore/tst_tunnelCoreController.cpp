@@ -553,7 +553,10 @@ private slots:
         QCOMPARE(network.requests.size(), 8);
         QCOMPARE(network.requests.last().url().path(), QString("/api/vpn/v1/configs/17/"));
         QCOMPARE(controller.selectedProfileKey(), profileKey);
+        network.responses.enqueue({"{\"ok\":true,\"devices_used\":0,\"devices_limit\":3}"});
         controller.logout();
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(!controller.authenticated());
         QVERIFY(controller.selectedProfileKey().isEmpty());
     }
 
@@ -857,6 +860,31 @@ private slots:
         QVERIFY(!controller.error().isEmpty());
         QCOMPARE(network.requests.size(), 1);
     }
+    void logoutRevokesCurrentDevice()
+    {
+        Network network;
+        enqueueLogin(network);
+        TunnelCoreController controller(nullptr, &network);
+        controller.loginCode("012345");
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(controller.authenticated());
+
+        const auto registration = QJsonDocument::fromJson(network.bodies[1]).object();
+        const auto deviceId = registration.value(QStringLiteral("device_id")).toString();
+        QVERIFY(!deviceId.isEmpty());
+
+        network.responses.enqueue({"{\"ok\":true,\"devices_used\":0,\"devices_limit\":3}"});
+        controller.logout();
+
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(!controller.authenticated());
+        QCOMPARE(network.requests.size(), 8);
+        QCOMPARE(network.requests.last().url().path(), QString("/api/vpn/v1/devices/revoke/"));
+        QCOMPARE(network.requests.last().rawHeader("Authorization"), QByteArray("Bearer test-token"));
+        const auto revokeBody = QJsonDocument::fromJson(network.bodies.last()).object();
+        QCOMPARE(revokeBody.value(QStringLiteral("device_id")).toString(), deviceId);
+    }
+
     void expiredSession()
     {
         Network network;
