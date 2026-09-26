@@ -35,8 +35,13 @@ Contract verified against `VnextDevelopment/tunnelcore`, main commit
 Legacy HTTPS configuration URLs are fetched without the account Authorization header.
 Redirects are rejected; TLS verification stays enabled. Configuration contents
 go through the existing import preview and parser. A 401 on an authenticated
-request clears the account session. Logout cancels outstanding requests and
-clears the profile; previously imported VPN configurations remain available.
+request clears the unusable local account session without attempting another
+authenticated request. Explicit logout first calls `POST devices/revoke/` for
+the current `device_id`; only after the server has released the device slot and
+revoked its VPN peer does the client clear the local account session. A
+`device_not_found` response is treated as already released. Other revoke
+failures keep the session so the user can retry instead of silently leaking a
+device slot. Previously imported VPN configurations remain available.
 
 The access token, display name, account type and successful Telegram-link state
 are persisted through the application's encrypted `SecureQSettings` storage.
