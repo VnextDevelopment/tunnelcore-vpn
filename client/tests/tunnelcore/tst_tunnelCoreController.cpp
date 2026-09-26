@@ -2,6 +2,7 @@
 #include "../../core/utils/tunnelCoreObfuscation.h"
 
 #include <QDateTime>
+#include <QDesktopServices>
 #include <QNetworkReply>
 #include <QQueue>
 #include <QSignalSpy>
@@ -79,6 +80,13 @@ protected:
 class TunnelCoreTests : public QObject
 {
     Q_OBJECT
+    QUrl m_openedUrl;
+
+    Q_INVOKABLE void captureUrl(const QUrl &url)
+    {
+        m_openedUrl = url;
+    }
+
     static QByteArray countrySelectionResponse()
     {
         return "{\"ok\":true,\"selection\":{\"mode\":\"auto\",\"country\":null,"
@@ -152,6 +160,25 @@ class TunnelCoreTests : public QObject
         network.responses.enqueue({"{\"ok\":true,\"configs\":[{\"name\":\"VPN\",\"config\":\"https://node.example/config/one-time\"}]}"});
     }
 private slots:
+    void emailAccountRenewalOpensBotForLinking()
+    {
+        Network network;
+        enqueueLogin(network);
+        TunnelCoreController controller(nullptr, &network);
+        controller.loginEmail("user@example.com", "Strong-pass-2026!");
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(controller.emailAccount());
+        QVERIFY(!controller.telegramLinked());
+
+        m_openedUrl.clear();
+        QDesktopServices::setUrlHandler("https", this, "captureUrl");
+        controller.renewSubscription();
+        QDesktopServices::unsetUrlHandler("https");
+
+        QCOMPARE(m_openedUrl, QUrl("https://t.me/tunnelcoree_bot"));
+        QVERIFY(controller.error().isEmpty());
+    }
+
     void codeLogin()
     {
         Network network;
