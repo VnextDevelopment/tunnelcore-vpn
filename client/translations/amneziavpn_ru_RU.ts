@@ -6942,6 +6942,8 @@ Remove the server from the app to continue.</source>
     <message><source>No configuration is available for the selected VPN location. Refresh and try again.</source><translation>Для выбранной локации VPN нет конфигурации. Обновите список и попробуйте снова.</translation></message>
     <message><source>The login details or password are incorrect.</source><translation>Неверные данные для входа или пароль.</translation></message>
     <message><source>Your session has ended. Sign in again.</source><translation>Сессия завершена. Войдите снова.</translation></message>
+    <message><source>Could not sign out because this device is not registered.</source><translation>Не удалось выйти: это устройство не зарегистрировано.</translation></message>
+    <message><source>Could not sign out and release this device. Check your connection and try again.</source><translation>Не удалось выйти и освободить слот этого устройства. Проверьте подключение и повторите попытку.</translation></message>
     <message><source>Enter a valid email and password.</source><translation>Введите корректный email и пароль.</translation></message>
     <message><source>The server rejected the login details. Check the sign-in method and API version.</source><translation>Сервер не принял данные для входа. Проверьте способ входа и версию API.</translation></message>
     <message><source>The server rejected the login details.</source><translation>Сервер не принял данные для входа.</translation></message>
