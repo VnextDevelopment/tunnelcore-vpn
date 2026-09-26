@@ -1,6 +1,7 @@
 #include "tunnelCoreController.h"
 
 #include <QDebug>
+#include <QCryptographicHash>
 #include <QDateTime>
 #include <QDesktopServices>
 #include <QJsonArray>
@@ -27,6 +28,8 @@ namespace {
 const QString apiBase = QStringLiteral("https://tlsdmd.isgood.host/api/vpn/v1/");
 constexpr qint64 maxResponseSize = 2 * 1024 * 1024;
 constexpr qsizetype maxLoggedResponseSize = 2048;
+constexpr qint64 routingCacheRefreshIntervalSecs = 6 * 60 * 60;
+const QString routingCacheTimestampKey = QStringLiteral("_tunnelcore_cached_at");
 
 QPair<QString, QString> normalizeObfuscationPolicy(const QJsonObject &object)
 {
@@ -624,6 +627,8 @@ void TunnelCoreController::logout()
     m_subscriptionAutoRenew = false;
     m_subscriptionExpiresAt = {};
     m_lastSubscriptionNotificationKey.clear();
+    m_lastAppliedRoutingCacheKey.clear();
+    m_lastAppliedRoutingRevision.clear();
     if (m_sessionStorage.clear)
         m_sessionStorage.clear();
     emit changed();
@@ -748,55 +753,265 @@ void TunnelCoreController::refreshGeoRoutingCountries()
     });
 }
 
-void TunnelCoreController::refreshRouting()
+QString TunnelCoreController::routingCacheKey(const QString &countryCode) const
 {
-    const auto applyAndContinue = [this](const QJsonObject &routing) {
-        if (m_sessionStorage.applyRouting) {
-            QString errorMessage;
-            if (!m_sessionStorage.applyRouting(routing, errorMessage)) {
+    const auto country = countryCode.trimmed().toUpper();
+    if (country.isEmpty())
+        return QStringLiteral("default:%1").arg(routingPlatform());
+    return QStringLiteral("country:%1:%2").arg(country, routingPlatform());
+}
+
+QJsonObject TunnelCoreController::cachedRouting(const QString &cacheKey)
+{
+    const auto cached = m_routingCache.constFind(cacheKey);
+    if (cached != m_routingCache.constEnd())
+        return cached.value();
+
+    if (!m_sessionStorage.loadRoutingCache)
+        return {};
+
+    const auto stored = m_sessionStorage.loadRoutingCache(cacheKey);
+    if (!stored.value(QStringLiteral("rules")).isArray())
+        return {};
+
+    m_routingCache.insert(cacheKey, stored);
+    return stored;
+}
+
+void TunnelCoreController::storeRoutingCache(const QString &cacheKey, const QJsonObject &routing)
+{
+    if (!routing.value(QStringLiteral("rules")).isArray())
+        return;
+
+    auto stored = routing;
+    stored.insert(routingCacheTimestampKey,
+                  QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs));
+    m_routingCache.insert(cacheKey, stored);
+    if (m_sessionStorage.saveRoutingCache)
+        m_sessionStorage.saveRoutingCache(cacheKey, stored);
+}
+
+bool TunnelCoreController::routingCacheIsFresh(const QJsonObject &routing) const
+{
+    const auto rawTimestamp = routing.value(routingCacheTimestampKey).toString();
+    auto cachedAt = QDateTime::fromString(rawTimestamp, Qt::ISODateWithMs);
+    if (!cachedAt.isValid())
+        cachedAt = QDateTime::fromString(rawTimestamp, Qt::ISODate);
+    if (!cachedAt.isValid())
+        return false;
+
+    const auto age = cachedAt.toUTC().secsTo(QDateTime::currentDateTimeUtc());
+    return age >= 0 && age < routingCacheRefreshIntervalSecs;
+}
+
+QString TunnelCoreController::routingRevision(const QJsonObject &routing) const
+{
+    const auto version = routing.value(QStringLiteral("version")).toString().trimmed();
+    if (!version.isEmpty())
+        return version;
+
+    auto canonical = routing;
+    canonical.remove(routingCacheTimestampKey);
+    return QString::fromLatin1(
+        QCryptographicHash::hash(
+            QJsonDocument(canonical).toJson(QJsonDocument::Compact),
+            QCryptographicHash::Sha256).toHex());
+}
+
+bool TunnelCoreController::normalizeRoutingResponse(const QString &countryCode,
+                                                    const QJsonObject &object,
+                                                    QJsonObject &routing,
+                                                    QString &errorMessage) const
+{
+    const auto country = countryCode.trimmed().toUpper();
+    if (country.isEmpty()) {
+        if (!object.value(QStringLiteral("rules")).isArray()) {
+            errorMessage = tr("The server returned an invalid VPN routing rule list.");
+            return false;
+        }
+        routing = object;
+        return true;
+    }
+
+    if (object.value(QStringLiteral("mode")).toString() != QStringLiteral("country_direct")
+        || object.value(QStringLiteral("default_route")).toString() != QStringLiteral("vpn")
+        || object.value(QStringLiteral("country_route")).toString() != QStringLiteral("direct")
+        || !object.value(QStringLiteral("ipv4")).isArray()) {
+        errorMessage = tr("The server returned invalid country routing data.");
+        return false;
+    }
+
+    QJsonArray rules;
+    for (const auto &value : object.value(QStringLiteral("ipv4")).toArray()) {
+        const auto subnet = value.toString().trimmed();
+        if (subnet.isEmpty())
+            continue;
+        rules.append(QJsonObject{
+            {QStringLiteral("type"), QStringLiteral("ip")},
+            {QStringLiteral("value"), subnet},
+            {QStringLiteral("route"), QStringLiteral("direct")},
+            {QStringLiteral("priority"), 0},
+        });
+    }
+
+    routing = QJsonObject{
+        {QStringLiteral("ok"), true},
+        {QStringLiteral("version"), object.value(QStringLiteral("version"))},
+        {QStringLiteral("platform"), routingPlatform()},
+        {QStringLiteral("country"), country},
+        {QStringLiteral("rules"), rules},
+    };
+
+    qInfo() << "[TunnelCore routing] prepared GeoIP direct country"
+            << country << "IPv4 routes=" << rules.size()
+            << "IPv6 routes kept inside VPN="
+            << object.value(QStringLiteral("ipv6")).toArray().size();
+    return true;
+}
+
+bool TunnelCoreController::applyRouting(const QString &cacheKey, const QJsonObject &routing,
+                                        bool reportError)
+{
+    if (!routing.value(QStringLiteral("rules")).isArray()) {
+        if (reportError)
+            fail(tr("The server returned an invalid VPN routing rule list."));
+        return false;
+    }
+
+    const auto revision = routingRevision(routing);
+    if (cacheKey == m_lastAppliedRoutingCacheKey
+        && revision == m_lastAppliedRoutingRevision) {
+        qInfo() << "[TunnelCore routing] unchanged routing already applied"
+                << cacheKey << revision;
+        return true;
+    }
+
+    if (m_sessionStorage.applyRouting) {
+        QString errorMessage;
+        if (!m_sessionStorage.applyRouting(routing, errorMessage)) {
+            if (reportError) {
                 fail(errorMessage.isEmpty()
                          ? tr("Could not apply the VPN routing rules.")
                          : errorMessage);
-                return;
+            } else {
+                qWarning() << "[TunnelCore routing] cached routing could not be applied"
+                           << cacheKey << errorMessage;
             }
+            return false;
         }
+    }
+
+    m_lastAppliedRoutingCacheKey = cacheKey;
+    m_lastAppliedRoutingRevision = revision;
+    return true;
+}
+
+void TunnelCoreController::refreshRoutingCacheInBackground(const QString &cacheKey,
+                                                           const QString &countryCode)
+{
+    if (!authenticated() || m_routingRefreshInFlight.contains(cacheKey))
+        return;
+
+    const auto country = countryCode.trimmed().toUpper();
+    const auto path = country.isEmpty()
+                          ? QStringLiteral("routing/?platform=%1").arg(routingPlatform())
+                          : QStringLiteral("routing/countries/%1/").arg(country);
+    QNetworkRequest networkRequest { QUrl(apiBase + path) };
+    networkRequest.setTransferTimeout(30000);
+    networkRequest.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                                QNetworkRequest::ManualRedirectPolicy);
+    networkRequest.setRawHeader("Accept", "application/json");
+    networkRequest.setRawHeader("Authorization", "Bearer " + m_token);
+
+    qInfo().noquote() << "[TunnelCore routing] background refresh GET"
+                      << networkRequest.url().toString(QUrl::FullyEncoded);
+
+    auto *reply = m_network->get(networkRequest);
+    m_routingRefreshInFlight.insert(cacheKey);
+    const auto generation = m_generation;
+
+    connect(reply, &QNetworkReply::readyRead, this, [reply]() {
+        if (reply->bytesAvailable() > maxResponseSize)
+            reply->abort();
+    });
+    connect(reply, &QNetworkReply::finished, this,
+            [this, reply, generation, cacheKey, country]() {
+        reply->deleteLater();
+        m_routingRefreshInFlight.remove(cacheKey);
+        if (generation != m_generation)
+            return;
+
+        const auto status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        const auto responseBody = reply->readAll();
+        if (reply->error() != QNetworkReply::NoError || status < 200 || status >= 300) {
+            qWarning() << "[TunnelCore routing] background refresh failed"
+                       << cacheKey << "status=" << status << reply->errorString();
+            return;
+        }
+
+        QJsonParseError parseError;
+        const auto document = QJsonDocument::fromJson(responseBody, &parseError);
+        if (parseError.error != QJsonParseError::NoError || !document.isObject()
+            || !document.object().value(QStringLiteral("ok")).toBool()) {
+            qWarning() << "[TunnelCore routing] background refresh returned invalid JSON"
+                       << cacheKey;
+            return;
+        }
+
+        QJsonObject routing;
+        QString errorMessage;
+        if (!normalizeRoutingResponse(country, document.object(), routing, errorMessage)) {
+            qWarning() << "[TunnelCore routing] background refresh returned invalid routing"
+                       << cacheKey << errorMessage;
+            return;
+        }
+
+        const auto previousRevision = routingRevision(cachedRouting(cacheKey));
+        const auto nextRevision = routingRevision(routing);
+        storeRoutingCache(cacheKey, routing);
+        qInfo() << "[TunnelCore routing]"
+                << (previousRevision == nextRevision ? "cache validated" : "cache updated")
+                << cacheKey << nextRevision;
+    });
+}
+
+void TunnelCoreController::refreshRouting()
+{
+    const auto country = m_geoRoutingCountry.trimmed().toUpper();
+    const auto cacheKey = routingCacheKey(country);
+    const auto cached = cachedRouting(cacheKey);
+
+    if (!cached.isEmpty() && cached.value(QStringLiteral("rules")).isArray()) {
+        if (!applyRouting(cacheKey, cached))
+            return;
+
+        const bool fresh = routingCacheIsFresh(cached);
+        qInfo() << "[TunnelCore routing] cache hit"
+                << cacheKey << "revision=" << routingRevision(cached)
+                << "fresh=" << fresh;
+
+        refreshConfigs();
+        if (!fresh)
+            refreshRoutingCacheInBackground(cacheKey, country);
+        return;
+    }
+
+    const auto applyAndContinue = [this, cacheKey](const QJsonObject &routing) {
+        storeRoutingCache(cacheKey, routing);
+        if (!applyRouting(cacheKey, routing))
+            return;
         refreshConfigs();
     };
 
-    if (!m_geoRoutingCountry.isEmpty()) {
-        const auto path = QStringLiteral("routing/countries/%1/").arg(m_geoRoutingCountry);
-        request(path, {}, [this, applyAndContinue](const QJsonObject &object) {
-            if (object.value("mode").toString() != QStringLiteral("country_direct")
-                || object.value("default_route").toString() != QStringLiteral("vpn")
-                || object.value("country_route").toString() != QStringLiteral("direct")
-                || !object.value("ipv4").isArray()) {
-                fail(tr("The server returned invalid country routing data."));
+    if (!country.isEmpty()) {
+        const auto path = QStringLiteral("routing/countries/%1/").arg(country);
+        request(path, {}, [this, country, applyAndContinue](const QJsonObject &object) {
+            QJsonObject routing;
+            QString errorMessage;
+            if (!normalizeRoutingResponse(country, object, routing, errorMessage)) {
+                fail(errorMessage);
                 return;
             }
-
-            QJsonArray rules;
-            for (const auto &value : object.value("ipv4").toArray()) {
-                const auto subnet = value.toString().trimmed();
-                if (subnet.isEmpty())
-                    continue;
-                rules.append(QJsonObject{
-                    {QStringLiteral("type"), QStringLiteral("ip")},
-                    {QStringLiteral("value"), subnet},
-                    {QStringLiteral("route"), QStringLiteral("direct")},
-                    {QStringLiteral("priority"), 0},
-                });
-            }
-
-            QJsonObject routing{
-                {QStringLiteral("ok"), true},
-                {QStringLiteral("version"), object.value("version")},
-                {QStringLiteral("platform"), routingPlatform()},
-                {QStringLiteral("rules"), rules},
-            };
-            qInfo() << "[TunnelCore routing] applying GeoIP direct country"
-                    << m_geoRoutingCountry << "IPv4 routes=" << rules.size()
-                    << "IPv6 routes kept inside VPN="
-                    << object.value("ipv6").toArray().size();
             applyAndContinue(routing);
         }, false, [this](int status, const QJsonObject &object) {
             const auto apiError = object.value("error").toString();
@@ -815,9 +1030,16 @@ void TunnelCoreController::refreshRouting()
     }
 
     const auto path = QStringLiteral("routing/?platform=%1").arg(routingPlatform());
-    request(path, {}, applyAndContinue, false, [this](int status, const QJsonObject &) {
+    request(path, {}, [this, applyAndContinue](const QJsonObject &object) {
+        QJsonObject routing;
+        QString errorMessage;
+        if (!normalizeRoutingResponse(QString(), object, routing, errorMessage)) {
+            fail(errorMessage);
+            return;
+        }
+        applyAndContinue(routing);
+    }, false, [this](int status, const QJsonObject &) {
         if (status == 404) {
-            // Compatibility with servers that have not deployed server-managed routing yet.
             refreshConfigs();
             return;
         }

@@ -180,6 +180,24 @@ void SecureAppSettingsRepository::addVpnSites(RouteMode mode, const QMap<QString
     emit sitesChanged(mode);
 }
 
+void SecureAppSettingsRepository::replaceVpnSites(
+    RouteMode mode, const QMap<QString, QStringList> &sites)
+{
+    QVariantMap replacement;
+    for (auto it = sites.constBegin(); it != sites.constEnd(); ++it) {
+        QStringList normalizedIps = it.value();
+        normalizedIps.removeAll(QString());
+        normalizedIps.removeDuplicates();
+        replacement.insert(it.key(), normalizedIps);
+    }
+
+    if (vpnSites(mode) == replacement)
+        return;
+
+    setVpnSites(mode, replacement);
+    emit sitesChanged(mode);
+}
+
 void SecureAppSettingsRepository::removeVpnSite(RouteMode mode, const QString &site)
 {
     QVariantMap sites = vpnSites(mode);

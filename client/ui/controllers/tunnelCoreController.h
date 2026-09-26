@@ -1,11 +1,13 @@
 #pragma once
 
 #include <QDateTime>
+#include <QHash>
 #include <QJsonObject>
 #include <QNetworkAccessManager>
 #include <QObject>
 #include <QPointer>
 #include <QPair>
+#include <QSet>
 #include <QVariantList>
 #include <functional>
 #include <tuple>
@@ -21,6 +23,8 @@ struct TunnelCoreSessionStorage
     std::function<bool(const QJsonObject &, QString &)> applyRouting;
     std::function<QString()> loadGeoRoutingCountry;
     std::function<void(const QString &)> saveGeoRoutingCountry;
+    std::function<QJsonObject(const QString &)> loadRoutingCache;
+    std::function<void(const QString &, const QJsonObject &)> saveRoutingCache;
     std::function<QString()> loadDeviceId;
     std::function<void(const QString &)> saveDeviceId;
 };
@@ -111,6 +115,15 @@ private:
     void refreshRouting();
     void refreshGeoRoutingCountries();
     QString routingPlatform() const;
+    QString routingCacheKey(const QString &countryCode) const;
+    QJsonObject cachedRouting(const QString &cacheKey);
+    void storeRoutingCache(const QString &cacheKey, const QJsonObject &routing);
+    bool routingCacheIsFresh(const QJsonObject &routing) const;
+    QString routingRevision(const QJsonObject &routing) const;
+    bool normalizeRoutingResponse(const QString &countryCode, const QJsonObject &object,
+                                  QJsonObject &routing, QString &errorMessage) const;
+    bool applyRouting(const QString &cacheKey, const QJsonObject &routing, bool reportError = true);
+    void refreshRoutingCacheInBackground(const QString &cacheKey, const QString &countryCode);
     void deliverConfig(const QString &data, const QString &fileName,
                        const QString &obfuscationMode, const QString &obfuscationProfile);
     void updateSubscriptionState(const QJsonObject &accountObject);
@@ -131,6 +144,10 @@ private:
     qint64 m_selectedConfigId = 0;
     QVariantList m_geoRoutingCountries;
     QString m_geoRoutingCountry;
+    QHash<QString, QJsonObject> m_routingCache;
+    QSet<QString> m_routingRefreshInFlight;
+    QString m_lastAppliedRoutingCacheKey;
+    QString m_lastAppliedRoutingRevision;
     QString m_deviceId;
     TunnelCoreSessionStorage m_sessionStorage;
     bool m_busy = false;
