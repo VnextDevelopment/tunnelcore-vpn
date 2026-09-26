@@ -128,6 +128,7 @@ private:
                        const QString &obfuscationMode, const QString &obfuscationProfile);
     void updateSubscriptionState(const QJsonObject &accountObject);
     void maybeNotifySubscription();
+    void clearSession();
     void fail(const QString &message);
     QNetworkAccessManager *m_network;
     QPointer<QNetworkReply> m_reply;
