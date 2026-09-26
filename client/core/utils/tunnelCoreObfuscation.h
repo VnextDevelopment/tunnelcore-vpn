@@ -2,6 +2,7 @@
 #define TUNNELCOREOBFUSCATION_H
 
 #include <QByteArray>
+#include <QCryptographicHash>
 #include <QList>
 #include <QRandomGenerator>
 #include <QString>
@@ -74,7 +75,22 @@ inline QString dnsQueryExpression(const QString &domain, bool ipv6, int paddingB
         + QLatin1Char('>');
 }
 
-inline PacketSet generate(const QString &requestedProfile)
+inline int stableProfileIndex(const QString &stableProfileKey, int profileCount)
+{
+    if (stableProfileKey.isEmpty() || profileCount <= 0)
+        return -1;
+
+    const auto digest = QCryptographicHash::hash(
+        stableProfileKey.toUtf8(), QCryptographicHash::Sha256);
+    quint32 value = 0;
+    for (int i = 0; i < 4 && i < digest.size(); ++i)
+        value = (value << 8) | quint8(digest.at(i));
+
+    return int(value % quint32(profileCount));
+}
+
+inline PacketSet generate(const QString &requestedProfile,
+                          const QString &stableProfileKey = {})
 {
     const QList<DnsProfile> profiles {
         {
@@ -124,8 +140,15 @@ inline PacketSet generate(const QString &requestedProfile)
     }
 
     auto *rng = QRandomGenerator::system();
-    if (profileIndex < 0)
-        profileIndex = int(rng->bounded(quint32(profiles.size())));
+    if (profileIndex < 0) {
+        // In auto mode pin the DNS family to the managed TunnelCore profile.
+        // Reconnects still get fresh transaction IDs, A/AAAA choices and
+        // padding, but do not jump between unrelated mail/yandex/vk families.
+        const int pinnedIndex = stableProfileIndex(stableProfileKey, profiles.size());
+        profileIndex = pinnedIndex >= 0
+                           ? pinnedIndex
+                           : int(rng->bounded(quint32(profiles.size())));
+    }
 
     const auto &profile = profiles.at(profileIndex);
     const int domainOffset = int(rng->bounded(quint32(profile.domains.size())));
