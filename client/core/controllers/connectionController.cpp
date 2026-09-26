@@ -51,13 +51,14 @@ void replaceAwgNativeParameter(QString &nativeConfig, const QString &key, const 
     }
 }
 
-bool applyTunnelCoreDynamicObfuscation(ContainerConfig &containerConfig, const QString &requestedProfile)
+bool applyTunnelCoreDynamicObfuscation(ContainerConfig &containerConfig, const QString &requestedProfile,
+                                       const QString &stableProfileKey)
 {
     auto *awg = containerConfig.getAwgProtocolConfig();
     if (!awg || !awg->clientConfig.has_value())
         return false;
 
-    const auto generated = TunnelCoreObfuscation::generate(requestedProfile);
+    const auto generated = TunnelCoreObfuscation::generate(requestedProfile, stableProfileKey);
     if (generated.packets.size() != 5
         || std::any_of(generated.packets.cbegin(), generated.packets.cend(),
                        [](const QString &packet) { return packet.isEmpty(); })) {
@@ -246,7 +247,9 @@ ErrorCode ConnectionController::prepareConnection(const QString &serverId,
                    QStringLiteral("client_dynamic"), Qt::CaseInsensitive) == 0
             && ContainerUtils::isAwgContainer(container)) {
             if (!applyTunnelCoreDynamicObfuscation(
-                    containerConfigModel, cfg->managedObfuscationProfile)) {
+                    containerConfigModel,
+                    cfg->managedObfuscationProfile,
+                    cfg->managedProfileKey)) {
                 qWarning() << "[TunnelCore] failed to generate dynamic AWG I1-I5; using static fallback";
             }
         }
