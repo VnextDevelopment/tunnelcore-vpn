@@ -511,6 +511,31 @@ private slots:
             QVERIFY(packet.endsWith(QLatin1Char('>')));
         }
     }
+    void automaticObfuscationKeepsProfileStableAcrossReconnects()
+    {
+        const QString stableProfileKey =
+            QStringLiteral("[\"client\",\"17\",\"DE\"]");
+
+        const auto first =
+            TunnelCoreObfuscation::generate(QStringLiteral("auto"), stableProfileKey);
+        QVERIFY(!first.profile.isEmpty());
+        QCOMPARE(first.packets.size(), 5);
+
+        for (int i = 0; i < 20; ++i) {
+            const auto reconnect =
+                TunnelCoreObfuscation::generate(QStringLiteral("auto"), stableProfileKey);
+            QCOMPARE(reconnect.profile, first.profile);
+            QCOMPARE(reconnect.sourceDomain, first.sourceDomain);
+            QCOMPARE(reconnect.packets.size(), 5);
+        }
+
+        // An explicit backend profile must always override the stable auto choice.
+        const auto explicitProfile =
+            TunnelCoreObfuscation::generate(QStringLiteral("vk_dns"), stableProfileKey);
+        QCOMPARE(explicitProfile.profile, QStringLiteral("vk_dns"));
+        QCOMPARE(explicitProfile.sourceDomain, QStringLiteral("vk.com"));
+    }
+
     void currentLocationUsesMatchingConfigNotFirst()
     {
         Network network;
