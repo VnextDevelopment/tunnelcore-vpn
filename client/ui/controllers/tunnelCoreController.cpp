@@ -233,7 +233,7 @@ void TunnelCoreController::renewSubscription()
                     [this](int status, const QJsonObject &object) {
                         const auto apiError = object.value(QStringLiteral("error")).toString();
                         if (status == 401) {
-                            logout();
+                            clearSession();
                             fail(tr("Your session has ended. Sign in again."));
                         } else if (status == 503) {
                             fail(tr("App Store renewal is temporarily unavailable."));
@@ -334,7 +334,7 @@ void TunnelCoreController::registerDevice(bool emitSignedIn)
     }, true, [this, emitSignedIn](int status, const QJsonObject &object) {
         const auto apiError = object.value(QStringLiteral("error")).toString();
         if (status == 401) {
-            logout();
+            clearSession();
             fail(tr("Your session has ended. Sign in again."));
         } else if (status == 409 && apiError == QStringLiteral("device_limit_reached")) {
             if (emitSignedIn)
@@ -437,7 +437,7 @@ void TunnelCoreController::request(const QString &path, const QJsonObject &body,
         }
         if (status == 401) {
             if (!post)
-                logout();
+                clearSession();
             fail(post ? tr("The login details or password are incorrect.") : tr("Your session has ended. Sign in again."));
             return;
         }
@@ -542,7 +542,7 @@ void TunnelCoreController::linkTelegram(const QString &code)
         if (status == 401 && apiError == "invalid_or_expired_code") {
             fail(tr("The Telegram code is invalid or has expired. Request a new code in the bot."));
         } else if (status == 401 && apiError == "unauthorized") {
-            logout();
+            clearSession();
             fail(tr("Your session has ended. Sign in again."));
         } else if (status == 403 && apiError == "email_account_required") {
             fail(tr("Telegram can only be linked to an email account."));
@@ -602,7 +602,7 @@ void TunnelCoreController::authenticate(const QString &path, const QJsonObject &
     });
 }
 
-void TunnelCoreController::logout()
+void TunnelCoreController::clearSession()
 {
     ++m_generation;
     if (m_reply) {
@@ -632,6 +632,49 @@ void TunnelCoreController::logout()
     if (m_sessionStorage.clear)
         m_sessionStorage.clear();
     emit changed();
+}
+
+void TunnelCoreController::logout()
+{
+    // A login request may still be in flight and there is no authenticated
+    // device to revoke yet. Preserve the old "cancel sign-in" behaviour.
+    if (!authenticated()) {
+        clearSession();
+        return;
+    }
+
+    // A successful explicit logout must release the tariff device slot and
+    // revoke the device peer before the bearer token is discarded locally.
+    if (m_deviceId.isEmpty()) {
+        fail(tr("Could not sign out because this device is not registered."));
+        return;
+    }
+
+    const QJsonObject body {
+        {QStringLiteral("device_id"), m_deviceId},
+    };
+    request(QStringLiteral("devices/revoke/"), body,
+            [this](const QJsonObject &) {
+                clearSession();
+            },
+            true,
+            [this](int status, const QJsonObject &object) {
+                const auto apiError = object.value(QStringLiteral("error")).toString();
+                if (status == 401) {
+                    // The token can no longer authorize a revoke. Clear the
+                    // unusable local session without recursively starting logout.
+                    clearSession();
+                    fail(tr("Your session has ended. Sign in again."));
+                    return;
+                }
+                if (status == 404 && apiError == QStringLiteral("device_not_found")) {
+                    // The server already considers the slot free.
+                    clearSession();
+                    return;
+                }
+                fail(tr("Could not sign out and release this device. Check your connection and try again."));
+            },
+            true);
 }
 
 bool TunnelCoreController::applyVpnCountrySelection(const QJsonObject &object)
@@ -745,7 +788,7 @@ void TunnelCoreController::refreshGeoRoutingCountries()
             return;
         }
         if (status == 401) {
-            logout();
+            clearSession();
             fail(tr("Your session has ended. Sign in again."));
             return;
         }
@@ -1016,7 +1059,7 @@ void TunnelCoreController::refreshRouting()
         }, false, [this](int status, const QJsonObject &object) {
             const auto apiError = object.value("error").toString();
             if (status == 401) {
-                logout();
+                clearSession();
                 fail(tr("Your session has ended. Sign in again."));
             } else if (status == 404 || apiError == "country_disabled") {
                 fail(tr("This split-tunneling country is no longer available."));
@@ -1044,7 +1087,7 @@ void TunnelCoreController::refreshRouting()
             return;
         }
         if (status == 401) {
-            logout();
+            clearSession();
             fail(tr("Your session has ended. Sign in again."));
             return;
         }
@@ -1088,7 +1131,7 @@ void TunnelCoreController::refresh()
                 return;
             }
             if (status == 401) {
-                logout();
+                clearSession();
                 fail(tr("Your session has ended. Sign in again."));
                 return;
             }
@@ -1175,7 +1218,7 @@ void TunnelCoreController::selectVpnCountry(const QString &countryCode)
     }, true, [this](int status, const QJsonObject &object) {
         const auto apiError = object.value("error").toString();
         if (status == 401) {
-            logout();
+            clearSession();
             fail(tr("Your session has ended. Sign in again."));
         } else if (status == 409 || apiError == "country_unavailable") {
             fail(tr("This VPN country is temporarily unavailable. Choose another country or Automatic."));
@@ -1261,7 +1304,7 @@ void TunnelCoreController::selectConfig(int index)
     }, false, [this](int status, const QJsonObject &object) {
         const auto apiError = object.value("error").toString();
         if (status == 401) {
-            logout();
+            clearSession();
             fail(tr("Your session has ended. Sign in again."));
         } else if (status == 404 || apiError == "config_not_found") {
             fail(tr("This configuration has already been retrieved or is no longer available. Refresh the list."));
