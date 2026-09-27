@@ -677,6 +677,30 @@ void TunnelCoreController::logout()
             true);
 }
 
+
+void TunnelCoreController::logoutAll()
+{
+    if (!authenticated()) {
+        clearSession();
+        return;
+    }
+
+    request(QStringLiteral("devices/revoke-all/"), {},
+            [this](const QJsonObject &) {
+                clearSession();
+            },
+            true,
+            [this](int status, const QJsonObject &) {
+                if (status == 401) {
+                    clearSession();
+                    fail(tr("Your session has ended. Sign in again."));
+                    return;
+                }
+                fail(tr("Could not sign out on all devices. Check your connection and try again."));
+            },
+            true);
+}
+
 bool TunnelCoreController::applyVpnCountrySelection(const QJsonObject &object)
 {
     const auto selectionValue = object.value("selection");
