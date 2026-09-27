@@ -20,6 +20,9 @@ Contract verified against `VnextDevelopment/tunnelcore`, main commit
   UUID in `device_id` and the client `platform`. Registration is idempotent for
   the same account and device; `device_limit_reached` (409) means the tariff's
   device allowance is exhausted.
+- `POST devices/revoke-all/`: Bearer token; revokes every registered device and
+  VPN peer for the account, releases all device slots and invalidates all bearer
+  tokens issued before the request.
 - `GET configs/?device_id=<uuid>`: Bearer token; response contains safe configuration metadata
   (`id`, `name`, `location`, `protocol`, `expires_at`) without a private URL.
 - `GET configs/<id>/?device_id=<uuid>`: Bearer token; consumes the application-specific one-time
@@ -41,7 +44,12 @@ the current `device_id`; only after the server has released the device slot and
 revoked its VPN peer does the client clear the local account session. A
 `device_not_found` response is treated as already released. Other revoke
 failures keep the session so the user can retry instead of silently leaking a
-device slot. Previously imported VPN configurations remain available.
+device slot. "Sign out on all devices" calls `POST devices/revoke-all/`; the
+server revokes every active device peer and rotates the account token generation,
+so existing app sessions cannot silently register themselves again. The client
+clears its own local session only after the global revoke succeeds. Previously
+imported VPN configurations may remain on disk, but their server-side peers are
+revoked.
 
 The access token, display name, account type and successful Telegram-link state
 are persisted through the application's encrypted `SecureQSettings` storage.
