@@ -86,6 +86,7 @@ public:
     Q_INVOKABLE void linkTelegram(const QString &code);
     Q_INVOKABLE void clearError();
     Q_INVOKABLE void logout();
+    Q_INVOKABLE void logoutAll();
     Q_INVOKABLE void refresh();
     Q_INVOKABLE void selectConfig(int index);
     Q_INVOKABLE void selectCurrentConfig();
