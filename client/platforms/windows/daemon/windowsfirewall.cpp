@@ -348,9 +348,9 @@ bool WindowsFirewall::enablePeerTraffic(const InterfaceConfig& config) {
   }
 
   if (!config.m_excludedAddresses.empty()) {
+    logger.debug() << "Allow excluded address ranges:"
+                   << config.m_excludedAddresses.size();
     for (const QString& i : config.m_excludedAddresses) {
-      logger.debug() << "excludedAddresses range: " << i;
-
       if (!allowTrafficTo(i, HIGH_WEIGHT,
                           "Allow Ecxlude route", config.m_serverPublicKey)) {
         return false;

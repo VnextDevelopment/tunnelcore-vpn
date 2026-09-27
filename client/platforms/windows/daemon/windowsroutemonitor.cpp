@@ -4,6 +4,7 @@
 
 #include "windowsroutemonitor.h"
 
+#include <QElapsedTimer>
 #include <QScopeGuard>
 
 #include "leakdetector.h"
@@ -366,8 +367,64 @@ void WindowsRouteMonitor::updateCapturedRoutes(int family, void* ptable) {
 }
 
 bool WindowsRouteMonitor::addExclusionRoute(const IPAddress& prefix) {
-  logger.debug() << "Adding exclusion route for" << prefix.toString();
+  return addExclusionRoutes({prefix});
+}
 
+bool WindowsRouteMonitor::addExclusionRoutes(
+    const QList<IPAddress>& prefixes) {
+  QElapsedTimer timer;
+  timer.start();
+  bool success = true;
+  QList<IPAddress> addedPrefixes;
+
+  const int families[] = {AF_INET, AF_INET6};
+  for (const int family : families) {
+    QList<IPAddress> familyPrefixes;
+    for (const IPAddress& prefix : prefixes) {
+      const bool isIpv6 = prefix.address().protocol() ==
+                          QAbstractSocket::IPv6Protocol;
+      if ((family == AF_INET6) == isIpv6) {
+        familyPrefixes.append(prefix);
+      }
+    }
+    if (familyPrefixes.isEmpty()) {
+      continue;
+    }
+
+    PMIB_IPFORWARD_TABLE2 table;
+    const DWORD result = GetIpForwardTable2(family, &table);
+    if (result != NO_ERROR) {
+      logger.error() << "Failed to fetch routing table:" << result;
+      success = false;
+      continue;
+    }
+
+    updateInterfaceMetrics(family);
+    updateCapturedRoutes(family, table);
+    for (const IPAddress& prefix : familyPrefixes) {
+      if (addExclusionRoute(prefix, table)) {
+        addedPrefixes.append(prefix);
+      } else {
+        success = false;
+      }
+    }
+    FreeMibTable(table);
+  }
+
+  if (!success) {
+    for (const IPAddress& prefix : addedPrefixes) {
+      deleteExclusionRoute(prefix);
+    }
+    return false;
+  }
+
+  logger.debug() << "Configured exclusion routes:" << prefixes.size()
+                 << "in" << timer.elapsed() << "ms";
+  return true;
+}
+
+bool WindowsRouteMonitor::addExclusionRoute(const IPAddress& prefix,
+                                            void* table) {
   // Silently ignore non-routeable addresses.
   QHostAddress addr = prefix.address();
   if (addr.isLoopback() || addr.isBroadcast() || addr.isLinkLocal() ||
@@ -409,24 +466,7 @@ bool WindowsRouteMonitor::addExclusionRoute(const IPAddress& prefix) {
   data->Immortal = false;
   data->Age = 0;
 
-  PMIB_IPFORWARD_TABLE2 table;
-  int family;
-  if (prefix.address().protocol() == QAbstractSocket::IPv6Protocol) {
-    family = AF_INET6;
-  } else {
-    family = AF_INET;
-  }
-
-  DWORD result = GetIpForwardTable2(family, &table);
-  if (result != NO_ERROR) {
-    logger.error() << "Failed to fetch routing table:" << result;
-    delete data;
-    return false;
-  }
-  updateInterfaceMetrics(family);
-  updateCapturedRoutes(family, table);
   updateExclusionRoute(data, table);
-  FreeMibTable(table);
 
   m_exclusionRoutes[prefix] = data;
   return true;
