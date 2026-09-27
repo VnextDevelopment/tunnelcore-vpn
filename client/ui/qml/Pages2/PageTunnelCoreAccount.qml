@@ -507,6 +507,36 @@ PageType {
                     text: qsTr("Signing out ends the account session. Imported VPN configurations remain on this device.")
                     color: AmneziaStyle.color.mutedGray
                 }
+                BasicButtonType {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 8
+                    text: qsTr("Sign out on all devices")
+                    enabled: !TunnelCoreController.busy && !root.importingProfile
+                             && root.pendingVpnCountry.length === 0
+                    defaultColor: AmneziaStyle.color.vibrantRed
+                    hoveredColor: AmneziaStyle.color.vibrantRed
+                    pressedColor: AmneziaStyle.color.vibrantRed
+                    textColor: AmneziaStyle.color.paleGray
+                    clickedFunc: function() {
+                        showQuestionDrawer(
+                            qsTr("Sign out on all devices?"),
+                            qsTr("All TunnelCore VPN sessions and registered VPN devices will be revoked. You will need to sign in again on every device."),
+                            qsTr("Sign out everywhere"),
+                            qsTr("Cancel"),
+                            function() {
+                                if (ConnectionController.isConnected || ConnectionController.isConnectionInProgress)
+                                    ConnectionController.closeConnection()
+                                TunnelCoreController.logoutAll()
+                            },
+                            function() {}
+                        )
+                    }
+                }
+                SmallTextType {
+                    Layout.fillWidth: true
+                    text: qsTr("Use this if a device was lost, replaced, or you need to reset all device slots.")
+                    color: AmneziaStyle.color.mutedGray
+                }
 
                 ColumnLayout {
                     Layout.fillWidth: true
