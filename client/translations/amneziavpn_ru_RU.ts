@@ -6913,6 +6913,11 @@ Remove the server from the app to continue.</source>
     <message><source>Refresh</source><translation>Обновить</translation></message>
     <message><source>Sign out</source><translation>Выйти из аккаунта</translation></message>
     <message><source>Signing out ends the account session. Imported VPN configurations remain on this device.</source><translation>Выход завершает сессию аккаунта. Импортированные VPN-конфигурации остаются на устройстве.</translation></message>
+    <message><source>Sign out on all devices</source><translation>Выйти на всех устройствах</translation></message>
+    <message><source>Sign out on all devices?</source><translation>Выйти на всех устройствах?</translation></message>
+    <message><source>All TunnelCore VPN sessions and registered VPN devices will be revoked. You will need to sign in again on every device.</source><translation>Все сессии TunnelCore VPN и зарегистрированные VPN-устройства будут отозваны. На каждом устройстве потребуется войти заново.</translation></message>
+    <message><source>Sign out everywhere</source><translation>Выйти везде</translation></message>
+    <message><source>Use this if a device was lost, replaced, or you need to reset all device slots.</source><translation>Используйте эту кнопку, если устройство потеряно, заменено или нужно освободить все слоты устройств.</translation></message>
     <message><source>Go to connection</source><translation>К подключению</translation></message>
     <message><source>Import configuration</source><translation>Импорт конфигурации</translation></message>
     <message><source>Create a TunnelCore account with your email and password.</source><translation>Создайте аккаунт TunnelCore, указав email и пароль.</translation></message>
@@ -6944,6 +6949,7 @@ Remove the server from the app to continue.</source>
     <message><source>Your session has ended. Sign in again.</source><translation>Сессия завершена. Войдите снова.</translation></message>
     <message><source>Could not sign out because this device is not registered.</source><translation>Не удалось выйти: это устройство не зарегистрировано.</translation></message>
     <message><source>Could not sign out and release this device. Check your connection and try again.</source><translation>Не удалось выйти и освободить слот этого устройства. Проверьте подключение и повторите попытку.</translation></message>
+    <message><source>Could not sign out on all devices. Check your connection and try again.</source><translation>Не удалось выйти на всех устройствах. Проверьте подключение и повторите попытку.</translation></message>
     <message><source>Enter a valid email and password.</source><translation>Введите корректный email и пароль.</translation></message>
     <message><source>The server rejected the login details. Check the sign-in method and API version.</source><translation>Сервер не принял данные для входа. Проверьте способ входа и версию API.</translation></message>
     <message><source>The server rejected the login details.</source><translation>Сервер не принял данные для входа.</translation></message>
