@@ -885,6 +885,27 @@ private slots:
         QCOMPARE(revokeBody.value(QStringLiteral("device_id")).toString(), deviceId);
     }
 
+    void logoutAllRevokesEveryDevice()
+    {
+        Network network;
+        enqueueLogin(network);
+        TunnelCoreController controller(nullptr, &network);
+        controller.loginCode("012345");
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(controller.authenticated());
+
+        network.responses.enqueue({"{\"ok\":true,\"devices_revoked\":2,\"devices_used\":0,\"tokens_revoked\":true}"});
+        controller.logoutAll();
+
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(!controller.authenticated());
+        QCOMPARE(network.requests.size(), 8);
+        QCOMPARE(network.requests.last().url().path(), QString("/api/vpn/v1/devices/revoke-all/"));
+        QCOMPARE(network.requests.last().rawHeader("Authorization"), QByteArray("Bearer test-token"));
+        QCOMPARE(QJsonDocument::fromJson(network.bodies.last()).object(), QJsonObject());
+    }
+
+
     void expiredSession()
     {
         Network network;
