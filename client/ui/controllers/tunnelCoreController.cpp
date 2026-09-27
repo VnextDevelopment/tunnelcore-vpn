@@ -574,7 +574,7 @@ void TunnelCoreController::authenticate(const QString &path, const QJsonObject &
         m_token = token;
         m_username = username;
         m_emailAccount = emailAccount;
-        m_telegramLinked = false;
+        m_telegramLinked = object.value(QStringLiteral("telegram_linked")).toBool();
         saveSession();
         registerDevice(true);
     }, true, [this, path](int status, const QJsonObject &object) {
@@ -1130,6 +1130,11 @@ void TunnelCoreController::refresh()
         if (!object.value("subscriptions").isArray()) {
             fail(tr("The server returned an invalid subscription list."));
             return;
+        }
+        const auto telegramLinked = object.value(QStringLiteral("telegram_linked"));
+        if (telegramLinked.isBool()) {
+            m_telegramLinked = telegramLinked.toBool();
+            saveSession();
         }
         m_subscriptions = object.value("subscriptions").toArray().toVariantList();
         updateSubscriptionState(object);

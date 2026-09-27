@@ -8,14 +8,14 @@ Contract verified against `VnextDevelopment/tunnelcore`, main commit
 
 - `POST auth/login/`: JSON `username`, `password` (bot credentials), or
   `email`, `password` (email login); response `ok`,
-  `access_token`, `token_type: Bearer`, `expires_in`, `user`.
+  `access_token`, `token_type: Bearer`, `expires_in`, `telegram_linked`, `user`.
 - `POST auth/code/exchange/`: JSON `code` (six-digit one-time code from the
   Telegram bot); response uses the same access-token contract as login.
 - `POST auth/register/`: JSON `email`, `password`; creates an email account and
   returns the same access-token contract with HTTP 201.
 - `POST auth/telegram/link/`: Bearer token plus JSON `code`; links a Telegram
   profile to an email account and migrates its subscriptions and payments.
-- `GET me/`: Bearer token; response `user`, `subscriptions`.
+- `GET me/`: Bearer token; response `user`, `telegram_linked`, `subscriptions`.
 - `POST devices/register/`: Bearer token plus a stable application-generated
   UUID in `device_id` and the client `platform`. Registration is idempotent for
   the same account and device; `device_limit_reached` (409) means the tariff's
@@ -86,7 +86,9 @@ An authenticated email account can enter a six-digit PIN obtained from the
 TunnelCore Telegram bot. The client sends it to `auth/telegram/link/` with the
 account Bearer token. The server consumes the PIN, links the Telegram identity,
 and transfers subscriptions and payments to the email account. The client then
-refreshes subscriptions and configurations.
+refreshes subscriptions and configurations. Both authentication and profile
+responses return `telegram_linked`, so signing out and back in does not show the
+linking PIN form for an account that is already linked.
 
 Expected failures are `invalid_or_expired_code` (401), `unauthorized` (401),
 `email_account_required` (403), `telegram_link_not_found` (409), and

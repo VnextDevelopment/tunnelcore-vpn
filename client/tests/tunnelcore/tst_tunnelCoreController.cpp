@@ -349,6 +349,27 @@ private slots:
         QVERIFY(network.requests.isEmpty());
         QVERIFY(!controller.busy());
     }
+    void emailLoginRestoresTelegramLink()
+    {
+        Network network;
+        network.responses.enqueue({"{\"ok\":true,\"access_token\":\"test-token\",\"token_type\":\"Bearer\","
+                                   "\"telegram_linked\":true,\"user\":{\"username\":\"client\","
+                                   "\"email\":\"user@example.com\"}}"});
+        network.responses.enqueue({deviceRegistrationResponse()});
+        network.responses.enqueue({"{\"ok\":true,\"telegram_linked\":true,\"subscriptions\":[]}"});
+        network.responses.enqueue({countrySelectionResponse()});
+        network.responses.enqueue({geoCountriesResponse()});
+        network.responses.enqueue({routingResponse()});
+        network.responses.enqueue({"{\"ok\":true,\"configs\":[]}"});
+        TunnelCoreController controller(nullptr, &network);
+
+        controller.loginEmail("user@example.com", "Strong-pass-2026!");
+
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(controller.authenticated());
+        QVERIFY(controller.emailAccount());
+        QVERIFY(controller.telegramLinked());
+    }
     void emailRegistration()
     {
         Network network;
