@@ -5,6 +5,7 @@ import android.net.IpPrefix
 import android.net.VpnService
 import android.net.VpnService.Builder
 import android.os.Build
+import android.os.SystemClock
 import android.system.OsConstants
 import androidx.annotation.RequiresApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -96,6 +97,7 @@ abstract class Protocol {
     }
 
     protected open fun buildVpnInterface(config: ProtocolConfig, vpnBuilder: Builder) {
+        val startedAt = SystemClock.elapsedRealtime()
         vpnBuilder.setSession(VPN_SESSION_NAME)
 
         for (addr in config.addresses) {
@@ -166,6 +168,11 @@ abstract class Protocol {
         vpnBuilder.setUnderlyingNetworks(null)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
             vpnBuilder.setMetered(false)
+
+        Log.i(
+            TAG,
+            "VPN interface builder configured in ${SystemClock.elapsedRealtime() - startedAt} ms"
+        )
     }
 }
 
