@@ -9,6 +9,7 @@
 #include <QSignalSpy>
 #include <QTest>
 #include <QTimer>
+#include <QTranslator>
 #include <QUrlQuery>
 #include <QUuid>
 #include <QJsonArray>
@@ -74,6 +75,20 @@ protected:
             response.body.replace("__DEVICE_ID__", deviceId);
         }
         return new Reply(request, response.body, response.status, this);
+    }
+};
+
+class CountryTranslator : public QTranslator
+{
+public:
+    QString translate(const char *context, const char *sourceText,
+                      const char *disambiguation = nullptr, int n = -1) const override
+    {
+        Q_UNUSED(disambiguation)
+        Q_UNUSED(n)
+        if (qstrcmp(context, "VpnCountries") == 0 && qstrcmp(sourceText, "Germany") == 0)
+            return QStringLiteral("Almanya");
+        return {};
     }
 };
 
@@ -847,6 +862,17 @@ private slots:
         QCOMPARE(config.first().first().toString(),
                  QString("[Interface]\nPrivateKey = netherlands-secret"));
         QCOMPARE(config.first().at(1).toString(), QString("netherlands.conf"));
+    }
+
+    void vpnCountryNameUsesAppLocale()
+    {
+        CountryTranslator translator;
+        QCoreApplication::installTranslator(&translator);
+        Network network;
+        TunnelCoreController controller(nullptr, &network);
+
+        QCOMPARE(controller.vpnCountryDisplayName(QStringLiteral("DE")), QStringLiteral("Almanya"));
+        QCoreApplication::removeTranslator(&translator);
     }
 
     void wrongPassword()

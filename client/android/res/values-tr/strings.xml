@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="disconnected">Bağlı değil</string>
+    <string name="connected">Bağlandı</string>
+    <string name="connecting">Bağlanıyor…</string>
+    <string name="disconnecting">Bağlantı kesiliyor…</string>
+    <string name="reconnecting">Yeniden bağlanıyor…</string>
+    <string name="connect">Bağlan</string>
+    <string name="disconnect">Bağlantıyı kes</string>
+    <string name="ok">Tamam</string>
+    <string name="cancel">İptal</string>
+    <string name="yes">Evet</string>
+    <string name="no">Hayır</string>
+
+    <string name="vpnGranted">VPN izni verildi</string>
+    <string name="vpnSetupFailed">VPN kurulum hatası</string>
+    <string name="vpnSetupFailedMessage">AmneziaVPN\'e bağlanmak için lütfen şunları yapın:\n\n- Uygulamanın VPN bağlantısı kurmasına izin verin\n- VPN sistem ayarlarında diğer tüm VPN uygulamaları için Her zaman açık VPN\'i devre dışı bırakın</string>
+    <string name="openVpnSettings">VPN ayarlarını aç</string>
+
+    <string name="subscriptionNotificationChannelName">TunnelCore VPN aboneliği</string>
+    <string name="subscriptionNotificationChannelDescription">Abonelik bitiş hatırlatıcıları</string>
+    <string name="notificationChannelDescription">AmneziaVPN hizmet bildirimi</string>
+    <string name="notificationDialogTitle">AmneziaVPN hizmeti</string>
+    <string name="notificationDialogMessage">VPN durumu, durum çubuğunda gösterilsin mi?</string>
+    <string name="notificationSettingsDialogTitle">Bildirim ayarları</string>
+    <string name="notificationSettingsDialogMessage">Bildirimleri göstermek için sistem ayarlarından bildirimleri etkinleştirmeniz gerekir</string>
+    <string name="openNotificationSettings">Bildirim ayarlarını aç</string>
+
+    <string name="tvNoFileBrowser">Dosyalara göz atmak için lütfen bir dosya yöneticisi yükleyin</string>
+</resources>

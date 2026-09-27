@@ -6941,9 +6941,58 @@ Remove the server from the app to continue.</source>
     <message><source>Cancel</source><translation>Отмена</translation></message>
     <message><source>Sign out is separated from VPN location controls to prevent accidental taps.</source><translation>Кнопка выхода отделена от выбора VPN-сервера, чтобы избежать случайного нажатия.</translation></message>
     <message><source>Link Telegram to renew</source><translation>Привязать Telegram для продления</translation></message>
+    <message><source>VPN location</source><translation>Локация VPN</translation></message>
+    <message><source>Automatic — %1</source><translation>Автоматически — %1</translation></message>
+    <message><source>Automatic</source><translation>Автоматически</translation></message>
+    <message><source>Selected: %1</source><translation>Выбрано: %1</translation></message>
+    <message><source>Automatic selects an available VPN server. Choosing a country moves your VPN access to that country.</source><translation>В автоматическом режиме выбирается доступный VPN-сервер. Выбор страны перемещает VPN-доступ в эту страну.</translation></message>
+</context>
+<context>
+    <name>VpnCountries</name>
+    <message><source>Germany</source><translation>Германия</translation></message>
+    <message><source>Netherlands</source><translation>Нидерланды</translation></message>
+    <message><source>Turkey</source><translation>Турция</translation></message>
+    <message><source>United States</source><translation>США</translation></message>
+    <message><source>United Kingdom</source><translation>Великобритания</translation></message>
+    <message><source>France</source><translation>Франция</translation></message>
+    <message><source>Finland</source><translation>Финляндия</translation></message>
+    <message><source>Sweden</source><translation>Швеция</translation></message>
+    <message><source>Switzerland</source><translation>Швейцария</translation></message>
+    <message><source>Poland</source><translation>Польша</translation></message>
+    <message><source>Czechia</source><translation>Чехия</translation></message>
+    <message><source>Austria</source><translation>Австрия</translation></message>
+    <message><source>Spain</source><translation>Испания</translation></message>
+    <message><source>Italy</source><translation>Италия</translation></message>
+    <message><source>Canada</source><translation>Канада</translation></message>
+    <message><source>Japan</source><translation>Япония</translation></message>
+    <message><source>Singapore</source><translation>Сингапур</translation></message>
 </context>
 <context>
     <name>TunnelCoreController</name>
+    <message><source>TunnelCore VPN</source><translation>TunnelCore VPN</translation></message>
+    <message><source>The server returned invalid device registration data.</source><translation>Сервер вернул некорректные данные регистрации устройства.</translation></message>
+    <message><source>The device limit for this subscription has been reached. Remove another device and try again.</source><translation>Достигнут лимит устройств для этой подписки. Удалите другое устройство и повторите попытку.</translation></message>
+    <message><source>An active VPN subscription is required to register this device.</source><translation>Для регистрации этого устройства нужна активная VPN-подписка.</translation></message>
+    <message><source>No VPN server is currently available for this device. Try again later.</source><translation>Сейчас для этого устройства нет доступных VPN-серверов. Повторите позже.</translation></message>
+    <message><source>Could not prepare a VPN configuration for this device. Try again later.</source><translation>Не удалось подготовить VPN-конфигурацию для этого устройства. Повторите позже.</translation></message>
+    <message><source>Could not register this device. Try again.</source><translation>Не удалось зарегистрировать это устройство. Повторите попытку.</translation></message>
+    <message><source>The server returned an invalid split-tunneling country list.</source><translation>Сервер вернул некорректный список стран для раздельного туннелирования.</translation></message>
+    <message><source>Could not load the split-tunneling country list.</source><translation>Не удалось загрузить список стран для раздельного туннелирования.</translation></message>
+    <message><source>The server returned an invalid VPN routing rule list.</source><translation>Сервер вернул некорректный список правил VPN-маршрутизации.</translation></message>
+    <message><source>The server returned invalid country routing data.</source><translation>Сервер вернул некорректные данные маршрутизации по странам.</translation></message>
+    <message><source>Could not apply the VPN routing rules.</source><translation>Не удалось применить правила VPN-маршрутизации.</translation></message>
+    <message><source>This split-tunneling country is no longer available.</source><translation>Эта страна больше недоступна для раздельного туннелирования.</translation></message>
+    <message><source>Country routing data is temporarily unavailable.</source><translation>Данные маршрутизации по странам временно недоступны.</translation></message>
+    <message><source>Could not load country routing data.</source><translation>Не удалось загрузить данные маршрутизации по странам.</translation></message>
+    <message><source>Could not load the VPN routing rules.</source><translation>Не удалось загрузить правила VPN-маршрутизации.</translation></message>
+    <message><source>The server returned an invalid VPN country list.</source><translation>Сервер вернул некорректный список стран VPN.</translation></message>
+    <message><source>Could not load the VPN country list.</source><translation>Не удалось загрузить список стран VPN.</translation></message>
+    <message><source>The selected split-tunneling country is unavailable.</source><translation>Выбранная страна недоступна для раздельного туннелирования.</translation></message>
+    <message><source>The server returned invalid VPN country data.</source><translation>Сервер вернул некорректные данные страны VPN.</translation></message>
+    <message><source>This VPN country is temporarily unavailable. Choose another country or Automatic.</source><translation>Эта страна VPN временно недоступна. Выберите другую страну или автоматический режим.</translation></message>
+    <message><source>Could not move your VPN connection to the selected country. Try again later.</source><translation>Не удалось переместить VPN-подключение в выбранную страну. Повторите позже.</translation></message>
+    <message><source>The selected VPN country is invalid.</source><translation>Выбрана некорректная страна VPN.</translation></message>
+    <message><source>Could not change the VPN country. Try again.</source><translation>Не удалось изменить страну VPN. Повторите попытку.</translation></message>
     <message><source>No configuration is available for the selected VPN location. Refresh and try again.</source><translation>Для выбранной локации VPN нет конфигурации. Обновите список и попробуйте снова.</translation></message>
     <message><source>The login details or password are incorrect.</source><translation>Неверные данные для входа или пароль.</translation></message>
     <message><source>Your session has ended. Sign in again.</source><translation>Сессия завершена. Войдите снова.</translation></message>

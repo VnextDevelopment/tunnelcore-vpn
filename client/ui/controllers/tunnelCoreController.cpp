@@ -2,6 +2,7 @@
 
 #include <QDebug>
 #include <QCryptographicHash>
+#include <QCoreApplication>
 #include <QDateTime>
 #include <QDesktopServices>
 #include <QJsonArray>
@@ -1172,7 +1173,8 @@ QString TunnelCoreController::vpnCountryDisplayName(const QString &countryCode) 
     const auto territory = QLocale::codeToTerritory(code);
     if (territory == QLocale::AnyTerritory)
         return code;
-    const auto name = QLocale().territoryToString(territory);
+    const auto sourceName = QLocale::territoryToString(territory);
+    const auto name = QCoreApplication::translate("VpnCountries", sourceName.toUtf8().constData());
     return name.isEmpty() ? code : name;
 }
 
