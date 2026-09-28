@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'feature/tunnelcore-branding'
+      - 'feature/tunnelcore-icon-refresh'
   workflow_dispatch:
 
 env:
