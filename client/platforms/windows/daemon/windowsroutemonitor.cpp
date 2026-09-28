@@ -4,6 +4,7 @@
 
 #include "windowsroutemonitor.h"
 
+#include <QElapsedTimer>
 #include <QScopeGuard>
 
 #include "leakdetector.h"
@@ -18,25 +19,29 @@ Logger logger("WindowsRouteMonitor");
 // creation when processing route changes, and ensures that we give
 // way to other routing entries.
 constexpr const ULONG EXCLUSION_ROUTE_METRIC = 0x5e72;
+constexpr int ROUTE_CHANGE_DEBOUNCE_MSEC = 50;
 
 // Called by the kernel on route changes - perform some basic filtering and
-// invoke the routeChanged slot to do the real work.
+// debounce the expensive reconciliation work.
 static void routeChangeCallback(PVOID context, PMIB_IPFORWARD_ROW2 row,
                                 MIB_NOTIFICATION_TYPE type) {
   WindowsRouteMonitor* monitor = (WindowsRouteMonitor*)context;
   Q_UNUSED(type);
 
-  // Ignore route changes that we created.
-  if ((row->Protocol == MIB_IPPROTO_NETMGMT) &&
-      (row->Metric == EXCLUSION_ROUTE_METRIC)) {
-    return;
-  }
-  if (monitor->getLuid() == row->InterfaceLuid.Value) {
-    return;
+  // Ignore route changes that we created. Windows can report notifications
+  // without a row, so only dereference it when present.
+  if (row != nullptr) {
+    if ((row->Protocol == MIB_IPPROTO_NETMGMT) &&
+        (row->Metric == EXCLUSION_ROUTE_METRIC)) {
+      return;
+    }
+    if (monitor->getLuid() == row->InterfaceLuid.Value) {
+      return;
+    }
   }
 
-  // Invoke the route changed signal to do the real work in Qt.
-  QMetaObject::invokeMethod(monitor, "routeChanged", Qt::QueuedConnection);
+  QMetaObject::invokeMethod(monitor, "scheduleRouteChanged",
+                            Qt::QueuedConnection);
 }
 
 // Perform prefix matching comparison on IP addresses in host order.
@@ -63,24 +68,37 @@ WindowsRouteMonitor::WindowsRouteMonitor(quint64 luid, QObject* parent)
   MZ_COUNT_CTOR(WindowsRouteMonitor);
   logger.debug() << "WindowsRouteMonitor created.";
 
-  NotifyRouteChange2(AF_INET, routeChangeCallback, this, FALSE, &m_routeHandle);
+  m_routeChangedDebounce.setSingleShot(true);
+  m_routeChangedDebounce.setInterval(ROUTE_CHANGE_DEBOUNCE_MSEC);
+  connect(&m_routeChangedDebounce, &QTimer::timeout, this,
+          &WindowsRouteMonitor::routeChanged);
+
+  const DWORD result =
+      NotifyRouteChange2(AF_INET, routeChangeCallback, this, FALSE,
+                         &m_routeHandle);
+  if (result != NO_ERROR) {
+    logger.error() << "Failed to subscribe to route changes:" << result;
+    m_routeHandle = INVALID_HANDLE_VALUE;
+  }
 }
 
 WindowsRouteMonitor::~WindowsRouteMonitor() {
   MZ_COUNT_DTOR(WindowsRouteMonitor);
-  CancelMibChangeNotify2(m_routeHandle);
+  if (m_routeHandle != INVALID_HANDLE_VALUE) {
+    CancelMibChangeNotify2(m_routeHandle);
+  }
 
   flushRouteTable(m_exclusionRoutes);
   flushRouteTable(m_clonedRoutes);
   logger.debug() << "WindowsRouteMonitor destroyed.";
 }
 
-void WindowsRouteMonitor::updateInterfaceMetrics(int family) {
-  PMIB_IPINTERFACE_TABLE table;
+bool WindowsRouteMonitor::updateInterfaceMetrics(int family) {
+  PMIB_IPINTERFACE_TABLE table = nullptr;
   DWORD result = GetIpInterfaceTable(family, &table);
   if (result != NO_ERROR) {
     logger.warning() << "Failed to retrive interface table." << result;
-    return;
+    return false;
   }
   auto guard = qScopeGuard([&] { FreeMibTable(table); });
 
@@ -113,9 +131,11 @@ void WindowsRouteMonitor::updateInterfaceMetrics(int family) {
       m_interfaceMetricsIpv6[row->InterfaceLuid.Value] = row->Metric;
     }
   }
+
+  return true;
 }
 
-void WindowsRouteMonitor::updateExclusionRoute(MIB_IPFORWARD_ROW2* data,
+bool WindowsRouteMonitor::updateExclusionRoute(MIB_IPFORWARD_ROW2* data,
                                                void* ptable) {
   PMIB_IPFORWARD_TABLE2 table = reinterpret_cast<PMIB_IPFORWARD_TABLE2>(ptable);
   SOCKADDR_INET nexthop = {};
@@ -181,10 +201,17 @@ void WindowsRouteMonitor::updateExclusionRoute(MIB_IPFORWARD_ROW2* data,
     }
   }
 
+  if (bestMatch < 0) {
+    logger.error() << "No physical route found for exclusion"
+                   << prefixToAddress(&data->DestinationPrefix).toString()
+                   << "/" << data->DestinationPrefix.PrefixLength;
+    return false;
+  }
+
   // If neither the interface nor next-hop have changed, then do nothing.
   if (data->InterfaceLuid.Value == bestLuid &&
       memcmp(&nexthop, &data->NextHop, sizeof(SOCKADDR_INET)) == 0) {
-    return;
+    return true;
   }
 
   // Delete the previous routing table entry, if any.
@@ -192,18 +219,31 @@ void WindowsRouteMonitor::updateExclusionRoute(MIB_IPFORWARD_ROW2* data,
     DWORD result = DeleteIpForwardEntry2(data);
     if ((result != NO_ERROR) && (result != ERROR_NOT_FOUND)) {
       logger.error() << "Failed to delete route:" << result;
+      return false;
     }
   }
 
   // Update the routing table entry.
   data->InterfaceLuid.Value = bestLuid;
-  memcpy(&data->NextHop, &nexthop, sizeof(SOCKADDR_INET));
+  data->NextHop = nexthop;
   if (data->InterfaceLuid.Value != 0) {
     DWORD result = CreateIpForwardEntry2(data);
+    if (result == ERROR_OBJECT_ALREADY_EXISTS) {
+      // An equivalent route owned by another component is usable, but must not
+      // be deleted later as if it belonged to us.
+      data->InterfaceLuid.Value = 0;
+      return true;
+    }
     if (result != NO_ERROR) {
       logger.error() << "Failed to update route:" << result;
+      data->InterfaceLuid.Value = 0;
+      data->NextHop = {};
+      data->NextHop.si_family = data->DestinationPrefix.Prefix.si_family;
+      return false;
     }
   }
+
+  return true;
 }
 
 // static
@@ -256,12 +296,15 @@ void WindowsRouteMonitor::updateCapturedRoutes(int family) {
     return;
   }
 
-  PMIB_IPFORWARD_TABLE2 table;
+  PMIB_IPFORWARD_TABLE2 table = nullptr;
   DWORD error = GetIpForwardTable2(family, &table);
   if (error != NO_ERROR) {
-    updateCapturedRoutes(family, table);
-    FreeMibTable(table);
+    logger.error() << "Failed to fetch routing table:" << error;
+    return;
   }
+
+  updateCapturedRoutes(family, table);
+  FreeMibTable(table);
 }
 
 void WindowsRouteMonitor::updateCapturedRoutes(int family, void* ptable) {
@@ -366,8 +409,99 @@ void WindowsRouteMonitor::updateCapturedRoutes(int family, void* ptable) {
 }
 
 bool WindowsRouteMonitor::addExclusionRoute(const IPAddress& prefix) {
-  logger.debug() << "Adding exclusion route for" << prefix.toString();
+  return addExclusionRoutes({prefix});
+}
 
+bool WindowsRouteMonitor::addExclusionRoutes(
+    const QList<IPAddress>& prefixes) {
+  QElapsedTimer timer;
+  timer.start();
+
+  QList<IPAddress> addedPrefixes;
+  QSet<int> touchedFamilies;
+
+  const auto rollback = [this, &addedPrefixes, &touchedFamilies]() {
+    for (auto iterator = addedPrefixes.crbegin();
+         iterator != addedPrefixes.crend(); ++iterator) {
+      MIB_IPFORWARD_ROW2* data = m_exclusionRoutes.take(*iterator);
+      if (data == nullptr) {
+        continue;
+      }
+      if (data->InterfaceLuid.Value != 0) {
+        const DWORD result = DeleteIpForwardEntry2(data);
+        if (result != NO_ERROR && result != ERROR_NOT_FOUND) {
+          logger.error() << "Failed to roll back exclusion route"
+                         << iterator->toString() << "result:" << result;
+          m_exclusionRoutes.insert(*iterator, data);
+          continue;
+        }
+      }
+      delete data;
+    }
+    for (const int family : touchedFamilies) {
+      updateCapturedRoutes(family);
+    }
+  };
+
+  const int families[] = {AF_INET, AF_INET6};
+  for (const int family : families) {
+    QList<IPAddress> familyPrefixes;
+    for (const IPAddress& prefix : prefixes) {
+      const auto protocol = prefix.address().protocol();
+      if (protocol != QAbstractSocket::IPv4Protocol &&
+          protocol != QAbstractSocket::IPv6Protocol) {
+        logger.error() << "Invalid exclusion prefix:" << prefix.toString();
+        rollback();
+        return false;
+      }
+
+      const bool isIpv6 = protocol == QAbstractSocket::IPv6Protocol;
+      if ((family == AF_INET6) == isIpv6) {
+        familyPrefixes.append(prefix);
+      }
+    }
+    if (familyPrefixes.isEmpty()) {
+      continue;
+    }
+
+    PMIB_IPFORWARD_TABLE2 table = nullptr;
+    const DWORD result = GetIpForwardTable2(family, &table);
+    if (result != NO_ERROR) {
+      logger.error() << "Failed to fetch routing table:" << result;
+      rollback();
+      return false;
+    }
+    auto tableGuard = qScopeGuard([table] { FreeMibTable(table); });
+
+    if (!updateInterfaceMetrics(family)) {
+      rollback();
+      return false;
+    }
+
+    touchedFamilies.insert(family);
+    for (const IPAddress& prefix : familyPrefixes) {
+      const bool alreadyPresent = m_exclusionRoutes.contains(prefix);
+      if (!addExclusionRoute(prefix, table)) {
+        rollback();
+        return false;
+      }
+      if (!alreadyPresent && m_exclusionRoutes.contains(prefix)) {
+        addedPrefixes.append(prefix);
+      }
+    }
+
+    // Reconcile captured routes only after the whole exclusion batch is
+    // visible, avoiding repeated and transient route cloning.
+    updateCapturedRoutes(family, table);
+  }
+
+  logger.debug() << "Configured exclusion routes:" << prefixes.size()
+                 << "in" << timer.elapsed() << "ms";
+  return true;
+}
+
+bool WindowsRouteMonitor::addExclusionRoute(const IPAddress& prefix,
+                                            void* table) {
   // Silently ignore non-routeable addresses.
   QHostAddress addr = prefix.address();
   if (addr.isLoopback() || addr.isBroadcast() || addr.isLinkLocal() ||
@@ -376,8 +510,7 @@ bool WindowsRouteMonitor::addExclusionRoute(const IPAddress& prefix) {
   }
 
   if (m_exclusionRoutes.contains(prefix)) {
-    logger.warning() << "Exclusion route already exists";
-    return false;
+    return true;
   }
 
   // Allocate and initialize the MIB routing table row.
@@ -409,24 +542,10 @@ bool WindowsRouteMonitor::addExclusionRoute(const IPAddress& prefix) {
   data->Immortal = false;
   data->Age = 0;
 
-  PMIB_IPFORWARD_TABLE2 table;
-  int family;
-  if (prefix.address().protocol() == QAbstractSocket::IPv6Protocol) {
-    family = AF_INET6;
-  } else {
-    family = AF_INET;
-  }
-
-  DWORD result = GetIpForwardTable2(family, &table);
-  if (result != NO_ERROR) {
-    logger.error() << "Failed to fetch routing table:" << result;
+  if (!updateExclusionRoute(data, table)) {
     delete data;
     return false;
   }
-  updateInterfaceMetrics(family);
-  updateCapturedRoutes(family, table);
-  updateExclusionRoute(data, table);
-  FreeMibTable(table);
 
   m_exclusionRoutes[prefix] = data;
   return true;
@@ -441,11 +560,15 @@ bool WindowsRouteMonitor::deleteExclusionRoute(const IPAddress& prefix) {
     return true;
   }
 
-  DWORD result = DeleteIpForwardEntry2(data);
-  if ((result != ERROR_NOT_FOUND) && (result != NO_ERROR)) {
-    logger.error() << "Failed to delete route to"
-                   << prefix.toString()
-                   << "result:" << result;
+  if (data->InterfaceLuid.Value != 0) {
+    DWORD result = DeleteIpForwardEntry2(data);
+    if ((result != ERROR_NOT_FOUND) && (result != NO_ERROR)) {
+      logger.error() << "Failed to delete route to"
+                     << prefix.toString()
+                     << "result:" << result;
+      m_exclusionRoutes.insert(prefix, data);
+      return false;
+    }
   }
 
   // Captured routes might have changed.
@@ -459,11 +582,13 @@ void WindowsRouteMonitor::flushRouteTable(
     QHash<IPAddress, MIB_IPFORWARD_ROW2*>& table) {
   for (auto i = table.begin(); i != table.end(); i++) {
     MIB_IPFORWARD_ROW2* data = i.value();
-    DWORD result = DeleteIpForwardEntry2(data);
-    if ((result != ERROR_NOT_FOUND) && (result != NO_ERROR)) {
-      logger.error() << "Failed to delete route to"
-                     << i.key().toString()
-                     << "result:" << result;
+    if (data->InterfaceLuid.Value != 0) {
+      DWORD result = DeleteIpForwardEntry2(data);
+      if ((result != ERROR_NOT_FOUND) && (result != NO_ERROR)) {
+        logger.error() << "Failed to delete route to"
+                       << i.key().toString()
+                       << "result:" << result;
+      }
     }
     delete data;
   }
@@ -480,21 +605,30 @@ void WindowsRouteMonitor::setDetaultRouteCapture(bool enable) {
   }
 }
 
+void WindowsRouteMonitor::scheduleRouteChanged() {
+  if (!m_routeChangedDebounce.isActive()) {
+    m_routeChangedDebounce.start();
+  }
+}
+
 void WindowsRouteMonitor::routeChanged() {
   logger.debug() << "Routes changed";
 
-  PMIB_IPFORWARD_TABLE2 table;
+  PMIB_IPFORWARD_TABLE2 table = nullptr;
   DWORD result = GetIpForwardTable2(AF_UNSPEC, &table);
   if (result != NO_ERROR) {
     logger.error() << "Failed to fetch routing table:" << result;
     return;
   }
+  auto tableGuard = qScopeGuard([table] { FreeMibTable(table); });
 
-  updateInterfaceMetrics(AF_UNSPEC);
+  if (!updateInterfaceMetrics(AF_UNSPEC)) {
+    return;
+  }
   updateCapturedRoutes(AF_UNSPEC, table);
   for (MIB_IPFORWARD_ROW2* data : m_exclusionRoutes) {
-    updateExclusionRoute(data, table);
+    if (!updateExclusionRoute(data, table)) {
+      logger.error() << "Failed to refresh an exclusion route";
+    }
   }
-
-  FreeMibTable(table);
 }

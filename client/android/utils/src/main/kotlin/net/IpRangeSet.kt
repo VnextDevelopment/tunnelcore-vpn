@@ -1,40 +1,46 @@
 package org.amnezia.vpn.util.net
 
+import java.util.TreeSet
+
 class IpRangeSet {
 
-    private val ranges = sortedSetOf<IpRange>()
+    private val ranges = TreeSet<IpRange>()
 
     fun add(ipRange: IpRange) {
-        val iterator = ranges.iterator()
         var rangeToAdd = ipRange
-        run {
-            while (iterator.hasNext()) {
-                val curRange = iterator.next()
-                if (rangeToAdd.end < curRange.start &&
-                    !rangeToAdd.end.isMaxIp() &&
-                    rangeToAdd.end.inc() != curRange.start) break
-                (curRange + rangeToAdd)?.let { resultRange ->
-                    if (resultRange == curRange) return@run
-                    iterator.remove()
-                    rangeToAdd = resultRange
-                }
+
+        // GeoIP split-tunnel lists contain thousands of ranges. Looking up only
+        // adjacent ranges avoids rescanning the whole set for every insertion.
+        ranges.floor(rangeToAdd)?.let { lowerRange ->
+            (lowerRange + rangeToAdd)?.let { mergedRange ->
+                if (mergedRange == lowerRange) return
+                ranges.remove(lowerRange)
+                rangeToAdd = mergedRange
             }
-            ranges += rangeToAdd
         }
+
+        while (true) {
+            val upperRange = ranges.ceiling(rangeToAdd) ?: break
+            val mergedRange = upperRange + rangeToAdd ?: break
+            ranges.remove(upperRange)
+            rangeToAdd = mergedRange
+        }
+
+        ranges += rangeToAdd
     }
 
     fun remove(ipRange: IpRange) {
-        val iterator = ranges.iterator()
-        val splitRanges = mutableListOf<IpRange>()
-        while (iterator.hasNext()) {
-            val curRange = iterator.next()
-            if (ipRange.end < curRange.start) break
-            (curRange - ipRange)?.let { resultRanges ->
-                iterator.remove()
-                splitRanges += resultRanges
+        // Start at the range containing the removal boundary (or the next one)
+        // and visit only ranges that can overlap it.
+        var currentRange = ranges.floor(ipRange) ?: ranges.ceiling(ipRange)
+        while (currentRange != null && currentRange.start <= ipRange.end) {
+            val nextRange = ranges.higher(currentRange)
+            (currentRange - ipRange)?.let { remainingRanges ->
+                ranges.remove(currentRange)
+                ranges += remainingRanges
             }
+            currentRange = nextRange
         }
-        ranges += splitRanges
     }
 
     fun subnets(): List<InetNetwork> = ranges.map(IpRange::subnets).flatten()

@@ -105,11 +105,28 @@ bool ImportUiController::extractTunnelCoreConfigFromData(QString data, QString c
     return true;
 }
 
-void ImportUiController::importTunnelCoreConfig(QString data, QString configFileName, QString profileKey)
+void ImportUiController::importTunnelCoreConfig(QString data, QString configFileName, QString profileKey,
+                                                  QString obfuscationMode, QString obfuscationProfile)
 {
     if (!extractTunnelCoreConfigFromData(std::move(data), std::move(configFileName)))
         return;
+
     m_config.insert(amnezia::configKey::managedProfileKey, profileKey);
+
+    const auto normalizedMode = obfuscationMode.trimmed().toLower();
+    if (normalizedMode == QStringLiteral("client_dynamic")) {
+        m_config.insert(amnezia::configKey::managedObfuscationMode, QStringLiteral("client_dynamic"));
+        const auto normalizedProfile = obfuscationProfile.trimmed().toLower();
+        m_config.insert(amnezia::configKey::managedObfuscationProfile,
+                        normalizedProfile.isEmpty() ? QStringLiteral("auto") : normalizedProfile);
+    } else {
+        m_config.insert(amnezia::configKey::managedObfuscationMode, QStringLiteral("static"));
+        if (!obfuscationProfile.trimmed().isEmpty()) {
+            m_config.insert(amnezia::configKey::managedObfuscationProfile,
+                            obfuscationProfile.trimmed().toLower());
+        }
+    }
+
     importConfig();
 }
 

@@ -25,6 +25,8 @@ struct NativeServerConfig {
     QString dns2;
     QString managedProfileId;
     QString managedProfileKey;
+    QString managedObfuscationMode;
+    QString managedObfuscationProfile;
     
     bool hasContainers() const;
     ContainerConfig containerConfig(DockerContainer container) const;

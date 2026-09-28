@@ -1,6 +1,8 @@
 package org.amnezia.vpn.protocol.wireguard
 
 import android.net.VpnService.Builder
+import android.os.ParcelFileDescriptor
+import android.os.SystemClock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -28,6 +30,7 @@ private const val TAG = "Wireguard"
 open class Wireguard : Protocol() {
 
     private var tunnelHandle: Int = -1
+    private var tunFd: ParcelFileDescriptor? = null
     private var config: WireguardConfig? = null // save config for reconnect
     protected open val ifName: String = "amn0"
     private lateinit var scope: CoroutineScope
@@ -61,7 +64,9 @@ open class Wireguard : Protocol() {
     }
 
     override suspend fun startVpn(config: JSONObject, vpnBuilder: Builder, protect: (Int) -> Boolean) {
+        val startedAt = SystemClock.elapsedRealtime()
         val wireguardConfig = parseConfig(config)
+        Log.i(TAG, "Parsed VPN config in ${SystemClock.elapsedRealtime() - startedAt} ms")
         start(wireguardConfig, vpnBuilder, protect)
         this.config = wireguardConfig
     }
@@ -165,31 +170,61 @@ open class Wireguard : Protocol() {
             return
         }
 
-        buildVpnInterface(config, vpnBuilder)
+        val reusableTunFd = tunFd
+        if (stopExistingVpn && tunnelHandle != -1 && reusableTunFd != null) {
+            val startedAt = SystemClock.elapsedRealtime()
+            try {
+                turnOffBackend()
+                tunnelHandle = turnOnBackend(config, reusableTunFd)
+            } catch (e: Throwable) {
+                closeTunInterface()
+                throw e
+            }
+            Log.i(TAG, "Reused VPN interface in ${SystemClock.elapsedRealtime() - startedAt} ms")
+        } else {
+            val builderStartedAt = SystemClock.elapsedRealtime()
+            buildVpnInterface(config, vpnBuilder)
+            val establishStartedAt = SystemClock.elapsedRealtime()
+            val establishedTunFd = vpnBuilder.establish()
+                ?: throw VpnStartException("Create VPN interface: permission not granted or revoked")
+            Log.i(
+                TAG,
+                "Established VPN interface in ${SystemClock.elapsedRealtime() - establishStartedAt} ms " +
+                    "(builder total ${SystemClock.elapsedRealtime() - builderStartedAt} ms)"
+            )
 
-        vpnBuilder.establish().use { tunFd ->
             if (stopExistingVpn && tunnelHandle != -1) {
                 turnOffVpn()
             }
-            if (tunFd == null) {
-                throw VpnStartException("Create VPN interface: permission not granted or revoked")
-            }
+            tunFd = establishedTunFd
             Log.i(TAG, "awg-go backend ${GoBackend.awgVersion()}")
-            tunnelHandle = GoBackend.awgTurnOn(ifName, tunFd.detachFd(), config.toWgUserspaceString())
+            try {
+                tunnelHandle = turnOnBackend(config, establishedTunFd)
+            } catch (e: Throwable) {
+                closeTunInterface()
+                throw e
+            }
         }
 
         if (tunnelHandle < 0) {
             tunnelHandle = -1
+            closeTunInterface()
             throw VpnStartException("Wireguard tunnel creation error")
         }
 
         if (!protect(GoBackend.awgGetSocketV4(tunnelHandle)) || !protect(GoBackend.awgGetSocketV6(tunnelHandle))) {
-            GoBackend.awgTurnOff(tunnelHandle)
-            tunnelHandle = -1
+            turnOffVpn()
             throw VpnStartException("Protect VPN interface: permission not granted or revoked")
         }
         launchStatusJob()
     }
+
+    private fun turnOnBackend(config: WireguardConfig, tunFd: ParcelFileDescriptor): Int =
+        GoBackend.awgTurnOn(
+            ifName,
+            ParcelFileDescriptor.dup(tunFd.fileDescriptor).detachFd(),
+            config.toWgUserspaceString()
+        )
 
     private fun launchStatusJob() {
         Log.d(TAG, "Launch status job")
@@ -227,12 +262,22 @@ open class Wireguard : Protocol() {
         return lastHandshake
     }
 
-    private fun turnOffVpn() {
+    private fun turnOffBackend() {
         statusJob?.cancel()
         statusJob = null
         val handleToClose = tunnelHandle
         tunnelHandle = -1
         GoBackend.awgTurnOff(handleToClose)
+    }
+
+    private fun closeTunInterface() {
+        tunFd?.close()
+        tunFd = null
+    }
+
+    private fun turnOffVpn() {
+        turnOffBackend()
+        closeTunInterface()
     }
 
     override fun stopVpn() {

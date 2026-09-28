@@ -8,30 +8,48 @@ Contract verified against `VnextDevelopment/tunnelcore`, main commit
 
 - `POST auth/login/`: JSON `username`, `password` (bot credentials), or
   `email`, `password` (email login); response `ok`,
-  `access_token`, `token_type: Bearer`, `expires_in`, `user`.
+  `access_token`, `token_type: Bearer`, `expires_in`, `telegram_linked`, `user`.
 - `POST auth/code/exchange/`: JSON `code` (six-digit one-time code from the
   Telegram bot); response uses the same access-token contract as login.
 - `POST auth/register/`: JSON `email`, `password`; creates an email account and
   returns the same access-token contract with HTTP 201.
 - `POST auth/telegram/link/`: Bearer token plus JSON `code`; links a Telegram
   profile to an email account and migrates its subscriptions and payments.
-- `GET me/`: Bearer token; response `user`, `subscriptions`.
+- `GET me/`: Bearer token; response `user`, `telegram_linked`, `subscriptions`.
 - `POST devices/register/`: Bearer token plus a stable application-generated
   UUID in `device_id` and the client `platform`. Registration is idempotent for
   the same account and device; `device_limit_reached` (409) means the tariff's
   device allowance is exhausted.
+- `POST devices/revoke-all/`: Bearer token; revokes every registered device and
+  VPN peer for the account, releases all device slots and invalidates all bearer
+  tokens issued before the request.
 - `GET configs/?device_id=<uuid>`: Bearer token; response contains safe configuration metadata
   (`id`, `name`, `location`, `protocol`, `expires_at`) without a private URL.
 - `GET configs/<id>/?device_id=<uuid>`: Bearer token; consumes the application-specific one-time
-  copy and returns `id`, `name`, `filename`, `protocol`, `config`. The client
-  passes `filename` into the import flow and uses its safe basename (without
-  `.conf`) as the imported AWG/WireGuard connection name.
+  copy and returns `id`, `name`, `filename`, `protocol`, `config`, and an optional
+  `obfuscation` policy. The client passes `filename` into the import flow and
+  uses its safe basename (without `.conf`) as the imported AWG/WireGuard
+  connection name. For `obfuscation.mode=client_dynamic`, the policy is stored
+  on the managed TunnelCore profile and a fresh coherent `I1-I5` set is
+  generated locally each time a new AWG connection is prepared. All five
+  packets use one selected profile/source; `static` keeps the values from the
+  downloaded configuration unchanged.
 
 Legacy HTTPS configuration URLs are fetched without the account Authorization header.
 Redirects are rejected; TLS verification stays enabled. Configuration contents
 go through the existing import preview and parser. A 401 on an authenticated
-request clears the account session. Logout cancels outstanding requests and
-clears the profile; previously imported VPN configurations remain available.
+request clears the unusable local account session without attempting another
+authenticated request. Explicit logout first calls `POST devices/revoke/` for
+the current `device_id`; only after the server has released the device slot and
+revoked its VPN peer does the client clear the local account session. A
+`device_not_found` response is treated as already released. Other revoke
+failures keep the session so the user can retry instead of silently leaking a
+device slot. "Sign out on all devices" calls `POST devices/revoke-all/`; the
+server revokes every active device peer and rotates the account token generation,
+so existing app sessions cannot silently register themselves again. The client
+clears its own local session only after the global revoke succeeds. Previously
+imported VPN configurations may remain on disk, but their server-side peers are
+revoked.
 
 The access token, display name, account type and successful Telegram-link state
 are persisted through the application's encrypted `SecureQSettings` storage.
@@ -68,7 +86,9 @@ An authenticated email account can enter a six-digit PIN obtained from the
 TunnelCore Telegram bot. The client sends it to `auth/telegram/link/` with the
 account Bearer token. The server consumes the PIN, links the Telegram identity,
 and transfers subscriptions and payments to the email account. The client then
-refreshes subscriptions and configurations.
+refreshes subscriptions and configurations. Both authentication and profile
+responses return `telegram_linked`, so signing out and back in does not show the
+linking PIN form for an account that is already linked.
 
 Expected failures are `invalid_or_expired_code` (401), `unauthorized` (401),
 `email_account_required` (403), `telegram_link_not_found` (409), and

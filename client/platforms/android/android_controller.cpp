@@ -307,6 +307,14 @@ void AndroidController::requestNotificationPermission()
     callActivityMethod("requestNotificationPermission", "()V");
 }
 
+void AndroidController::showSubscriptionNotification(const QString &title, const QString &message)
+{
+    callActivityMethod("showSubscriptionNotification",
+                       "(Ljava/lang/String;Ljava/lang/String;)V",
+                       QJniObject::fromString(title).object<jstring>(),
+                       QJniObject::fromString(message).object<jstring>());
+}
+
 bool AndroidController::requestAuthentication()
 {
     QEventLoop wait;

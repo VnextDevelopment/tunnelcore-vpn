@@ -10,6 +10,7 @@
 #include <QJsonObject>
 #include <QJsonValue>
 #include <QMetaEnum>
+#include <QScopeGuard>
 #include <QTimer>
 
 #include "leakdetector.h"
@@ -131,10 +132,19 @@ bool Daemon::activate(const InterfaceConfig& config) {
     }
   }
 
-  // Configure routing for excluded addresses.
-  for (const QString& i : config.m_excludedAddresses) {
-    addExclusionRoute(IPAddress(i));
+  // Configure routing for excluded addresses. On Windows this is intentionally
+  // batched so the system routing table is read only once for a large GeoIP
+  // split-tunneling list.
+  if (!addExclusionRoutes(config.m_excludedAddresses)) {
+    logger.error() << "Failed to configure exclusion routes";
+    return false;
   }
+  const QStringList excludedAddresses = config.m_excludedAddresses;
+  auto exclusionRoutesGuard = qScopeGuard([this, excludedAddresses] {
+    for (const QString& address : excludedAddresses) {
+      delExclusionRoute(IPAddress(address));
+    }
+  });
 
   // Add the peer to this interface.
   if (!wgutils()->updatePeer(config)) {
@@ -159,6 +169,7 @@ bool Daemon::activate(const InterfaceConfig& config) {
   if (status) {
     m_connections[config.m_hopType] = ConnectionState(config);
     m_handshakeTimer.start(HANDSHAKE_POLL_MSEC);
+    exclusionRoutesGuard.dismiss();
     emit_failure_guard.dismiss();
     return true;
   }
@@ -221,14 +232,42 @@ bool Daemon::addExclusionRoute(const IPAddress& prefix) {
   return true;
 }
 
+bool Daemon::addExclusionRoutes(const QStringList& addresses) {
+  QHash<IPAddress, int> requestedPrefixes;
+  for (const QString& address : addresses) {
+    requestedPrefixes[IPAddress(address)]++;
+  }
+
+  QList<IPAddress> newPrefixes;
+  for (auto i = requestedPrefixes.constBegin();
+       i != requestedPrefixes.constEnd(); ++i) {
+    if (!m_excludedAddrSet.contains(i.key())) {
+      newPrefixes.append(i.key());
+    }
+  }
+
+  if (!wgutils()->addExclusionRoutes(newPrefixes)) {
+    return false;
+  }
+
+  for (auto i = requestedPrefixes.constBegin();
+       i != requestedPrefixes.constEnd(); ++i) {
+    m_excludedAddrSet[i.key()] += i.value();
+  }
+  return true;
+}
+
 bool Daemon::delExclusionRoute(const IPAddress& prefix) {
   Q_ASSERT(m_excludedAddrSet.contains(prefix));
   if (m_excludedAddrSet[prefix] > 1) {
     m_excludedAddrSet[prefix]--;
     return true;
   }
+  if (!wgutils()->deleteExclusionRoute(prefix)) {
+    return false;
+  }
   m_excludedAddrSet.remove(prefix);
-  return wgutils()->deleteExclusionRoute(prefix);
+  return true;
 }
 
 // static
@@ -546,21 +585,40 @@ bool Daemon::switchServer(const InterfaceConfig& config) {
       m_connections.value(config.m_hopType).m_config;
 
   // Configure routing for new excluded addresses.
-  for (const QString& i : config.m_excludedAddresses) {
-    addExclusionRoute(IPAddress(i));
+  if (!addExclusionRoutes(config.m_excludedAddresses)) {
+    logger.error() << "Server switch failed to configure exclusion routes";
+    return false;
   }
+  const QStringList excludedAddresses = config.m_excludedAddresses;
+  auto exclusionRoutesGuard = qScopeGuard([this, excludedAddresses] {
+    for (const QString& address : excludedAddresses) {
+      delExclusionRoute(IPAddress(address));
+    }
+  });
 
   // Activate the new peer and its routes.
   if (!wgutils()->updatePeer(config)) {
     logger.error() << "Server switch failed to update the wireguard interface";
     return false;
   }
+
+  QList<IPAddress> updatedPrefixes;
   for (const IPAddress& ip : config.m_allowedIPAddressRanges) {
     if (!wgutils()->updateRoutePrefix(ip)) {
       logger.error() << "Server switch failed to update the routing table";
-      break;
+      for (const IPAddress& updatedPrefix : updatedPrefixes) {
+        if (!lastConfig.m_allowedIPAddressRanges.contains(updatedPrefix)) {
+          wgutils()->deleteRoutePrefix(updatedPrefix);
+        }
+      }
+      if (!wgutils()->updatePeer(lastConfig)) {
+        logger.error() << "Server switch failed to restore the previous peer";
+      }
+      return false;
     }
+    updatedPrefixes.append(ip);
   }
+  exclusionRoutesGuard.dismiss();
 
   // Remove routing entries for the old peer.
   for (const QString& i : lastConfig.m_excludedAddresses) {

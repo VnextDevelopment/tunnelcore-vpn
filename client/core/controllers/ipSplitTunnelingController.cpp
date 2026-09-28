@@ -47,7 +47,19 @@ void IpSplitTunnelingController::addSites(const QMap<QString, QStringList> &site
 {
     if (replaceExisting) {
         m_sites.clear();
+        for (auto it = sites.constBegin(); it != sites.constEnd(); ++it) {
+            QStringList ips = it.value();
+            ips.removeAll(QString());
+            ips.removeDuplicates();
+            m_sites.append(qMakePair(it.key(), ips));
+        }
+
+        // Country GeoIP lists can contain thousands of CIDRs. Replace them in
+        // one settings write instead of writing an empty map first.
+        m_appSettingsRepository->replaceVpnSites(m_currentRouteMode, sites);
+        return;
     }
+
     for (auto it = sites.constBegin(); it != sites.constEnd(); ++it) {
         const QString &hostname = it.key();
         const QStringList &ips = it.value();
@@ -66,9 +78,6 @@ void IpSplitTunnelingController::addSites(const QMap<QString, QStringList> &site
         if (!found) {
             m_sites.append(qMakePair(hostname, ips));
         }
-    }
-    if (replaceExisting) {
-        m_appSettingsRepository->removeAllVpnSites(m_currentRouteMode);
     }
     m_appSettingsRepository->addVpnSites(m_currentRouteMode, sites);
 }

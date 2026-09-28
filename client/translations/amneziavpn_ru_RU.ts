@@ -6913,6 +6913,11 @@ Remove the server from the app to continue.</source>
     <message><source>Refresh</source><translation>Обновить</translation></message>
     <message><source>Sign out</source><translation>Выйти из аккаунта</translation></message>
     <message><source>Signing out ends the account session. Imported VPN configurations remain on this device.</source><translation>Выход завершает сессию аккаунта. Импортированные VPN-конфигурации остаются на устройстве.</translation></message>
+    <message><source>Sign out on all devices</source><translation>Выйти на всех устройствах</translation></message>
+    <message><source>Sign out on all devices?</source><translation>Выйти на всех устройствах?</translation></message>
+    <message><source>All TunnelCore VPN sessions and registered VPN devices will be revoked. You will need to sign in again on every device.</source><translation>Все сессии TunnelCore VPN и зарегистрированные VPN-устройства будут отозваны. На каждом устройстве потребуется войти заново.</translation></message>
+    <message><source>Sign out everywhere</source><translation>Выйти везде</translation></message>
+    <message><source>Use this if a device was lost, replaced, or you need to reset all device slots.</source><translation>Используйте эту кнопку, если устройство потеряно, заменено или нужно освободить все слоты устройств.</translation></message>
     <message><source>Go to connection</source><translation>К подключению</translation></message>
     <message><source>Import configuration</source><translation>Импорт конфигурации</translation></message>
     <message><source>Create a TunnelCore account with your email and password.</source><translation>Создайте аккаунт TunnelCore, указав email и пароль.</translation></message>
@@ -6925,12 +6930,75 @@ Remove the server from the app to continue.</source>
     <message><source>Request a six-digit code in the TunnelCore bot and enter it here. Your Telegram subscriptions and payments will be transferred to this account.</source><translation>Запросите шестизначный код в боте TunnelCore и введите его здесь. Ваши подписки и платежи Telegram будут перенесены в этот аккаунт.</translation></message>
     <message><source>Telegram code</source><translation>Код Telegram</translation></message>
     <message><source>Telegram is linked to this account.</source><translation>Telegram привязан к этому аккаунту.</translation></message>
+    <message><source>VPN subscription inactive</source><translation>VPN-подписка неактивна</translation></message>
+    <message><source>VPN subscription expires soon</source><translation>Срок VPN-подписки скоро закончится</translation></message>
+    <message><source>Renew in App Store</source><translation>Продлить в App Store</translation></message>
+    <message><source>Renew in Telegram</source><translation>Продлить в Telegram</translation></message>
+    <message><source>Account</source><translation>Аккаунт</translation></message>
+    <message><source>Sign out of account</source><translation>Выйти из аккаунта</translation></message>
+    <message><source>Sign out of TunnelCore VPN?</source><translation>Выйти из TunnelCore VPN?</translation></message>
+    <message><source>This ends the account session on this device. Imported VPN configurations remain on the device.</source><translation>Сессия аккаунта на этом устройстве будет завершена. Импортированные VPN-конфигурации останутся на устройстве.</translation></message>
+    <message><source>Cancel</source><translation>Отмена</translation></message>
+    <message><source>Sign out is separated from VPN location controls to prevent accidental taps.</source><translation>Кнопка выхода отделена от выбора VPN-сервера, чтобы избежать случайного нажатия.</translation></message>
+    <message><source>Link Telegram to renew</source><translation>Привязать Telegram для продления</translation></message>
+    <message><source>VPN location</source><translation>Локация VPN</translation></message>
+    <message><source>Automatic — %1</source><translation>Автоматически — %1</translation></message>
+    <message><source>Automatic</source><translation>Автоматически</translation></message>
+    <message><source>Selected: %1</source><translation>Выбрано: %1</translation></message>
+    <message><source>Automatic selects an available VPN server. Choosing a country moves your VPN access to that country.</source><translation>В автоматическом режиме выбирается доступный VPN-сервер. Выбор страны перемещает VPN-доступ в эту страну.</translation></message>
+</context>
+<context>
+    <name>VpnCountries</name>
+    <message><source>Germany</source><translation>Германия</translation></message>
+    <message><source>Netherlands</source><translation>Нидерланды</translation></message>
+    <message><source>Turkey</source><translation>Турция</translation></message>
+    <message><source>United States</source><translation>США</translation></message>
+    <message><source>United Kingdom</source><translation>Великобритания</translation></message>
+    <message><source>France</source><translation>Франция</translation></message>
+    <message><source>Finland</source><translation>Финляндия</translation></message>
+    <message><source>Sweden</source><translation>Швеция</translation></message>
+    <message><source>Switzerland</source><translation>Швейцария</translation></message>
+    <message><source>Poland</source><translation>Польша</translation></message>
+    <message><source>Czechia</source><translation>Чехия</translation></message>
+    <message><source>Austria</source><translation>Австрия</translation></message>
+    <message><source>Spain</source><translation>Испания</translation></message>
+    <message><source>Italy</source><translation>Италия</translation></message>
+    <message><source>Canada</source><translation>Канада</translation></message>
+    <message><source>Japan</source><translation>Япония</translation></message>
+    <message><source>Singapore</source><translation>Сингапур</translation></message>
 </context>
 <context>
     <name>TunnelCoreController</name>
+    <message><source>TunnelCore VPN</source><translation>TunnelCore VPN</translation></message>
+    <message><source>The server returned invalid device registration data.</source><translation>Сервер вернул некорректные данные регистрации устройства.</translation></message>
+    <message><source>The device limit for this subscription has been reached. Remove another device and try again.</source><translation>Достигнут лимит устройств для этой подписки. Удалите другое устройство и повторите попытку.</translation></message>
+    <message><source>An active VPN subscription is required to register this device.</source><translation>Для регистрации этого устройства нужна активная VPN-подписка.</translation></message>
+    <message><source>No VPN server is currently available for this device. Try again later.</source><translation>Сейчас для этого устройства нет доступных VPN-серверов. Повторите позже.</translation></message>
+    <message><source>Could not prepare a VPN configuration for this device. Try again later.</source><translation>Не удалось подготовить VPN-конфигурацию для этого устройства. Повторите позже.</translation></message>
+    <message><source>Could not register this device. Try again.</source><translation>Не удалось зарегистрировать это устройство. Повторите попытку.</translation></message>
+    <message><source>The server returned an invalid split-tunneling country list.</source><translation>Сервер вернул некорректный список стран для раздельного туннелирования.</translation></message>
+    <message><source>Could not load the split-tunneling country list.</source><translation>Не удалось загрузить список стран для раздельного туннелирования.</translation></message>
+    <message><source>The server returned an invalid VPN routing rule list.</source><translation>Сервер вернул некорректный список правил VPN-маршрутизации.</translation></message>
+    <message><source>The server returned invalid country routing data.</source><translation>Сервер вернул некорректные данные маршрутизации по странам.</translation></message>
+    <message><source>Could not apply the VPN routing rules.</source><translation>Не удалось применить правила VPN-маршрутизации.</translation></message>
+    <message><source>This split-tunneling country is no longer available.</source><translation>Эта страна больше недоступна для раздельного туннелирования.</translation></message>
+    <message><source>Country routing data is temporarily unavailable.</source><translation>Данные маршрутизации по странам временно недоступны.</translation></message>
+    <message><source>Could not load country routing data.</source><translation>Не удалось загрузить данные маршрутизации по странам.</translation></message>
+    <message><source>Could not load the VPN routing rules.</source><translation>Не удалось загрузить правила VPN-маршрутизации.</translation></message>
+    <message><source>The server returned an invalid VPN country list.</source><translation>Сервер вернул некорректный список стран VPN.</translation></message>
+    <message><source>Could not load the VPN country list.</source><translation>Не удалось загрузить список стран VPN.</translation></message>
+    <message><source>The selected split-tunneling country is unavailable.</source><translation>Выбранная страна недоступна для раздельного туннелирования.</translation></message>
+    <message><source>The server returned invalid VPN country data.</source><translation>Сервер вернул некорректные данные страны VPN.</translation></message>
+    <message><source>This VPN country is temporarily unavailable. Choose another country or Automatic.</source><translation>Эта страна VPN временно недоступна. Выберите другую страну или автоматический режим.</translation></message>
+    <message><source>Could not move your VPN connection to the selected country. Try again later.</source><translation>Не удалось переместить VPN-подключение в выбранную страну. Повторите позже.</translation></message>
+    <message><source>The selected VPN country is invalid.</source><translation>Выбрана некорректная страна VPN.</translation></message>
+    <message><source>Could not change the VPN country. Try again.</source><translation>Не удалось изменить страну VPN. Повторите попытку.</translation></message>
     <message><source>No configuration is available for the selected VPN location. Refresh and try again.</source><translation>Для выбранной локации VPN нет конфигурации. Обновите список и попробуйте снова.</translation></message>
     <message><source>The login details or password are incorrect.</source><translation>Неверные данные для входа или пароль.</translation></message>
     <message><source>Your session has ended. Sign in again.</source><translation>Сессия завершена. Войдите снова.</translation></message>
+    <message><source>Could not sign out because this device is not registered.</source><translation>Не удалось выйти: это устройство не зарегистрировано.</translation></message>
+    <message><source>Could not sign out and release this device. Check your connection and try again.</source><translation>Не удалось выйти и освободить слот этого устройства. Проверьте подключение и повторите попытку.</translation></message>
+    <message><source>Could not sign out on all devices. Check your connection and try again.</source><translation>Не удалось выйти на всех устройствах. Проверьте подключение и повторите попытку.</translation></message>
     <message><source>Enter a valid email and password.</source><translation>Введите корректный email и пароль.</translation></message>
     <message><source>The server rejected the login details. Check the sign-in method and API version.</source><translation>Сервер не принял данные для входа. Проверьте способ входа и версию API.</translation></message>
     <message><source>The server rejected the login details.</source><translation>Сервер не принял данные для входа.</translation></message>
@@ -6957,5 +7025,18 @@ Remove the server from the app to continue.</source>
     <message><source>An account with this email already exists. Sign in instead.</source><translation>Аккаунт с этим email уже существует. Войдите в него.</translation></message>
     <message><source>The password does not meet the security requirements.</source><translation>Пароль не соответствует требованиям безопасности.</translation></message>
     <message><source>Could not create the account. Try again.</source><translation>Не удалось создать аккаунт. Повторите попытку.</translation></message>
+    <message><source>VPN subscription is inactive. Renew it to keep using TunnelCore VPN.</source><translation>VPN-подписка неактивна. Продлите её, чтобы продолжить пользоваться TunnelCore VPN.</translation></message>
+    <message><source>Your VPN subscription expires today.</source><translation>Срок вашей VPN-подписки заканчивается сегодня.</translation></message>
+    <message><source>Your VPN subscription expires tomorrow.</source><translation>Срок вашей VPN-подписки заканчивается завтра.</translation></message>
+    <message><source>Your VPN subscription expires in %1 days.</source><translation>Срок вашей VPN-подписки закончится через %1 дн.</translation></message>
+    <message><source>App Store renewal is not configured for this subscription.</source><translation>Продление через App Store для этой подписки не настроено.</translation></message>
+    <message><source>The App Store purchase is pending approval.</source><translation>Покупка в App Store ожидает подтверждения.</translation></message>
+    <message><source>Could not complete the App Store purchase.</source><translation>Не удалось завершить покупку в App Store.</translation></message>
+    <message><source>Could not complete the App Store purchase: %1</source><translation>Не удалось завершить покупку в App Store: %1</translation></message>
+    <message><source>App Store renewal is temporarily unavailable.</source><translation>Продление через App Store временно недоступно.</translation></message>
+    <message><source>The App Store purchase could not be verified by TunnelCore.</source><translation>TunnelCore не удалось подтвердить покупку в App Store.</translation></message>
+    <message><source>Could not confirm the App Store purchase. Try again.</source><translation>Не удалось подтвердить покупку в App Store. Повторите попытку.</translation></message>
+    <message><source>Could not open the TunnelCore bot.</source><translation>Не удалось открыть бот TunnelCore.</translation></message>
+    <message><source>Link Telegram to this account before renewing in the bot.</source><translation>Перед продлением в боте привяжите Telegram к этому аккаунту.</translation></message>
 </context>
 </TS>

@@ -5,11 +5,14 @@ import android.net.IpPrefix
 import android.net.VpnService
 import android.net.VpnService.Builder
 import android.os.Build
+import android.os.SystemClock
 import android.system.OsConstants
 import androidx.annotation.RequiresApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.amnezia.vpn.util.Log
 import org.amnezia.vpn.util.net.InetNetwork
+import org.amnezia.vpn.util.net.IpRange
+import org.amnezia.vpn.util.net.IpRangeSet
 import org.json.JSONObject
 
 private const val TAG = "Protocol"
@@ -61,8 +64,18 @@ abstract class Protocol {
             else -> throw BadConfigException("Unexpected value of the 'splitTunnelType' parameter: $splitTunnelType")
         }
 
+        val addressRanges = IpRangeSet()
         for (i in 0 until splitTunnelSites.length()) {
-            val address = InetNetwork.parse(splitTunnelSites.getString(i))
+            addressRanges.add(IpRange(InetNetwork.parse(splitTunnelSites.getString(i))))
+        }
+
+        val compactedAddresses = addressRanges.subnets()
+        Log.d(
+            TAG,
+            "Configure address split tunneling: input=${splitTunnelSites.length()}, " +
+                "compacted=${compactedAddresses.size}"
+        )
+        for (address in compactedAddresses) {
             addressHandlerFunc(address)
         }
     }
@@ -84,6 +97,7 @@ abstract class Protocol {
     }
 
     protected open fun buildVpnInterface(config: ProtocolConfig, vpnBuilder: Builder) {
+        val startedAt = SystemClock.elapsedRealtime()
         vpnBuilder.setSession(VPN_SESSION_NAME)
 
         for (addr in config.addresses) {
@@ -108,13 +122,14 @@ abstract class Protocol {
             vpnBuilder.addSearchDomain(it)
         }
 
+        val includedRouteCount = config.routes.count { it.include }
+        val excludedRouteCount = config.routes.size - includedRouteCount
+        Log.d(TAG, "Configure routes: include=$includedRouteCount, exclude=$excludedRouteCount")
         for ((inetNetwork, include) in config.routes) {
             if (include) {
-                Log.d(TAG, "addRoute: $inetNetwork")
                 vpnBuilder.addRoute(inetNetwork)
             } else {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    Log.d(TAG, "excludeRoute: $inetNetwork")
                     vpnBuilder.excludeRoute(inetNetwork)
                 } else {
                     Log.e(TAG, "Trying to exclude route $inetNetwork on old Android")
@@ -153,6 +168,11 @@ abstract class Protocol {
         vpnBuilder.setUnderlyingNetworks(null)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
             vpnBuilder.setMetered(false)
+
+        Log.i(
+            TAG,
+            "VPN interface builder configured in ${SystemClock.elapsedRealtime() - startedAt} ms"
+        )
     }
 }
 

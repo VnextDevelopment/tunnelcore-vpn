@@ -12,8 +12,11 @@
 #include <ws2ipdef.h>
 
 #include <QHash>
+#include <QList>
 #include <QMap>
 #include <QObject>
+#include <QSet>
+#include <QTimer>
 
 #include "ipaddress.h"
 
@@ -27,6 +30,7 @@ class WindowsRouteMonitor final : public QObject {
   void setDetaultRouteCapture(bool enable);
 
   bool addExclusionRoute(const IPAddress& prefix);
+  bool addExclusionRoutes(const QList<IPAddress>& prefixes);
   bool deleteExclusionRoute(const IPAddress& prefix);
   void flushExclusionRoutes() { return flushRouteTable(m_exclusionRoutes); };
 
@@ -34,6 +38,7 @@ class WindowsRouteMonitor final : public QObject {
 
  public slots:
   void routeChanged();
+  void scheduleRouteChanged();
 
  private:
   bool isRouteExcluded(const IP_ADDRESS_PREFIX* dest) const;
@@ -42,10 +47,11 @@ class WindowsRouteMonitor final : public QObject {
   static QHostAddress prefixToAddress(const IP_ADDRESS_PREFIX* dest);
 
   void flushRouteTable(QHash<IPAddress, MIB_IPFORWARD_ROW2*>& table);
-  void updateExclusionRoute(MIB_IPFORWARD_ROW2* data, void* table);
-  void updateInterfaceMetrics(int family);
+  bool updateExclusionRoute(MIB_IPFORWARD_ROW2* data, void* table);
+  bool updateInterfaceMetrics(int family);
   void updateCapturedRoutes(int family);
   void updateCapturedRoutes(int family, void* table);
+  bool addExclusionRoute(const IPAddress& prefix, void* table);
 
   QHash<IPAddress, MIB_IPFORWARD_ROW2*> m_exclusionRoutes;
   QMap<quint64, ULONG> m_interfaceMetricsIpv4;
@@ -57,6 +63,7 @@ class WindowsRouteMonitor final : public QObject {
 
   const quint64 m_luid = 0;
   HANDLE m_routeHandle = INVALID_HANDLE_VALUE;
+  QTimer m_routeChangedDebounce;
 };
 
 #endif /* WINDOWSROUTEMONITOR_H */

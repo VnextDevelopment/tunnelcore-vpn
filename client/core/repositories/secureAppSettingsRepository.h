@@ -40,6 +40,7 @@ public:
     void setRouteMode(RouteMode mode);
     bool addVpnSite(RouteMode mode, const QString &site, const QStringList &ips = {});
     void addVpnSites(RouteMode mode, const QMap<QString, QStringList> &sites);
+    void replaceVpnSites(RouteMode mode, const QMap<QString, QStringList> &sites);
     void removeVpnSite(RouteMode mode, const QString &site);
     void removeAllVpnSites(RouteMode mode);
     QVariantMap vpnSites(RouteMode mode) const;

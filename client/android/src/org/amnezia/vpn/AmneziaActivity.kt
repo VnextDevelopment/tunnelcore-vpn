@@ -1071,6 +1071,11 @@ class AmneziaActivity : QtActivity() {
     }
 
     @Suppress("unused")
+    fun showSubscriptionNotification(title: String, message: String) {
+        ServiceNotification.showSubscriptionAlert(applicationContext, title, message)
+    }
+
+    @Suppress("unused")
     fun requestAuthentication() {
         Log.v(TAG, "Request authentication")
         mainScope.launch {

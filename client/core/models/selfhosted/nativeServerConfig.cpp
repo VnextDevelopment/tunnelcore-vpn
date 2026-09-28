@@ -81,6 +81,12 @@ QJsonObject NativeServerConfig::toJson() const
     if (!managedProfileId.isEmpty()) {
         obj[configKey::managedProfileId] = managedProfileId;
         obj[configKey::managedProfileKey] = managedProfileKey;
+        if (!managedObfuscationMode.isEmpty()) {
+            obj[configKey::managedObfuscationMode] = managedObfuscationMode;
+        }
+        if (!managedObfuscationProfile.isEmpty()) {
+            obj[configKey::managedObfuscationProfile] = managedObfuscationProfile;
+        }
     }
     
     return obj;
@@ -111,6 +117,8 @@ NativeServerConfig NativeServerConfig::fromJson(const QJsonObject& json)
     config.dns2 = json.value(configKey::dns2).toString();
     config.managedProfileId = json.value(configKey::managedProfileId).toString();
     config.managedProfileKey = json.value(configKey::managedProfileKey).toString();
+    config.managedObfuscationMode = json.value(configKey::managedObfuscationMode).toString();
+    config.managedObfuscationProfile = json.value(configKey::managedObfuscationProfile).toString();
     
     if (config.displayName.isEmpty()) {
         config.displayName = config.description.isEmpty() ? config.hostName : config.description;

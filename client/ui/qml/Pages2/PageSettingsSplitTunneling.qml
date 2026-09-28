@@ -24,7 +24,13 @@ PageType {
     
     property bool pageEnabled
 
+    ListModel {
+        id: geoCountriesListModel
+    }
+
     Component.onCompleted: {
+        updateGeoCountriesModel()
+
         if (ConnectionController.isConnected) {
             PageController.showNotificationMessage(qsTr("Cannot change split tunneling settings during active connection"))
             root.pageEnabled = false
@@ -45,6 +51,14 @@ PageType {
 
         function onErrorOccurred(errorMessage) {
             PageController.showErrorMessage(errorMessage)
+        }
+    }
+
+    Connections {
+        target: TunnelCoreController
+
+        function onChanged() {
+            updateGeoCountriesModel()
         }
     }
 
@@ -80,16 +94,16 @@ PageType {
         }
     }
 
-    function geoCountriesModel() {
-        var result = [{ "name": qsTr("Standard rules"), "code": "" }]
+    function updateGeoCountriesModel() {
+        geoCountriesListModel.clear()
+        geoCountriesListModel.append({ "name": qsTr("Standard rules"), "code": "" })
         var countries = TunnelCoreController.geoRoutingCountries
         for (var i = 0; i < countries.length; ++i) {
-            result.push({
+            geoCountriesListModel.append({
                 "name": countries[i].name + " (" + countries[i].code + ")",
                 "code": countries[i].code
             })
         }
-        return result
     }
 
     function geoCountryModelIndex() {
@@ -105,9 +119,14 @@ PageType {
     }
 
     function geoCountryText() {
-        var model = geoCountriesModel()
         var index = geoCountryModelIndex()
-        return model[index].name
+        if (index >= 0 && index < geoCountriesListModel.count)
+            return geoCountriesListModel.get(index).name
+        return qsTr("Standard rules")
+    }
+
+    function escapeRegExp(value) {
+        return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
     }
 
     ColumnLayout {
@@ -160,23 +179,67 @@ PageType {
             headerText: qsTr("Country traffic directly")
             text: root.geoCountryText()
 
-            listView: ListViewWithRadioButtonType {
-                rootWidth: root.width
-                model: root.geoCountriesModel()
-                selectedIndex: root.geoCountryModelIndex()
+            listView: Item {
+                ColumnLayout {
+                    anchors.fill: parent
+                    spacing: 12
 
-                clickedFunction: function() {
-                    countryBypassSelector.text = selectedText
-                    countryBypassSelector.closeTriggered()
-                    var item = root.geoCountriesModel()[selectedIndex]
-                    TunnelCoreController.selectGeoRoutingCountry(item.code)
-                }
+                    TextFieldWithHeaderType {
+                        id: countrySearchField
+                        Layout.fillWidth: true
+                        Layout.leftMargin: 16
+                        Layout.rightMargin: 16
 
-                Connections {
-                    target: TunnelCoreController
-                    function onChanged() {
-                        selectedIndex = root.geoCountryModelIndex()
-                        countryBypassSelector.text = root.geoCountryText()
+                        backgroundColor: AmneziaStyle.color.slateGray
+                        headerText: qsTr("Search")
+                        textField.placeholderText: qsTr("Search")
+                        buttonImageSource: countrySearchField.textField.text.length > 0
+                                           ? "qrc:/images/controls/close.svg"
+                                           : "qrc:/images/controls/search.svg"
+                        clickedFunc: function() {
+                            if (countrySearchField.textField.text.length > 0)
+                                countrySearchField.textField.text = ""
+                            else
+                                countrySearchField.textField.forceActiveFocus()
+                        }
+                    }
+
+                    ListViewWithRadioButtonType {
+                        id: geoCountriesList
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        clip: true
+
+                        rootWidth: root.width
+                        model: SortFilterProxyModel {
+                            id: filteredGeoCountriesModel
+                            sourceModel: geoCountriesListModel
+                            filters: RegExpFilter {
+                                roleName: "name"
+                                pattern: ".*" + root.escapeRegExp(countrySearchField.textField.text) + ".*"
+                                caseSensitivity: Qt.CaseInsensitive
+                            }
+                        }
+                        textColor: AmneziaStyle.color.textPrimary
+                        itemColor: AmneziaStyle.color.slateGray
+                        itemHoveredColor: AmneziaStyle.color.charcoalGray
+                        itemSelectedColor: AmneziaStyle.color.translucentRichBrown
+                        currentValue: root.geoCountryText()
+
+                        clickedFunction: function() {
+                            var item = filteredGeoCountriesModel.get(selectedIndex)
+                            countryBypassSelector.text = item.name
+                            countryBypassSelector.closeTriggered()
+                            TunnelCoreController.selectGeoRoutingCountry(item.code)
+                        }
+
+                        Connections {
+                            target: TunnelCoreController
+                            function onChanged() {
+                                geoCountriesList.currentValue = root.geoCountryText()
+                                countryBypassSelector.text = root.geoCountryText()
+                            }
+                        }
                     }
                 }
             }
