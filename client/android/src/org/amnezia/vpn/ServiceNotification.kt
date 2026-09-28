@@ -67,7 +67,7 @@ class ServiceNotification(private val context: Context) {
         Log.v(TAG, "Build notification: $serverName, $state")
 
         return notificationBuilder
-            .setSmallIcon(R.drawable.ic_amnezia_round)
+            .setSmallIcon(R.drawable.ic_tunnelcore_round)
             .setContentTitle((serverName ?: "AmneziaVPN") + (protocol?.let { " $it" } ?: ""))
             .setContentText(context.getString(state))
             .setSubText(speedString)
@@ -170,7 +170,7 @@ class ServiceNotification(private val context: Context) {
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
             val notification = NotificationCompat.Builder(context, SUBSCRIPTION_NOTIFICATION_CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_amnezia_round)
+                .setSmallIcon(R.drawable.ic_tunnelcore_round)
                 .setContentTitle(title)
                 .setContentText(message)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(message))

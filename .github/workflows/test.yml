@@ -5,6 +5,7 @@ on:
     branches:
       - 'feature/tunnelcore-branding'
       - 'feature/subscription-renewal-ux'
+      - 'feature/tunnelcore-icon-refresh'
   workflow_dispatch:
 
 env:
