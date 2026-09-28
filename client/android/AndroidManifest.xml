@@ -194,7 +194,7 @@
         <service
             android:name=".AmneziaTileService"
             android:process=":amneziaTileService"
-            android:icon="@drawable/ic_amnezia_round"
+            android:icon="@drawable/ic_tunnelcore_round"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
             android:exported="true">
 

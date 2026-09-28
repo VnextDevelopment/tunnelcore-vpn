@@ -65,7 +65,7 @@ class ServiceNotification(private val context: Context) {
         Log.v(TAG, "Build notification: $serverName, $state")
 
         return notificationBuilder
-            .setSmallIcon(R.drawable.ic_amnezia_round)
+            .setSmallIcon(R.drawable.ic_tunnelcore_round)
             .setContentTitle((serverName ?: "AmneziaVPN") + (protocol?.let { " $it" } ?: ""))
             .setContentText(context.getString(state))
             .setSubText(speedString)
