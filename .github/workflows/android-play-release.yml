@@ -1,0 +1,118 @@
+name: Android Play Release
+
+on:
+  workflow_dispatch:
+
+env:
+  QT_MIRROR: https://mirrors.ocf.berkeley.edu/qt/
+  QT_VERSION: 6.10.1
+  NDK_VERSION: 27.0.11718014
+  ANDROID_PLATFORM: android-28
+  QT_DESKTOP_MODULES: 'qtremoteobjects qt5compat qtimageformats qtshadertools'
+  QT_ANDROID_MODULES: 'qtremoteobjects qt5compat qtshadertools'
+
+jobs:
+  build-play-aab:
+    runs-on: ubuntu-latest
+    env:
+      PROD_AGW_PUBLIC_KEY: ${{ secrets.PROD_AGW_PUBLIC_KEY }}
+      PROD_S3_ENDPOINT: ${{ secrets.PROD_S3_ENDPOINT }}
+      FALLBACK_S3_ENDPOINT: ${{ secrets.FALLBACK_S3_ENDPOINT }}
+      DEV_AGW_PUBLIC_KEY: ${{ secrets.DEV_AGW_PUBLIC_KEY }}
+      DEV_AGW_ENDPOINT: ${{ secrets.DEV_AGW_ENDPOINT }}
+      DEV_S3_ENDPOINT: ${{ secrets.DEV_S3_ENDPOINT }}
+      FREE_V2_ENDPOINT: ${{ secrets.FREE_V2_ENDPOINT }}
+      PREM_V1_ENDPOINT: ${{ secrets.PREM_V1_ENDPOINT }}
+      QT_ANDROID_KEYSTORE_PATH: /tmp/tunnelcore-release.keystore
+      QT_ANDROID_KEYSTORE_STORE_PASS: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
+      QT_ANDROID_KEYSTORE_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+          fetch-depth: 10
+
+      - name: Install desktop Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: linux
+          target: desktop
+          arch: linux_gcc_64
+          modules: ${{ env.QT_DESKTOP_MODULES }}
+          dir: ${{ runner.temp }}
+          py7zrversion: '==0.22.*'
+          extra: '--base ${{ env.QT_MIRROR }}'
+
+      - name: Install Android Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: all_os
+          target: android
+          arch: android_arm64_v8a
+          modules: ${{ env.QT_ANDROID_MODULES }}
+          dir: ${{ runner.temp }}
+          py7zrversion: '==0.22.*'
+          extra: '--base ${{ env.QT_MIRROR }}'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: "platforms;${{ env.ANDROID_PLATFORM }} platforms;android-36 build-tools;36.0.0 ndk;${{ env.NDK_VERSION }}"
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Install Conan
+        run: pip install "conan==2.28.0"
+
+      - name: Restore release keystore
+        shell: bash
+        env:
+          ANDROID_RELEASE_KEYSTORE_BASE64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$ANDROID_RELEASE_KEYSTORE_BASE64"
+          printf '%s' "$ANDROID_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$QT_ANDROID_KEYSTORE_PATH"
+          chmod 600 "$QT_ANDROID_KEYSTORE_PATH"
+
+      - name: Validate signing configuration
+        shell: bash
+        run: |
+          test -n "$QT_ANDROID_KEYSTORE_STORE_PASS"
+          test -n "$QT_ANDROID_KEYSTORE_ALIAS"
+          keytool -list -keystore "$QT_ANDROID_KEYSTORE_PATH" \
+            -storepass "$QT_ANDROID_KEYSTORE_STORE_PASS" \
+            -alias "$QT_ANDROID_KEYSTORE_ALIAS" >/dev/null
+
+      - name: Build signed Google Play AAB
+        shell: bash
+        env:
+          QT_INSTALL_DIR: ${{ runner.temp }}
+        run: |
+          deploy/build.sh -t android --abi arm64-v8a \
+            --build ./deploy/build/android-play \
+            --play --aab --sign
+          mkdir -p deploy/artifacts
+          VERSION=$(grep CMAKE_PROJECT_VERSION:STATIC deploy/build/android-play/CMakeCache.txt | cut -d= -f2)
+          AAB=$(find deploy/build/android-play/client/android-build/build/outputs/bundle -type f -name '*.aab' | head -1)
+          test -n "$AAB"
+          cp "$AAB" "deploy/artifacts/TunnelCoreVPN_${VERSION}_play.aab"
+
+      - name: Upload Play AAB
+        uses: actions/upload-artifact@v7
+        with:
+          name: TunnelCoreVPN-Android-Play-AAB
+          path: deploy/artifacts/TunnelCoreVPN_*_play.aab
+          archive: false
+          retention-days: 14
