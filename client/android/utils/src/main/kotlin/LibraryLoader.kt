@@ -22,14 +22,12 @@ object LibraryLoader {
                 ZipFile(File(apk), ZipFile.OPEN_READ).use { zipFile ->
                     val mappedName = System.mapLibraryName(libraryName)
                     val libraryZipPath = listOf("lib", abi, mappedName).joinToString(File.separator)
-                    val zipEntry = zipFile.getEntry(libraryZipPath)
-                    zipEntry?.let {
-                        Log.d(TAG, "Extracting apk:/$libraryZipPath to ${destination.absolutePath}")
-                        FileOutputStream(destination).use { outStream ->
-                            zipFile.getInputStream(zipEntry).use { inStream ->
-                                inStream.copyTo(outStream, 32 * 1024)
-                                outStream.fd.sync()
-                            }
+                    val zipEntry = zipFile.getEntry(libraryZipPath) ?: return@use
+                    Log.d(TAG, "Extracting $apk:/$libraryZipPath to ${destination.absolutePath}")
+                    FileOutputStream(destination).use { outStream ->
+                        zipFile.getInputStream(zipEntry).use { inStream ->
+                            inStream.copyTo(outStream, 32 * 1024)
+                            outStream.fd.sync()
                         }
                     }
                     return true
