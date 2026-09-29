@@ -46,13 +46,25 @@ jobs:
           py7zrversion: '==0.22.*'
           extra: '--base ${{ env.QT_MIRROR }}'
 
-      - name: Install Android Qt
+      - name: Install Android Qt (arm64-v8a)
         uses: jurplel/install-qt-action@v4
         with:
           version: ${{ env.QT_VERSION }}
           host: all_os
           target: android
           arch: android_arm64_v8a
+          modules: ${{ env.QT_ANDROID_MODULES }}
+          dir: ${{ runner.temp }}
+          py7zrversion: '==0.22.*'
+          extra: '--base ${{ env.QT_MIRROR }}'
+
+      - name: Install Android Qt (x86_64)
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: all_os
+          target: android
+          arch: android_x86_64
           modules: ${{ env.QT_ANDROID_MODULES }}
           dir: ${{ runner.temp }}
           py7zrversion: '==0.22.*'
@@ -100,13 +112,16 @@ jobs:
         env:
           QT_INSTALL_DIR: ${{ runner.temp }}
         run: |
-          deploy/build.sh -t android --abi arm64-v8a \
+          deploy/build.sh -t android --abi arm64-v8a --abi x86_64 \
             --build ./deploy/build/android-play \
             --play --aab --sign
           mkdir -p deploy/artifacts
           VERSION=$(grep CMAKE_PROJECT_VERSION:STATIC deploy/build/android-play/CMakeCache.txt | cut -d= -f2)
           AAB=$(find deploy/build/android-play/client/android-build/build/outputs/bundle -type f -name '*.aab' | head -1)
           test -n "$AAB"
+          unzip -Z1 "$AAB" > /tmp/tunnelcore-aab-entries.txt
+          grep -q '^base/lib/arm64-v8a/' /tmp/tunnelcore-aab-entries.txt
+          grep -q '^base/lib/x86_64/' /tmp/tunnelcore-aab-entries.txt
           cp "$AAB" "deploy/artifacts/TunnelCoreVPN_${VERSION}_play.aab"
 
       - name: Upload Play AAB
