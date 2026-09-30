@@ -52,6 +52,7 @@ class TunnelCoreController : public QObject
     Q_PROPERTY(int subscriptionDaysRemaining READ subscriptionDaysRemaining NOTIFY changed)
     Q_PROPERTY(QString subscriptionStatusText READ subscriptionStatusText NOTIFY changed)
     Q_PROPERTY(bool usesAppleBilling READ usesAppleBilling CONSTANT)
+    Q_PROPERTY(bool externalRenewalLinkAllowed READ externalRenewalLinkAllowed CONSTANT)
 
 public:
     explicit TunnelCoreController(QObject *parent = nullptr, QNetworkAccessManager *network = nullptr,
@@ -76,6 +77,7 @@ public:
     int subscriptionDaysRemaining() const;
     QString subscriptionStatusText() const;
     bool usesAppleBilling() const;
+    bool externalRenewalLinkAllowed() const;
 
     Q_INVOKABLE void loginCode(const QString &code);
     // Legacy login methods remain available during the server transition, but the
