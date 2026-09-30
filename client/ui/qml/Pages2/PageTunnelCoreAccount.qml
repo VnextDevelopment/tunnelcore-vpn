@@ -380,6 +380,8 @@ PageType {
                         }
                         BasicButtonType {
                             Layout.fillWidth: true
+                            visible: TunnelCoreController.usesAppleBilling
+                                     || TunnelCoreController.externalRenewalLinkAllowed
                             text: TunnelCoreController.usesAppleBilling
                                   ? qsTr("Renew in App Store")
                                   : (TunnelCoreController.emailAccount && !TunnelCoreController.telegramLinked
@@ -391,6 +393,14 @@ PageType {
                                           : AmneziaStyle.color.accentWarning
                             hoveredColor: defaultColor
                             clickedFunc: function() { TunnelCoreController.renewSubscription() }
+                        }
+                        SmallTextType {
+                            Layout.fillWidth: true
+                            visible: !TunnelCoreController.usesAppleBilling
+                                     && !TunnelCoreController.externalRenewalLinkAllowed
+                            textFormat: Text.PlainText
+                            text: qsTr("Renew your TunnelCore subscription outside the app. Telegram users can use @tunnelcoree_bot. After renewal, return here and tap Refresh.")
+                            color: AmneziaStyle.color.paleGray
                         }
                     }
                 }
