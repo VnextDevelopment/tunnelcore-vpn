@@ -1,12 +1,14 @@
-name: 'Test workflow'
+name: 'Android + Windows CI'
 
 on:
-  push:
+  pull_request:
     branches:
-      - 'feature/tunnelcore-branding'
-      - 'feature/subscription-renewal-ux'
-      - 'feature/tunnelcore-icon-refresh'
+      - 'main'
   workflow_dispatch:
+
+concurrency:
+  group: android-windows-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 env:
   QT_MIRROR: https://mirrors.ocf.berkeley.edu/qt/
