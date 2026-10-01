@@ -15,7 +15,10 @@ DrawerType2 {
     property bool isRenewalAvailable: false
 
     onOpened: {
-        isRenewalAvailable = ServersUiController.isServerRenewalAvailable(ServersUiController.defaultServerId) && !ApiAccountInfoModel.data("isInAppPurchase")
+        const consumptionOnlyPlatform = Qt.platform.os === "android" || Qt.platform.os === "windows"
+        isRenewalAvailable = !consumptionOnlyPlatform
+                             && ServersUiController.isServerRenewalAvailable(ServersUiController.defaultServerId)
+                             && !ApiAccountInfoModel.data("isInAppPurchase")
     }
 
     expandedStateContent: ColumnLayout {

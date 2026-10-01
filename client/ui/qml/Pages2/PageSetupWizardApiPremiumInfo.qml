@@ -21,10 +21,14 @@ PageType {
 
     readonly property var currentPlan: ApiSubscriptionPlansModel.planAt(selectedPlanIndex)
     readonly property bool anyPlanHasFreeTrial: ApiSubscriptionPlansModel.hasAnyFreeTrial()
+    readonly property bool consumptionOnlyPlatform: Qt.platform.os === "android"
+                                                    || Qt.platform.os === "windows"
     readonly property bool storePurchaseAvailable: Qt.platform.os === "ios" || IsMacOsNeBuild
-                                                   || (Qt.platform.os === "android" && IsPlayBuild)
 
     function proceedWithPurchase(plan) {
+        if (root.consumptionOnlyPlatform) {
+            return
+        }
         var storeId = plan.storeProductId !== undefined ? String(plan.storeProductId) : ""
         if (root.storePurchaseAvailable) {
             PageController.showBusyIndicator(true)
@@ -270,8 +274,14 @@ PageType {
                     if (plan.hasFreeTrial) {
                         return qsTr("Start %n-day free trial", "", Number(plan.trialDays))
                     }
+                    if (root.consumptionOnlyPlatform) {
+                        return qsTr("Subscription required")
+                    }
                     return qsTr("Subscribe — %1 for %2").arg(String(plan.billingPeriod)).arg(String(plan.priceLabel))
                 }
+
+                enabled: !root.consumptionOnlyPlatform
+                         || (!!root.currentPlan && !!root.currentPlan.isTrial)
 
                 clickedFunc: function() {
                     var plan = root.currentPlan

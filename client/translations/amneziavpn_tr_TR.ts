@@ -41,6 +41,7 @@
     <message><source>VPN subscription expires soon</source><translation>VPN aboneliğinin süresi yakında dolacak</translation></message>
     <message><source>Renew in App Store</source><translation>App Store&apos;da yenile</translation></message>
     <message><source>Renew in Telegram</source><translation>Telegram&apos;da yenile</translation></message>
+    <message><source>Renew your TunnelCore subscription outside the app. Telegram users can use @tunnelcoree_bot. After renewal, return here and tap Refresh.</source><translation>TunnelCore aboneliğinizi uygulama dışında yenileyin. Telegram kullanıcıları @tunnelcoree_bot botunu kullanabilir. Yenilemeden sonra buraya dönüp Yenile düğmesine dokunun.</translation></message>
     <message><source>Account</source><translation>Hesap</translation></message>
     <message><source>Sign out of account</source><translation>Hesaptan çık</translation></message>
     <message><source>Sign out of TunnelCore VPN?</source><translation>TunnelCore VPN&apos;den çıkış yapılsın mı?</translation></message>

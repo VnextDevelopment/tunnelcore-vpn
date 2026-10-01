@@ -6934,6 +6934,7 @@ Remove the server from the app to continue.</source>
     <message><source>VPN subscription expires soon</source><translation>Срок VPN-подписки скоро закончится</translation></message>
     <message><source>Renew in App Store</source><translation>Продлить в App Store</translation></message>
     <message><source>Renew in Telegram</source><translation>Продлить в Telegram</translation></message>
+    <message><source>Renew your TunnelCore subscription outside the app. Telegram users can use @tunnelcoree_bot. After renewal, return here and tap Refresh.</source><translation>Продлите подписку TunnelCore вне приложения. Пользователи Telegram могут использовать @tunnelcoree_bot. После продления вернитесь сюда и нажмите «Обновить».</translation></message>
     <message><source>Account</source><translation>Аккаунт</translation></message>
     <message><source>Sign out of account</source><translation>Выйти из аккаунта</translation></message>
     <message><source>Sign out of TunnelCore VPN?</source><translation>Выйти из TunnelCore VPN?</translation></message>

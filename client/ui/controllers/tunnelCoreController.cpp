@@ -55,6 +55,15 @@ bool TunnelCoreController::usesAppleBilling() const
 #endif
 }
 
+bool TunnelCoreController::externalRenewalLinkAllowed() const
+{
+#if defined(Q_OS_ANDROID) || defined(Q_OS_WIN)
+    return false;
+#else
+    return true;
+#endif
+}
+
 bool TunnelCoreController::subscriptionExpired() const
 {
     if (!authenticated() || !m_subscriptionKnown)
@@ -169,7 +178,12 @@ void TunnelCoreController::renewSubscription()
     if (m_busy || !authenticated())
         return;
 
-#if defined(Q_OS_IOS)
+#if defined(Q_OS_ANDROID) || defined(Q_OS_WIN)
+    // Android Play and Windows builds use a consumption-only flow.
+    // Never deep-link from the client to an external purchase channel.
+    qInfo().noquote() << "[TunnelCore] External renewal link is disabled on this platform";
+    return;
+#elif defined(Q_OS_IOS)
     request(QStringLiteral("billing/?platform=ios"), {}, [this](const QJsonObject &object) {
         QString productId;
         const auto billing = object.value(QStringLiteral("billing")).toObject();
