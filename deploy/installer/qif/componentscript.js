@@ -11,9 +11,7 @@ function displayName()
 
 function serviceName()
 {
-    // Keep the legacy service executable/name until the Windows service layer
-    // is renamed end-to-end. This is internal and not user-facing.
-    return "AmneziaVPN-service"
+    return "TunnelCoreVPN-service"
 }
 
 function appExecutableFileName()
