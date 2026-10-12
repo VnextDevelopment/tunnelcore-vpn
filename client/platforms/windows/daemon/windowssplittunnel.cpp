@@ -120,7 +120,7 @@ using ProcessInfo = struct {
 
 constexpr static const auto DRIVER_SYMLINK = L"\\\\.\\MULLVADSPLITTUNNEL";
 constexpr static const auto DRIVER_FILENAME = "mullvad-split-tunnel.sys";
-constexpr static const auto DRIVER_SERVICE_NAME = L"AmneziaVPNSplitTunnel";
+constexpr static const auto DRIVER_SERVICE_NAME = L"TunnelCoreVPNSplitTunnel";
 constexpr static const auto MV_SERVICE_NAME = L"MullvadVPN";
 
 #pragma endregion
@@ -618,7 +618,7 @@ std::vector<uint8_t> WindowsSplitTunnel::generateProcessBlob() {
 
 // static
 SC_HANDLE WindowsSplitTunnel::installDriver() {
-  LPCWSTR displayName = L"Amnezia Split Tunnel Service";
+  LPCWSTR displayName = L"TunnelCore Split Tunnel Service";
   QFileInfo driver(qApp->applicationDirPath() + "/" + DRIVER_FILENAME);
   if (!driver.exists()) {
     logger.error() << "Split Tunnel Driver File not found "
@@ -727,11 +727,24 @@ QString WindowsSplitTunnel::convertPath(const QString& path) {
 
 // static
 bool WindowsSplitTunnel::detectConflict() {
-  auto scm_rights = SC_MANAGER_ENUMERATE_SERVICE;
+  auto scm_rights = SC_MANAGER_CONNECT | SC_MANAGER_ENUMERATE_SERVICE;
   auto serviceManager = OpenSCManager(NULL,  // local computer
                                       NULL,  // servicesActive database
                                       scm_rights);
+  if (!serviceManager) {
+    logger.error() << "Cannot inspect split-tunnel driver ownership";
+    return true;
+  }
   auto cleanup = qScopeGuard([&] { CloseServiceHandle(serviceManager); });
+  // Bundled driver exposes a fixed device name. Do not reset Amnezia's
+  // split-tunnel device while a separate Amnezia installation exists.
+  SC_HANDLE amneziaDriver = OpenService(serviceManager, L"AmneziaVPNSplitTunnel",
+                                       SERVICE_QUERY_STATUS);
+  if (amneziaDriver != nullptr) {
+    CloseServiceHandle(amneziaDriver);
+    logger.warning() << "Amnezia split tunnel detected; leaving its driver untouched";
+    return true;
+  }
   // Query for Mullvad Service.
   auto servicehandle =
       OpenService(serviceManager, MV_SERVICE_NAME, GENERIC_READ);

@@ -21,8 +21,8 @@ function appExecutableFileName()
 function appInstalled()
 {
     if (runningOnWindows()) {
-        appInstalledUninstallerPath = installer.value("RootDir") + "Program Files/AmneziaVPN/maintenancetool.exe";
-        appInstalledUninstallerPath_x86 = installer.value("RootDir") + "Program Files (x86)/AmneziaVPN/maintenancetool.exe";
+        appInstalledUninstallerPath = installer.value("RootDir") + "Program Files/TunnelCore VPN/maintenancetool.exe";
+        appInstalledUninstallerPath_x86 = installer.value("RootDir") + "Program Files (x86)/TunnelCore VPN/maintenancetool.exe";
     } else if (runningOnMacOS()){
         appInstalledUninstallerPath = "/Applications/" + appName() + ".app/maintenancetool.app/Contents/MacOS/maintenancetool";
     } else if (runningOnLinux()){
@@ -30,6 +30,16 @@ function appInstalled()
     }
 
     return installer.fileExists(appInstalledUninstallerPath) || installer.fileExists(appInstalledUninstallerPath_x86);
+}
+
+// Older TunnelCore versions used Amnezia service identifiers. Do not run
+// their legacy uninstall scripts automatically as they could stop Amnezia.
+function legacyTunnelCoreInstalled()
+{
+    if (!runningOnWindows()) return false;
+    var root = installer.value("RootDir");
+    return installer.fileExists(root + "Program Files/TunnelCore VPN/AmneziaVPN-service.exe")
+        || installer.fileExists(root + "Program Files (x86)/TunnelCore VPN/AmneziaVPN-service.exe");
 }
 
 function endsWith(str, suffix)
@@ -250,6 +260,15 @@ function Controller () {
 
         if (runningOnMacOS()) {
             installer.setMessageBoxAutomaticAnswer("OverwriteTargetDirectory", QMessageBox.Yes);
+        }
+
+        if (legacyTunnelCoreInstalled()) {
+            QMessageBox.warning("legacy.tunnelcore", "TunnelCore VPN",
+                "An older TunnelCore installation uses Amnezia service identifiers. "
+                + "To protect Amnezia VPN, automatic removal is disabled. "
+                + "Please uninstall the older TunnelCore version before installing this one.");
+            installer.setCancelled();
+            return;
         }
 
         if (appInstalled()) {

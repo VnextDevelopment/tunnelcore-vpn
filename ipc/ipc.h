@@ -8,7 +8,11 @@
 
 #include "../client/core/utils/utilities.h"
 
+#ifdef Q_OS_WIN
+#define IPC_SERVICE_URL "local:TunnelCoreVpnIpcInterface"
+#else
 #define IPC_SERVICE_URL "local:AmneziaVpnIpcInterface"
+#endif
 
 namespace amnezia {
 

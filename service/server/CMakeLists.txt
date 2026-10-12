@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.25.0 FATAL_ERROR)
 
-set(PROJECT AmneziaVPN-service)
+if(WIN32)
+    set(PROJECT TunnelCoreVPN-service)
+else()
+    set(PROJECT AmneziaVPN-service)
+endif()
 project(${PROJECT} VERSION ${AMNEZIAVPN_VERSION})
 
 if (APPLE)

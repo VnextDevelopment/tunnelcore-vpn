@@ -34,10 +34,10 @@
 #define IPV6_ADDRESS_SIZE 16
 
 // ID for the Firewall Sublayer
-DEFINE_GUID(ST_FW_WINFW_BASELINE_SUBLAYER_KEY, 0xc78056ff, 0x2bc1, 0x4211, 0xaa,
-            0xdd, 0x7f, 0x35, 0x8d, 0xef, 0x20, 0x2d);
-DEFINE_GUID(ST_FW_WINFW_DNS_SUBLAYER_KEY, 0x60090787, 0xcca1, 0x4937, 0xaa,
-            0xce, 0x51, 0x25, 0x6e, 0xf4, 0x81, 0xf3);
+DEFINE_GUID(ST_FW_WINFW_BASELINE_SUBLAYER_KEY, 0x492f4f36, 0x6de1, 0x511e, 0x81,
+            0xeb, 0x3f, 0x5d, 0x97, 0x36, 0x63, 0xc1);
+DEFINE_GUID(ST_FW_WINFW_DNS_SUBLAYER_KEY, 0xbb60573e, 0xd0f6, 0x5394, 0x98,
+            0xd4, 0x44, 0xc8, 0x57, 0xda, 0x38, 0x2c);
 // ID for the Mullvad Split-Tunnel Sublayer Provider
 DEFINE_GUID(ST_FW_PROVIDER_KEY, 0xe2c114ee, 0xf32a, 0x4264, 0xa6, 0xcb, 0x3f,
             0xa7, 0x99, 0x63, 0x56, 0xd9);
@@ -166,10 +166,10 @@ bool WindowsFirewall::initSublayer() {
   auto cleanup = qScopeGuard([&] { FwpmEngineClose0(wfp); });
 
   return ensureSublayer(wfp, ST_FW_WINFW_BASELINE_SUBLAYER_KEY,
-                        L"Amnezia-SplitTunnel-Sublayer",
+                        L"TunnelCore-SplitTunnel-Sublayer",
                         L"Filters that enforce a good baseline") &&
          ensureSublayer(wfp, ST_FW_WINFW_DNS_SUBLAYER_KEY,
-                        L"Amnezia-SplitTunnel-DNS-Sublayer",
+                        L"TunnelCore-SplitTunnel-DNS-Sublayer",
                         L"DNS filters for split tunneling");
 }
 
@@ -215,7 +215,7 @@ bool WindowsFirewall::enableInterface(int vpnAdapterIndex) {
   FW_OK(allowDHCPTraffic(MED_WEIGHT, "Allow DHCP Traffic"));
   FW_OK(allowHyperVTraffic(MAX_WEIGHT, "Allow Hyper-V Traffic"));
   FW_OK(allowTrafficForAppOnAll(getCurrentPath(), MAX_WEIGHT,
-                                "Allow all for AmneziaVPN.exe"));
+                                "Allow all for TunnelCoreVPN.exe"));
   FW_OK(blockTrafficOnPort(53, MED_WEIGHT, "Block all DNS"));
   FW_OK(allowLoopbackTraffic(MED_WEIGHT,
                              "Allow Loopback traffic on device %1"));
