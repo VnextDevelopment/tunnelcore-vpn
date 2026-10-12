@@ -280,6 +280,37 @@ private slots:
         QVERIFY(!controller.subscriptionExpired());
     }
 
+    void primarySubscriptionHasLatestExpiry()
+    {
+        Network network;
+        const auto earlierExpiry = QDateTime::currentDateTimeUtc().addMonths(1);
+        const auto laterExpiry = QDateTime::currentDateTimeUtc().addYears(1);
+        const QJsonArray subscriptions {
+            QJsonObject {
+                {QStringLiteral("id"), 1},
+                {QStringLiteral("tariff"), QStringLiteral("Monthly VPN")},
+                {QStringLiteral("expires_at"), earlierExpiry.toString(Qt::ISODateWithMs)},
+            },
+            QJsonObject {
+                {QStringLiteral("id"), 2},
+                {QStringLiteral("tariff"), QStringLiteral("Yearly VPN")},
+                {QStringLiteral("expires_at"), laterExpiry.toString(Qt::ISODateWithMs)},
+            },
+        };
+        const auto account = QJsonDocument(QJsonObject {
+            {QStringLiteral("ok"), true},
+            {QStringLiteral("subscriptions"), subscriptions},
+        }).toJson(QJsonDocument::Compact);
+        enqueueLoginWithAccount(network, account);
+
+        TunnelCoreController controller(nullptr, &network);
+        controller.loginCode("012345");
+
+        QTRY_VERIFY(!controller.busy());
+        QCOMPARE(controller.subscriptions().size(), 2);
+        QCOMPARE(controller.primarySubscription().value(QStringLiteral("id")).toInt(), 2);
+    }
+
     void codeLoginRequiresSixDigits()
     {
         Network network;

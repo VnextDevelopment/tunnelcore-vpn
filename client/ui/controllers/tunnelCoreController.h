@@ -39,6 +39,7 @@ class TunnelCoreController : public QObject
     Q_PROPERTY(bool emailAccount READ emailAccount NOTIFY changed)
     Q_PROPERTY(bool telegramLinked READ telegramLinked NOTIFY changed)
     Q_PROPERTY(QVariantList subscriptions READ subscriptions NOTIFY changed)
+    Q_PROPERTY(QVariantMap primarySubscription READ primarySubscription NOTIFY changed)
     Q_PROPERTY(QVariantList configs READ configs NOTIFY changed)
     Q_PROPERTY(QVariantList vpnCountries READ vpnCountries NOTIFY changed)
     Q_PROPERTY(QString vpnCountryMode READ vpnCountryMode NOTIFY changed)
@@ -64,6 +65,7 @@ public:
     bool emailAccount() const { return m_emailAccount; }
     bool telegramLinked() const { return m_telegramLinked; }
     QVariantList subscriptions() const { return m_subscriptions; }
+    QVariantMap primarySubscription() const;
     QVariantList configs() const { return m_configs; }
     QVariantList vpnCountries() const { return m_vpnCountries; }
     QString vpnCountryMode() const { return m_vpnCountryMode; }

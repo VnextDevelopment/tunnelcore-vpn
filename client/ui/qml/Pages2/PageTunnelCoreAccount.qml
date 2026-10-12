@@ -335,15 +335,15 @@ PageType {
                     visible: TunnelCoreController.busy || root.pendingVpnCountry.length > 0
                     text: qsTr("Loading data…")
                 }
-                Repeater {
-                    model: TunnelCoreController.subscriptions
-                    delegate: SmallTextType {
-                        required property var modelData
-                        Layout.fillWidth: true
-                        textFormat: Text.PlainText
-                        text: root.localizedTariffName(modelData) + "\n"
-                              + qsTr("Until %1").arg(Qt.formatDateTime(new Date(modelData.expires_at), "dd.MM.yyyy"))
-                    }
+                LabelWithButtonType {
+                    Layout.fillWidth: true
+                    visible: TunnelCoreController.subscriptions.length > 0
+                    text: root.localizedTariffName(TunnelCoreController.primarySubscription)
+                    descriptionText: qsTr("Until %1").arg(Qt.formatDateTime(
+                                         new Date(TunnelCoreController.primarySubscription.expires_at),
+                                         "dd.MM.yyyy"))
+                    rightImageSource: "qrc:/images/controls/chevron-right.svg"
+                    clickedFunction: function() { subscriptionsDrawer.openTriggered() }
                 }
 
                 Rectangle {
@@ -606,5 +606,73 @@ PageType {
     HomeSplitTunnelingDrawer {
         id: splitTunnelingDrawer
         parent: root
+    }
+
+    DrawerType2 {
+        id: subscriptionsDrawer
+        objectName: "subscriptionsDrawer"
+        parent: root
+        anchors.fill: parent
+        expandedHeight: root.height * 0.8
+
+        expandedStateContent: Item {
+            implicitHeight: subscriptionsDrawer.expandedHeight
+
+            ColumnLayout {
+                id: subscriptionsDrawerHeader
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.topMargin: 16
+
+                BackButtonType {
+                    Layout.fillWidth: true
+                    backButtonFunction: function() { subscriptionsDrawer.closeTriggered() }
+                }
+
+                Header2Type {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 16
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    headerText: qsTr("Subscriptions")
+                }
+            }
+
+            ListViewType {
+                id: subscriptionsList
+                anchors.top: subscriptionsDrawerHeader.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.topMargin: 8
+                clip: true
+                model: TunnelCoreController.subscriptions
+
+                delegate: ColumnLayout {
+                    id: subscriptionDelegate
+                    required property var modelData
+                    width: subscriptionsList.width
+                    spacing: 0
+
+                    LabelWithButtonType {
+                        Layout.fillWidth: true
+                        enabled: false
+                        textDisabledColor: AmneziaStyle.color.paleGray
+                        descriptionDisabledColor: AmneziaStyle.color.mutedGray
+                        text: root.localizedTariffName(subscriptionDelegate.modelData)
+                        descriptionText: qsTr("Until %1").arg(Qt.formatDateTime(
+                                             new Date(subscriptionDelegate.modelData.expires_at),
+                                             "dd.MM.yyyy"))
+                    }
+
+                    DividerType {
+                        Layout.fillWidth: true
+                        Layout.leftMargin: 16
+                        Layout.rightMargin: 16
+                    }
+                }
+            }
+        }
     }
 }

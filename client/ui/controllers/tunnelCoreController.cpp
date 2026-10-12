@@ -44,6 +44,33 @@ QPair<QString, QString> normalizeObfuscationPolicy(const QJsonObject &object)
 
     return {mode, profile};
 }
+
+QDateTime subscriptionExpiry(const QVariantMap &subscription)
+{
+    const auto rawExpiry = subscription.value(QStringLiteral("expires_at")).toString();
+    auto expiry = QDateTime::fromString(rawExpiry, Qt::ISODateWithMs);
+    if (!expiry.isValid())
+        expiry = QDateTime::fromString(rawExpiry, Qt::ISODate);
+    return expiry.isValid() ? expiry.toUTC() : QDateTime {};
+}
+}
+
+QVariantMap TunnelCoreController::primarySubscription() const
+{
+    QVariantMap primary;
+    QDateTime latestExpiry;
+
+    for (const auto &subscriptionValue : m_subscriptions) {
+        const auto subscription = subscriptionValue.toMap();
+        const auto expiry = subscriptionExpiry(subscription);
+        if (primary.isEmpty() || (expiry.isValid()
+                                  && (!latestExpiry.isValid() || expiry > latestExpiry))) {
+            primary = subscription;
+            latestExpiry = expiry;
+        }
+    }
+
+    return primary;
 }
 
 bool TunnelCoreController::usesAppleBilling() const
@@ -126,12 +153,9 @@ void TunnelCoreController::updateSubscriptionState(const QJsonObject &accountObj
     // Compatibility with servers that return only the subscriptions array.
     if (!m_subscriptionExpiresAt.isValid()) {
         for (const auto &subscriptionValue : m_subscriptions) {
-            const auto rawExpiry = subscriptionValue.toMap().value(QStringLiteral("expires_at")).toString();
-            auto expiry = QDateTime::fromString(rawExpiry, Qt::ISODateWithMs);
-            if (!expiry.isValid())
-                expiry = QDateTime::fromString(rawExpiry, Qt::ISODate);
+            const auto expiry = subscriptionExpiry(subscriptionValue.toMap());
             if (expiry.isValid() && (!m_subscriptionExpiresAt.isValid() || expiry > m_subscriptionExpiresAt))
-                m_subscriptionExpiresAt = expiry.toUTC();
+                m_subscriptionExpiresAt = expiry;
         }
     }
 

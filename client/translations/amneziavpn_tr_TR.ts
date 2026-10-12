@@ -16,6 +16,7 @@
     <message><source>VPN — 1 month</source><translation>VPN — 1 ay</translation></message>
     <message><source>VPN — 1 year</source><translation>VPN — 1 yıl</translation></message>
     <message><source>Until %1</source><translation>%1 tarihine kadar</translation></message>
+    <message><source>Subscriptions</source><translation>Abonelikler</translation></message>
     <message><source>No VPN configurations are available. Check your subscription in the bot and refresh the list.</source><translation>Kullanılabilir VPN yapılandırması yok. Bot üzerinden aboneliğinizi kontrol edip listeyi yenileyin.</translation></message>
     <message><source>Refresh</source><translation>Yenile</translation></message>
     <message><source>Sign out</source><translation>Çıkış yap</translation></message>
