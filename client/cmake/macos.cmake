@@ -44,7 +44,7 @@ set(SOURCES ${SOURCES} ${ICON_FILE})
 
 target_compile_options(${PROJECT} PRIVATE
     -DGROUP_ID=\"${BUILD_IOS_GROUP_IDENTIFIER}\"
-    -DVPN_NE_BUNDLEID=\"${BUILD_IOS_APP_IDENTIFIER}.network-extension\"
+    -DVPN_NE_BUNDLEID=\"${BUILD_OSX_APP_IDENTIFIER}.network-extension\"
 )
 
 # Get SDK path
