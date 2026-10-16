@@ -18,6 +18,36 @@ PageType {
     property bool connectAfterImport: false
     property bool importingProfile: false
 
+    // The account page is inside PageStart's IME-adjusted StackView.
+    // Bring the focused input into view when the keyboard reduces its height.
+    function keepFocusedInputVisible() {
+        if (!root.visible || TunnelCoreController.authenticated || scroll.height <= 0)
+            return
+
+        var focusedField = null
+        if (loginField.textField.activeFocus)
+            focusedField = loginField
+        else if (passwordField.visible && passwordField.textField.activeFocus)
+            focusedField = passwordField
+        else if (confirmPasswordField.visible && confirmPasswordField.textField.activeFocus)
+            focusedField = confirmPasswordField
+
+        if (!focusedField)
+            return
+
+        var fieldTop = focusedField.mapToItem(content, 0, 0).y
+        var fieldBottom = fieldTop + focusedField.height
+        var margin = 16
+        var targetY = scroll.contentY
+        if (fieldBottom + margin > scroll.contentY + scroll.height)
+            targetY = fieldBottom + margin - scroll.height
+        else if (fieldTop - margin < scroll.contentY)
+            targetY = fieldTop - margin
+
+        scroll.contentY = Math.max(0, Math.min(targetY,
+                                              Math.max(0, scroll.contentHeight - scroll.height)))
+    }
+
     function selectVpnCountry(countryCode) {
         if (TunnelCoreController.busy || pendingVpnCountry.length > 0 || importingProfile)
             return
@@ -160,8 +190,11 @@ PageType {
         id: scroll
         anchors.fill: parent
         anchors.topMargin: PageController.safeAreaTopMargin + 24
-        anchors.bottomMargin: PageController.safeAreaBottomMargin + PageController.imeHeight + 16
+        // PageStart already reserves the IME inset in the StackView height.
+        // Adding imeHeight again clips these fields behind the keyboard.
+        anchors.bottomMargin: PageController.safeAreaBottomMargin + 16
         contentHeight: content.implicitHeight + 24
+        onHeightChanged: Qt.callLater(root.keepFocusedInputVisible)
         clip: true
         boundsBehavior: Flickable.StopAtBounds
 
@@ -239,6 +272,10 @@ PageType {
                 }
                 TextFieldWithHeaderType {
                     id: loginField
+                    textField.onActiveFocusChanged: {
+                        if (loginField.textField.activeFocus)
+                            Qt.callLater(root.keepFocusedInputVisible)
+                    }
                     Layout.fillWidth: true
                     enabled: !TunnelCoreController.busy
                     headerText: root.emailMode ? qsTr("Email") : qsTr("Bot code")
@@ -257,6 +294,10 @@ PageType {
                 }
                 TextFieldWithHeaderType {
                     id: passwordField
+                    textField.onActiveFocusChanged: {
+                        if (passwordField.textField.activeFocus)
+                            Qt.callLater(root.keepFocusedInputVisible)
+                    }
                     Layout.fillWidth: true
                     visible: root.emailMode
                     enabled: !TunnelCoreController.busy
@@ -267,6 +308,10 @@ PageType {
                 }
                 TextFieldWithHeaderType {
                     id: confirmPasswordField
+                    textField.onActiveFocusChanged: {
+                        if (confirmPasswordField.textField.activeFocus)
+                            Qt.callLater(root.keepFocusedInputVisible)
+                    }
                     Layout.fillWidth: true
                     visible: root.emailMode && root.registrationMode
                     enabled: !TunnelCoreController.busy
