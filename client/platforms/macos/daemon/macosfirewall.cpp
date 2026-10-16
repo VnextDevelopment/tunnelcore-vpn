@@ -112,7 +112,7 @@ void MacOSFirewall::installRootAnchors()
         R"(pfctl -sr | grep -v '%1/*'; )"   // Filter rules (everything from pfctl -sr except 'scrub')
         R"(echo 'anchor "%2/*"'; )"         // PIA's filter anchors
         R"(echo 'load anchor "%3" from "%4/%5.conf"'; )" // Load the PIA anchors from file
-        " ) | pfctl -R -f -").arg(kRootAnchor, kRootAnchor, kRootAnchor, ResourceDir, kRootAnchor);
+        " ) | pfctl -R -f -").arg(kRootAnchor, kRootAnchor, kRootAnchor, ResourceDir, QStringLiteral(RULE_FILE_PREFIX));
     execute(insertFilterAnchor);
 }
 

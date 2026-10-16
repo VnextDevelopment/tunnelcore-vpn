@@ -25,14 +25,14 @@ namespace
     Logger logger("UpdateController");
 
 #if defined(Q_OS_WINDOWS)
-    const QLatin1String kInstallerRemoteFileNamePattern("AmneziaVPN_%1_windows_x64.exe");
-    const QString kInstallerLocalPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/AmneziaVPN_installer.exe";
+    const QLatin1String kInstallerRemoteFileNamePattern("TunnelCoreVPN_%1_windows_x64.exe");
+    const QString kInstallerLocalPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/TunnelCoreVPN_installer.exe";
 #elif defined(Q_OS_MACOS) && !defined(MACOS_NE)
-    const QLatin1String kInstallerRemoteFileNamePattern("AmneziaVPN_%1_macos_x64.pkg");
-    const QString kInstallerLocalPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/AmneziaVPN.pkg";
+    const QLatin1String kInstallerRemoteFileNamePattern("TunnelCoreVPN_%1_macos_x64.pkg");
+    const QString kInstallerLocalPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/TunnelCoreVPN.pkg";
 #elif defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
-    const QLatin1String kInstallerRemoteFileNamePattern("AmneziaVPN_%1_linux_x64.run");
-    const QString kInstallerLocalPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/AmneziaVPN.run";
+    const QLatin1String kInstallerRemoteFileNamePattern("TunnelCoreVPN_%1_linux_x64.run");
+    const QString kInstallerLocalPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/TunnelCoreVPN.run";
 #endif
 
     QStringList stringListFromJsonValue(const QJsonValue &value)
@@ -190,10 +190,14 @@ void UpdateController::checkForUpdates()
 
 void UpdateController::openStorePage() const
 {
-#if defined(Q_OS_IOS)
-    QDesktopServices::openUrl(QUrl(QLatin1String(APP_IOS_STORE_URL_FALLBACK)));
-#elif defined(MACOS_NE)
-    QDesktopServices::openUrl(QUrl(QStringLiteral("https://apps.apple.com/app/id1600529900")));
+#if defined(Q_OS_IOS) || defined(MACOS_NE)
+    // No upstream App Store redirect. Configure the TunnelCore URL once published.
+    const QUrl storeUrl(QLatin1String(APP_IOS_STORE_URL_FALLBACK));
+    if (!storeUrl.isEmpty() && storeUrl.isValid()) {
+        QDesktopServices::openUrl(storeUrl);
+    } else {
+        logger.warning() << "TunnelCore App Store URL is not configured yet";
+    }
 #elif defined(Q_OS_ANDROID)
     QDesktopServices::openUrl(
             QUrl(QStringLiteral("https://play.google.com/store/apps/details?id=%1").arg(QLatin1String(APP_ANDROID_PACKAGE))));
