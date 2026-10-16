@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "macosstatusicon.h"
+#include "core/utils/appUiConfig.h"
 #include "leakdetector.h"
 
 #include <QDebug>
@@ -67,7 +68,7 @@ void MacOSStatusIcon::showMessage(const QString& title, const QString& message) 
   content.body = message.toNSString();
   content.sound = [UNNotificationSound defaultSound];
 
-  UNNotificationRequest* request = [UNNotificationRequest requestWithIdentifier:@"amneziavpn"
+  UNNotificationRequest* request = [UNNotificationRequest requestWithIdentifier:[NSString stringWithUTF8String:APP_NOTIFICATION_IDENTIFIER]
                                                                         content:content
                                                                         trigger:nil];
   [content release];

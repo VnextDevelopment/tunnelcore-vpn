@@ -1,11 +1,10 @@
-#!/usr/bin/env xdg-open
 [Desktop Entry]
 Type=Application
 Name=TunnelCore VPN
 Version=1.0
 Comment=TunnelCore VPN client
-Exec=AmneziaVPN
-Icon=/usr/share/pixmaps/AmneziaVPN.png
+Exec=/opt/TunnelCoreVPN/bin/TunnelCoreVPN
+Icon=/usr/share/pixmaps/TunnelCoreVPN.png
 Categories=Network;Qt;Security;
 Terminal=false
-StartupWMClass=AmneziaVPN
+StartupWMClass=TunnelCoreVPN
