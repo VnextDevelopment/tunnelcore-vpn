@@ -7,11 +7,7 @@ if(NOT CLIENT_APPLICATION_NAME)
 endif()
 
 if(NOT CLIENT_SERVICE_NAME)
-    if(WIN32)
-        set(CLIENT_SERVICE_NAME "TunnelCoreVPN-service" CACHE STRING "Service executable name")
-    else()
-        set(CLIENT_SERVICE_NAME "AmneziaVPN-service" CACHE STRING "Service executable name")
-    endif()
+    set(CLIENT_SERVICE_NAME "TunnelCoreVPN-service" CACHE STRING "Service executable name")
 endif()
 
 if(NOT CLIENT_ORGANIZATION_NAME)

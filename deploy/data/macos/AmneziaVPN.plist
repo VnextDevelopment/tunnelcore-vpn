@@ -3,16 +3,16 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>AmneziaVPN-service</string>
+    <string>TunnelCoreVPN-service</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/Applications/AmneziaVPN.app/Contents/MacOS/AmneziaVPN-service</string>
+        <string>/Applications/TunnelCoreVPN.app/Contents/MacOS/TunnelCoreVPN-service</string>
     </array>
     <key>KeepAlive</key>
     <true/>
     <key>RunAtLoad</key>
     <true/>
     <key>GroupName</key>
-    <string>amnvpn</string>
+    <string>tcvpn</string>
 </dict>
 </plist>
