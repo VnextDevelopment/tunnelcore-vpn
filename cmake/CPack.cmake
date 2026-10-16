@@ -108,6 +108,7 @@ endif()
 if (APPLE AND NOT IOS AND NOT MACOS_NE)
     install(FILES ${CMAKE_SOURCE_DIR}/deploy/data/macos/AmneziaVPN.plist
         DESTINATION "TunnelCoreVPN.app/Contents/Resources"
+        RENAME TunnelCoreVPN.plist
         COMPONENT AmneziaVPN
     )
 endif()
