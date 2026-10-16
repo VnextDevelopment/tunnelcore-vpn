@@ -17,6 +17,7 @@ val qtTargetAbiList: String by gradleProperties
 val outputBaseName: String by gradleProperties
 
 android {
+    // Keep upstream Kotlin/Java class packages unchanged; this is not the Play application ID.
     namespace = "org.amnezia.vpn"
 
     buildFeatures {
@@ -37,7 +38,8 @@ android {
     val abiList = qtTargetAbiList.split(",")
 
     defaultConfig {
-        applicationId = "com.tunnelcore.vpn"
+        // Permanent identifier reserved in the VNext Development Google Play Console.
+        applicationId = "com.vnextdev.tunnelcorevpn"
         targetSdk = qtTargetSdkVersion.toInt()
 
         // keeps language resources for only the locales specified below
