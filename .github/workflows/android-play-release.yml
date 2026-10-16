@@ -34,6 +34,12 @@ jobs:
           submodules: 'true'
           fetch-depth: 10
 
+      - name: Verify Google Play package ID
+        shell: bash
+        run: |
+          grep -Fq 'applicationId = "com.vnextdev.tunnelcorevpn"' client/android/build.gradle.kts
+          grep -Fq 'set(CLIENT_ANDROID_PACKAGE "com.vnextdev.tunnelcorevpn"' client/cmake/branding/android.cmake
+
       - name: Install desktop Qt
         uses: jurplel/install-qt-action@v4
         with:
