@@ -14,6 +14,18 @@ env:
   QT_MIRROR: https://mirrors.ocf.berkeley.edu/qt/
 
 jobs:
+  Branding-Safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify platform branding and installer safety
+        shell: bash
+        run: |
+          python3 -m unittest discover -s tests/branding -p 'test_*.py'
+          bash -n deploy/data/macos/post_install.sh deploy/data/macos/post_uninstall.sh
+          bash -n deploy/data/linux/post_install.sh deploy/data/linux/post_uninstall.sh
+          bash -n client/client_scripts/mac_installer.sh
+
   Test-Windows:
     runs-on: windows-latest
 

@@ -35,7 +35,8 @@
 #include <QProcess>
 #include <QCoreApplication>
 
-#define BRAND_IDENTIFIER "amn"
+#define BRAND_IDENTIFIER "tcore"
+#define RULE_FILE_PREFIX "amn"  // Preserve existing bundled rule filenames.
 
 namespace {
     Logger logger("MacOSFirewall");
@@ -52,7 +53,7 @@ namespace {
 // Writable location that does NOT live inside the signed bundle.  Using a
 // constant path under /Library/Application Support keeps the signature intact
 // and is accessible to the root helper.
-#define DaemonDataDir QStringLiteral("/Library/Application Support/AmneziaVPN/pf")
+#define DaemonDataDir QStringLiteral("/Library/Application Support/TunnelCoreVPN/pf")
 
 #include <QProcess>
 
@@ -99,7 +100,7 @@ void MacOSFirewall::installRootAnchors()
         R"(echo 'nat-anchor "%2/*"'; )"     // PIA's translation anchors
         R"(echo 'rdr-anchor "%3/*"'; )"
         R"(echo 'load anchor "%4" from "%5/%6.conf"'; )" // Load the PIA anchors from file
-        ") | pfctl -N -f -").arg(kRootAnchor, kRootAnchor, kRootAnchor, kRootAnchor, ResourceDir, kRootAnchor);
+        ") | pfctl -N -f -").arg(kRootAnchor, kRootAnchor, kRootAnchor, kRootAnchor, ResourceDir, QStringLiteral(RULE_FILE_PREFIX));
 
     execute(insertNatAnchors);
 
@@ -111,14 +112,13 @@ void MacOSFirewall::installRootAnchors()
         R"(pfctl -sr | grep -v '%1/*'; )"   // Filter rules (everything from pfctl -sr except 'scrub')
         R"(echo 'anchor "%2/*"'; )"         // PIA's filter anchors
         R"(echo 'load anchor "%3" from "%4/%5.conf"'; )" // Load the PIA anchors from file
-        " ) | pfctl -R -f -").arg(kRootAnchor, kRootAnchor, kRootAnchor, ResourceDir, kRootAnchor);
+        " ) | pfctl -R -f -").arg(kRootAnchor, kRootAnchor, kRootAnchor, ResourceDir, QStringLiteral(RULE_FILE_PREFIX));
     execute(insertFilterAnchor);
 }
 
 void MacOSFirewall::install()
 {
-    // remove hard-coded (legacy) pia anchor from /etc/pf.conf if it exists
-    execute(QStringLiteral("if grep -Fq '%1' /etc/pf.conf ; then echo \"`cat /etc/pf.conf | grep -vF '%1'`\" > /etc/pf.conf ; fi").arg(kRootAnchor));
+    // Never rewrite /etc/pf.conf: another VPN may be installed.
 
     // Clean up any existing rules if they exist.
     uninstall();
@@ -141,7 +141,7 @@ void MacOSFirewall::uninstall()
 
     execute(QStringLiteral("pfctl -q -a '%1' -F all").arg(kRootAnchor));
     execute(QStringLiteral("test -f '%1/pf.token' && pfctl -X `cat '%1/pf.token'` && rm '%1/pf.token'").arg(DaemonDataDir));
-    execute(QStringLiteral("test -f /etc/pf.conf && pfctl -F all -f /etc/pf.conf"));
+    // Do not flush the global PF ruleset when another VPN is running.
 }
 
 bool MacOSFirewall::isInstalled()
@@ -171,7 +171,7 @@ bool MacOSFirewall::isRootAnchorLoaded()
 
 void MacOSFirewall::enableAnchor(const QString& anchor)
 {
-    execute(QStringLiteral("if pfctl -q -a '%1/%2' -s rules 2> /dev/null | grep -q . ; then echo '%2: ON' ; else echo '%2: OFF -> ON' ; pfctl -q -a '%1/%2' -F all -f '%3/%1.%2.conf' ; fi").arg(kRootAnchor, anchor, ResourceDir));
+    execute(QStringLiteral("if pfctl -q -a '%1/%2' -s rules 2> /dev/null | grep -q . ; then echo '%2: ON' ; else echo '%2: OFF -> ON' ; pfctl -q -a '%1/%2' -F all -f '%3/%4.%2.conf' ; fi").arg(kRootAnchor, anchor, ResourceDir, QStringLiteral(RULE_FILE_PREFIX)));
 }
 
 void MacOSFirewall::disableAnchor(const QString& anchor)

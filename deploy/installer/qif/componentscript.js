@@ -127,7 +127,7 @@ Component.prototype.installationFinished = function()
         } else if (runningOnMacOS()) {
             command = "/Applications/" + appName() + ".app/Contents/MacOS/" + appName();
         } else if (runningOnLinux()) {
-            command = "@TargetDir@/client/" + appName();
+            command = "@TargetDir@/bin/" + appName();
         }
 
         installer.dropAdminRights()

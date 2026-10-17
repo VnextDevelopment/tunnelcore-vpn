@@ -1,59 +1,26 @@
 #!/bin/bash
+# Install only the independent TunnelCore service and desktop entry.
+set -euo pipefail
+APP_NAME=TunnelCoreVPN
+APP_PATH="/opt/$APP_NAME"
+UNIT="/etc/systemd/system/$APP_NAME.service"
 
-APP_NAME=AmneziaVPN
-LOG_FOLDER=/var/log/$APP_NAME
-LOG_FILE="$LOG_FOLDER/post-install.log"
-APP_PATH=/opt/$APP_NAME
-
-if ! test -f $LOG_FOLDER; then
-        sudo mkdir $LOG_FOLDER
-        echo "AmneziaVPN log dir created at /var/log/"
+if [ "$(id -u)" -ne 0 ]; then
+    echo "TunnelCore installer must run as root" >&2
+    exit 1
+fi
+if [ ! -x "$APP_PATH/bin/TunnelCoreVPN" ] || [ ! -x "$APP_PATH/bin/TunnelCoreVPN-service" ]; then
+    echo "TunnelCore binaries not found in $APP_PATH/bin" >&2
+    exit 1
 fi
 
-if ! test -f $LOG_FILE; then
-        touch $LOG_FILE
-        echo "AmneziaVPN log file created at /var/log/AmneziaVPN/post-install.log"
-fi
-
-date > $LOG_FILE
-echo "Script started" >> $LOG_FILE
-sudo killall -9 $APP_NAME 2>> $LOG_FILE
-
-if command -v steamos-readonly &> /dev/null; then
-        sudo steamos-readonly disable >> $LOG_FILE
-        echo "steamos-readonly disabled" >> $LOG_FILE
-fi
-
-if sudo systemctl is-active --quiet $APP_NAME; then
-	sudo systemctl stop $APP_NAME >> $LOG_FILE
-	sudo systemctl disable $APP_NAME >> $LOG_FILE
-	sudo rm -rf /etc/systemd/system/$APP_NAME.service >> $LOG_FILE
-fi
-
-sudo chmod -R a-w $APP_PATH/
-
-sudo cp $APP_PATH/$APP_NAME.service /etc/systemd/system/ >> $LOG_FILE
-
-sudo systemctl start $APP_NAME >> $LOG_FILE
-sudo systemctl enable $APP_NAME >> $LOG_FILE
-sudo ln -sf $APP_PATH/bin/$APP_NAME /usr/local/sbin/$APP_NAME >> $LOG_FILE
-sudo ln -sf $APP_PATH/bin/$APP_NAME /usr/local/bin/$APP_NAME >> $LOG_FILE
-
-echo "user desktop creation loop started" >> $LOG_FILE
-sudo cp $APP_PATH/$APP_NAME.desktop /usr/share/applications/ >> $LOG_FILE
-sudo cp $APP_PATH/$APP_NAME.png /usr/share/pixmaps/ >> $LOG_FILE
-sudo chmod 555 /usr/share/applications/$APP_NAME.desktop >> $LOG_FILE
-
-echo "user desktop creation loop ended" >> $LOG_FILE
-
-if command -v steamos-readonly &> /dev/null; then
-        sudo steamos-readonly enable >> $LOG_FILE
-        echo "steamos-readonly enabled" >> $LOG_FILE
-fi
-
-date >> $LOG_FILE
-echo "Service status:" >> $LOG_FILE
-sudo systemctl status $APP_NAME >> $LOG_FILE
-date >> $LOG_FILE
-echo "Script finished" >> $LOG_FILE
-exit 0
+mkdir -p "/var/log/$APP_NAME"
+# Stop our existing daemon for upgrades, not any upstream service.
+systemctl stop "$APP_NAME.service" 2>/dev/null || true
+install -m 0644 "$APP_PATH/$APP_NAME.service" "$UNIT"
+systemctl daemon-reload
+systemctl enable --now "$APP_NAME.service"
+ln -sfn "$APP_PATH/bin/$APP_NAME" "/usr/local/bin/$APP_NAME"
+install -m 0644 "$APP_PATH/$APP_NAME.desktop" "/usr/share/applications/$APP_NAME.desktop"
+install -m 0644 "$APP_PATH/$APP_NAME.png" "/usr/share/pixmaps/$APP_NAME.png"
+echo "TunnelCore VPN installed"

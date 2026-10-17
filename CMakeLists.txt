@@ -71,7 +71,7 @@ if(APPLE AND NOT IOS)
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         set(AMN_PF_RULE_IDENTITY "user { root }")
     else()
-        set(AMN_PF_RULE_IDENTITY "group { amnvpn }")
+        set(AMN_PF_RULE_IDENTITY "group { tcvpn }")
     endif()
 
     configure_file(
