@@ -169,7 +169,9 @@ PageType {
             Layout.leftMargin: 16
             Layout.rightMargin: 16
 
-            drawerHeight: 0.55
+            // Keep the search box and matching country rows visible when
+            // the Android IME reduces the available page height.
+            drawerHeight: PageController.imeHeight > 0 ? 0.95 : 0.55
             drawerParent: root
 
             visible: TunnelCoreController.authenticated
@@ -270,6 +272,17 @@ PageType {
                                         Qt.inputMethod.show()
                                 }
                             }
+                        }
+                    }
+
+                    Connections {
+                        target: countryBypassSelector
+
+                        function onCloseTriggered() {
+                            // Do not leave the soft keyboard covering the
+                            // split tunneling page after dismissing the picker.
+                            Qt.inputMethod.hide()
+                            countrySearchInput.focus = false
                         }
                     }
 
