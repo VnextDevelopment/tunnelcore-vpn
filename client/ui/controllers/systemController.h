@@ -23,6 +23,7 @@ public slots:
 
     bool isAuthenticated();
     void sendTouch(float x, float y);
+    void requestSoftKeyboard();
 
 signals:
     void fileDialogClosed(const bool isAccepted);

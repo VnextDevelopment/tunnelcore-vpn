@@ -18,6 +18,9 @@ Item {
     property alias errorText: errorField.text
     property bool checkEmptyText: false
     property bool rightButtonClickedOnEnter: false
+    // For Android text inputs inside draggable drawers that do not reliably
+    // summon the keyboard using Qt focus alone.
+    property bool requestAndroidIme: false
 
     property string buttonText
     property string buttonImageSource
@@ -141,6 +144,14 @@ Item {
                         }
 
                         onActiveFocusChanged: {
+                            if (activeFocus && root.requestAndroidIme && Qt.platform.os === "android") {
+                                Qt.callLater(function() {
+                                    if (textField.activeFocus) {
+                                        Qt.inputMethod.show()
+                                        SystemController.requestSoftKeyboard()
+                                    }
+                                })
+                            }
                             if (root.checkEmptyText && text === "") {
                                 root.errorText = qsTr("The field can't be empty")
                             }
@@ -196,6 +207,10 @@ Item {
 
         onPressed: function(mouse) {
             textField.forceActiveFocus()
+            if (root.requestAndroidIme && Qt.platform.os === "android") {
+                Qt.inputMethod.show()
+                SystemController.requestSoftKeyboard()
+            }
             mouse.accepted = false
 
             backgroud.border.color = getBackgroundBorderColor(root.borderColor)
