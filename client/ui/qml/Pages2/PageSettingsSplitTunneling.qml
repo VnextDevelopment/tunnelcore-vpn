@@ -244,9 +244,21 @@ PageType {
                                     onActiveFocusChanged: {
                                         if (activeFocus && Qt.platform.os === "android") {
                                             Qt.callLater(function() {
-                                                if (countrySearchInput.activeFocus)
+                                                if (countrySearchInput.activeFocus) {
                                                     Qt.inputMethod.show()
+                                                    SystemController.requestSoftKeyboard()
+                                                }
                                             })
+                                        }
+                                    }
+
+                                    TapHandler {
+                                        onTapped: {
+                                            countrySearchInput.forceActiveFocus()
+                                            if (Qt.platform.os === "android") {
+                                                Qt.inputMethod.show()
+                                                SystemController.requestSoftKeyboard()
+                                            }
                                         }
                                     }
                                 }
@@ -268,8 +280,10 @@ PageType {
                                     if (countrySearchInput.text.length > 0)
                                         countrySearchInput.clear()
                                     countrySearchInput.forceActiveFocus()
-                                    if (Qt.platform.os === "android")
+                                    if (Qt.platform.os === "android") {
                                         Qt.inputMethod.show()
+                                        SystemController.requestSoftKeyboard()
+                                    }
                                 }
                             }
                         }
@@ -484,6 +498,7 @@ PageType {
                 id: searchField
 
                 Layout.fillWidth: true
+                requestAndroidIme: true
                 rightButtonClickedOnEnter: true
 
                 textField.placeholderText: qsTr("website or IP")

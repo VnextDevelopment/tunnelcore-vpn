@@ -7,6 +7,7 @@ import android.app.NotificationManager
 import android.content.ActivityNotFoundException
 import android.content.BroadcastReceiver
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.content.Intent.EXTRA_MIME_TYPES
 import android.content.Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY
@@ -31,6 +32,7 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
 import android.view.WindowManager.LayoutParams
 import android.webkit.MimeTypeMap
 import android.widget.Toast
@@ -42,6 +44,7 @@ import androidx.core.view.OnApplyWindowInsetsListener
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.core.view.WindowCompat
 import java.io.File
 import java.io.IOException
 import kotlin.LazyThreadSafetyMode.NONE
@@ -422,7 +425,12 @@ class AmneziaActivity : QtActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             window.apply {
                 addFlags(LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
-                addFlags(LayoutParams.FLAG_LAYOUT_NO_LIMITS)
+                // FLAG_LAYOUT_NO_LIMITS keeps the native window outside the
+                // IME-adjustable area and breaks soft keyboard on some Samsung
+                // devices. Use WindowCompat for edge-to-edge instead.
+                clearFlags(LayoutParams.FLAG_LAYOUT_NO_LIMITS)
+                WindowCompat.setDecorFitsSystemWindows(window, false)
+                setSoftInputMode(LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
                 statusBarColor = android.graphics.Color.TRANSPARENT
                 navigationBarColor = android.graphics.Color.TRANSPARENT
             }
@@ -1082,6 +1090,35 @@ class AmneziaActivity : QtActivity() {
             qtInitialized.await()
             Intent(this@AmneziaActivity, AuthActivity::class.java).also {
                 startActivity(it)
+            }
+        }
+    }
+
+    // Native fallback for Qt Quick fields that gain focus inside nested
+    // drawers. Qt.inputMethod.show() alone may not trigger Samsung IME.
+    // Called from SystemController only in response to an edit-field tap.
+    @Suppress("unused")
+    fun requestSoftKeyboard() {
+        runOnUiThread {
+            if (!isActivityResumed || !hasWindowFocus || isFinishing || isDestroyed) {
+                Log.d(TAG, "Skipping IME request: activity is not focused/resumed")
+                return@runOnUiThread
+            }
+
+            val qtView = findQtWindow(window.decorView)
+            if (qtView == null) {
+                Log.w(TAG, "Cannot show keyboard: QtWindow not attached")
+                return@runOnUiThread
+            }
+
+            qtView.post {
+                if (!isActivityResumed || !hasWindowFocus || !qtView.isAttachedToWindow) {
+                    return@post
+                }
+
+                val inputMethod = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                val requested = inputMethod.showSoftInput(qtView, InputMethodManager.SHOW_IMPLICIT)
+                Log.d(TAG, "Requested Android IME for QtWindow, accepted=$requested")
             }
         }
     }

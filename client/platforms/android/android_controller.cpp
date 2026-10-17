@@ -336,6 +336,11 @@ void AndroidController::sendTouch(float x, float y)
     callActivityMethod("sendTouch", "(FF)V", x, y);
 }
 
+void AndroidController::requestSoftKeyboard()
+{
+    callActivityMethod("requestSoftKeyboard", "()V");
+}
+
 
 bool AndroidController::isPlay()
 {

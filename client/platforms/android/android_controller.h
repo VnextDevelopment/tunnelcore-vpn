@@ -56,6 +56,7 @@ public:
     void showSubscriptionNotification(const QString &title, const QString &message);
     bool requestAuthentication();
     void sendTouch(float x, float y);
+    void requestSoftKeyboard();
     bool isPlay();
     QJsonObject getSubscriptionPlans();
     QJsonObject purchaseSubscription(const QString &offerToken);
