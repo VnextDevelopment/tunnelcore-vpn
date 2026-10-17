@@ -183,3 +183,10 @@ void SystemController::sendTouch(float x, float y)
     AndroidController::instance()->sendTouch(x, y);
 #endif
 }
+
+void SystemController::requestSoftKeyboard()
+{
+#ifdef Q_OS_ANDROID
+    AndroidController::instance()->requestSoftKeyboard();
+#endif
+}
