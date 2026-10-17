@@ -45,7 +45,7 @@
             android:configChanges="uiMode|screenSize|smallestScreenSize|screenLayout|orientation|density
                 |fontScale|layoutDirection|locale|keyboard|keyboardHidden|navigation|mcc|mnc"
             android:launchMode="singleInstance"
-            android:windowSoftInputMode="adjustResize|stateUnchanged"
+            android:windowSoftInputMode="adjustResize"
             android:enableOnBackInvokedCallback="false"
             android:exported="true">
 
