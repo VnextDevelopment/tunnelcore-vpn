@@ -32,6 +32,7 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import android.view.inputmethod.InputMethodManager
 import android.view.WindowManager.LayoutParams
 import android.webkit.MimeTypeMap
@@ -40,7 +41,6 @@ import androidx.annotation.MainThread
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.Insets
-import androidx.core.view.OnApplyWindowInsetsListener
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -102,6 +102,13 @@ class AmneziaActivity : QtActivity() {
     private val resumeHandler = Handler(Looper.getMainLooper())
     private var pendingOpenFileUri: String? = null
     private var openFileDeliveryScheduled = false
+    // Observe layout/insets passively: Qt 6.10 owns the actual decorView
+    // insets listener and its input method connection.
+    private var imeLayoutObserver: ViewTreeObserver.OnGlobalLayoutListener? = null
+    private var imeObserverView: View? = null
+    private var lastImeHeightDp = -1
+    private var lastNavBarHeightDp = -1
+    private var lastStatusBarHeightDp = -1
 
 
     private val vpnServiceEventHandler: Handler by lazy(NONE) {
@@ -194,6 +201,15 @@ class AmneziaActivity : QtActivity() {
         // Configure window for edge-to-edge display
         configureWindowForEdgeToEdge()
         mainScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            mainScope.launch {
+                // Wait for QtWindow setup before watching its final layout.
+                qtInitialized.await()
+                window.decorView.post {
+                    if (!isFinishing && !isDestroyed) setupPassiveImeInsetsObserver()
+                }
+            }
+        }
         val proto = mainScope.async(Dispatchers.IO) {
             VpnStateStore.getVpnState().vpnProto
         }
@@ -440,10 +456,7 @@ class AmneziaActivity : QtActivity() {
                 isAppearanceLightNavigationBars = false
             }
 
-            // Workaround for Android 14 (API 34+) IME adjustResize bug
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                setupImeInsetsListener()
-            }
+            // The passive IME observer is registered after Qt initialization.
         } else {
             window.apply {
                 addFlags(LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
@@ -457,35 +470,56 @@ class AmneziaActivity : QtActivity() {
         }
     }
 
-    private fun setupImeInsetsListener() {
-        ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { view, windowInsets ->
-            val imeInsets = windowInsets.getInsets(WindowInsetsCompat.Type.ime())
-            val imeVisible = windowInsets.isVisible(WindowInsetsCompat.Type.ime())
+    private fun setupPassiveImeInsetsObserver() {
+        if (imeLayoutObserver != null) return
 
-            val imeHeight = if (imeVisible) imeInsets.bottom else 0
+        val decor = window.decorView
+        // Never overwrite QtActivity's OnApplyWindowInsetsListener: on Qt 6.10
+        // this can disconnect the native IME from its editable QML fields.
+        val listener = ViewTreeObserver.OnGlobalLayoutListener {
+            publishImeInsetsFromLayout(decor)
+        }
+        imeLayoutObserver = listener
+        imeObserverView = decor
+        decor.viewTreeObserver.addOnGlobalLayoutListener(listener)
+        publishImeInsetsFromLayout(decor)
+        Log.d(TAG, "Passive IME observer attached after Qt initialization")
+    }
 
-            val density = resources.displayMetrics.density
-            val imeHeightDp = (imeHeight / density).toInt()
+    private fun publishImeInsetsFromLayout(decor: View) {
+        val insets = ViewCompat.getRootWindowInsets(decor) ?: return
+        val density = resources.displayMetrics.density
+        if (density <= 0f) return
 
-            // Also track system bars (navigation bar, status bar) changes
-            val systemBarsInsets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            val navBarHeight = systemBarsInsets.bottom
-            val navBarHeightDp = (navBarHeight / density).toInt()
-            val statusBarHeight = systemBarsInsets.top
-            val statusBarHeightDp = (statusBarHeight / density).toInt()
+        val imeHeightDp = if (insets.isVisible(WindowInsetsCompat.Type.ime())) {
+            (insets.getInsets(WindowInsetsCompat.Type.ime()).bottom / density).toInt()
+        } else {
+            0
+        }
+        val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+        val navBarHeightDp = (bars.bottom / density).toInt()
+        val statusBarHeightDp = (bars.top / density).toInt()
 
-            mainScope.launch {
-                qtInitialized.await()
-                QtAndroidController.onImeInsetsChanged(imeHeightDp)
-                QtAndroidController.onSystemBarsInsetsChanged(navBarHeightDp, statusBarHeightDp)
-            }
-
-            // Return windowInsets instead of CONSUMED to allow proper handling
-            windowInsets
+        if (lastImeHeightDp != imeHeightDp) {
+            lastImeHeightDp = imeHeightDp
+            QtAndroidController.onImeInsetsChanged(imeHeightDp)
+            Log.d(TAG, "Passive IME state: height=${imeHeightDp}dp")
+        }
+        if (lastNavBarHeightDp != navBarHeightDp || lastStatusBarHeightDp != statusBarHeightDp) {
+            lastNavBarHeightDp = navBarHeightDp
+            lastStatusBarHeightDp = statusBarHeightDp
+            QtAndroidController.onSystemBarsInsetsChanged(navBarHeightDp, statusBarHeightDp)
         }
     }
 
     override fun onDestroy() {
+        imeLayoutObserver?.let { listener ->
+            imeObserverView?.viewTreeObserver?.let { observer ->
+                if (observer.isAlive) observer.removeOnGlobalLayoutListener(listener)
+            }
+        }
+        imeLayoutObserver = null
+        imeObserverView = null
         isActivityResumed = false
         hasWindowFocus = false
         // Cancel all pending operations when activity is destroyed
