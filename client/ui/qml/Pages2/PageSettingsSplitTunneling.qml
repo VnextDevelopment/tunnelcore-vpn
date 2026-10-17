@@ -169,7 +169,9 @@ PageType {
             Layout.leftMargin: 16
             Layout.rightMargin: 16
 
-            drawerHeight: 0.55
+            // Keep the search box and matching country rows visible when
+            // the Android IME reduces the available page height.
+            drawerHeight: PageController.imeHeight > 0 ? 0.95 : 0.55
             drawerParent: root
 
             visible: TunnelCoreController.authenticated
@@ -184,23 +186,103 @@ PageType {
                     anchors.fill: parent
                     spacing: 12
 
-                    TextFieldWithHeaderType {
-                        id: countrySearchField
+                    // Use a native editable TextField instead of TextFieldWithHeaderType.
+                    // That component places a MouseArea over the input and forwards
+                    // touch presses, which can prevent Android's IME from opening
+                    // when the field is embedded in a draggable DrawerType2.
+                    Rectangle {
+                        id: countrySearchBox
                         Layout.fillWidth: true
                         Layout.leftMargin: 16
                         Layout.rightMargin: 16
+                        implicitHeight: 80
+                        radius: 16
+                        color: AmneziaStyle.color.slateGray
+                        border.width: 1
+                        border.color: countrySearchInput.activeFocus
+                                      ? AmneziaStyle.color.paleGray
+                                      : AmneziaStyle.color.charcoalGray
 
-                        backgroundColor: AmneziaStyle.color.slateGray
-                        headerText: qsTr("Search")
-                        textField.placeholderText: qsTr("Search")
-                        buttonImageSource: countrySearchField.textField.text.length > 0
-                                           ? "qrc:/images/controls/close.svg"
-                                           : "qrc:/images/controls/search.svg"
-                        clickedFunc: function() {
-                            if (countrySearchField.textField.text.length > 0)
-                                countrySearchField.textField.text = ""
-                            else
-                                countrySearchField.textField.forceActiveFocus()
+                        RowLayout {
+                            anchors.fill: parent
+                            spacing: 0
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                Layout.leftMargin: 16
+                                Layout.rightMargin: 8
+                                spacing: 4
+
+                                LabelTextType {
+                                    Layout.fillWidth: true
+                                    text: qsTr("Search")
+
+                                    // Tapping the caption should focus the same
+                                    // native text editor, not the drawer drag area.
+                                    TapHandler {
+                                        onTapped: countrySearchInput.forceActiveFocus()
+                                    }
+                                }
+
+                                TextField {
+                                    id: countrySearchInput
+                                    objectName: "splitTunnelingCountrySearchInput"
+                                    Layout.fillWidth: true
+                                    implicitHeight: 28
+                                    focusPolicy: Qt.StrongFocus
+                                    activeFocusOnPress: true
+                                    color: AmneziaStyle.color.paleGray
+                                    placeholderText: qsTr("Search")
+                                    placeholderTextColor: AmneziaStyle.color.charcoalGray
+                                    selectionColor: AmneziaStyle.color.richBrown
+                                    selectedTextColor: AmneziaStyle.color.paleGray
+                                    font.pixelSize: 16
+                                    font.family: "PT Root UI VF"
+                                    inputMethodHints: Qt.ImhNoAutoUppercase
+                                    background: Item {}
+
+                                    onActiveFocusChanged: {
+                                        if (activeFocus && Qt.platform.os === "android") {
+                                            Qt.callLater(function() {
+                                                if (countrySearchInput.activeFocus)
+                                                    Qt.inputMethod.show()
+                                            })
+                                        }
+                                    }
+                                }
+                            }
+
+                            BasicButtonType {
+                                Layout.preferredWidth: 80
+                                Layout.fillHeight: true
+                                implicitHeight: countrySearchBox.implicitHeight
+                                focusPolicy: Qt.NoFocus
+                                defaultColor: AmneziaStyle.color.paleGray
+                                hoveredColor: AmneziaStyle.color.lightGray
+                                pressedColor: AmneziaStyle.color.mutedGray
+                                squareLeftSide: true
+                                leftImageSource: countrySearchInput.text.length > 0
+                                                 ? "qrc:/images/controls/close.svg"
+                                                 : "qrc:/images/controls/search.svg"
+                                clickedFunc: function() {
+                                    if (countrySearchInput.text.length > 0)
+                                        countrySearchInput.clear()
+                                    countrySearchInput.forceActiveFocus()
+                                    if (Qt.platform.os === "android")
+                                        Qt.inputMethod.show()
+                                }
+                            }
+                        }
+                    }
+
+                    Connections {
+                        target: countryBypassSelector
+
+                        function onCloseTriggered() {
+                            // Do not leave the soft keyboard covering the
+                            // split tunneling page after dismissing the picker.
+                            Qt.inputMethod.hide()
+                            countrySearchInput.focus = false
                         }
                     }
 
@@ -216,7 +298,7 @@ PageType {
                             sourceModel: geoCountriesListModel
                             filters: RegExpFilter {
                                 roleName: "name"
-                                pattern: ".*" + root.escapeRegExp(countrySearchField.textField.text) + ".*"
+                                pattern: ".*" + root.escapeRegExp(countrySearchInput.text) + ".*"
                                 caseSensitivity: Qt.CaseInsensitive
                             }
                         }
