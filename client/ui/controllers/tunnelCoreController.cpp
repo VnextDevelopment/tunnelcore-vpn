@@ -662,6 +662,7 @@ void TunnelCoreController::clearSession()
     m_busy = false;
     m_emailAccount = false;
     m_telegramLinked = false;
+    m_accountDeletionRequested = false;
     m_subscriptionKnown = false;
     m_subscriptionAutoRenew = false;
     m_subscriptionExpiresAt = {};
@@ -712,6 +713,35 @@ void TunnelCoreController::logout()
                     return;
                 }
                 fail(tr("Could not sign out and release this device. Check your connection and try again."));
+            },
+            true);
+}
+
+
+void TunnelCoreController::requestAccountDeletion()
+{
+    if (m_busy || !authenticated() || m_accountDeletionRequested)
+        return;
+
+    // Account deletion is an authenticated, durable request; do not claim
+    // deletion is complete or discard the account session before processing.
+    request(QStringLiteral("account/delete-request/"), {},
+            [this](const QJsonObject &object) {
+                if (object.value(QStringLiteral("status")).toString()
+                    != QStringLiteral("pending")) {
+                    fail(tr("Could not confirm the account deletion request. Contact support."));
+                    return;
+                }
+                m_accountDeletionRequested = true;
+            },
+            true,
+            [this](int status, const QJsonObject &) {
+                if (status == 401) {
+                    clearSession();
+                    fail(tr("Your session has ended. Sign in again."));
+                    return;
+                }
+                fail(tr("Could not submit the account deletion request. Try again or use the website."));
             },
             true);
 }
@@ -1174,6 +1204,9 @@ void TunnelCoreController::refresh()
             m_telegramLinked = telegramLinked.toBool();
             saveSession();
         }
+        const auto deletionRequested = object.value(QStringLiteral("deletion_requested"));
+        if (deletionRequested.isBool())
+            m_accountDeletionRequested = deletionRequested.toBool();
         m_subscriptions = object.value("subscriptions").toArray().toVariantList();
         updateSubscriptionState(object);
         request(deviceRequestPath(QStringLiteral("country-selection/")), {}, [this](const QJsonObject &countryObject) {
