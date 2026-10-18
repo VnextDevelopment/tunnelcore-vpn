@@ -342,6 +342,17 @@ PageType {
                                  : loginField.textField.text.trim().length === 6)
                     clickedFunc: root.submit
                 }
+                BasicButtonType {
+                    objectName: "accountDeletionWebsiteGuest"
+                    Layout.fillWidth: true
+                    text: qsTr("Account deletion information")
+                    enabled: !TunnelCoreController.busy
+                    defaultColor: AmneziaStyle.color.transparent
+                    textColor: AmneziaStyle.color.goldenApricot
+                    clickedFunc: function() {
+                        Qt.openUrlExternally("https://vnextdev.com/tunnelcore/delete-account")
+                    }
+                }
             }
 
             ColumnLayout {
@@ -635,6 +646,61 @@ PageType {
                         visible: TunnelCoreController.telegramLinked
                         text: qsTr("Telegram is linked to this account.")
                         color: AmneziaStyle.color.goldenApricot
+                    }
+                }
+                DividerType {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 20
+                }
+                Header2TextType {
+                    Layout.fillWidth: true
+                    text: qsTr("Delete account")
+                }
+                SmallTextType {
+                    Layout.fillWidth: true
+                    textFormat: Text.PlainText
+                    text: qsTr("Request permanent deletion of your TunnelCore VPN account and associated data. Subscriptions billed by other providers must be cancelled separately.")
+                    color: AmneziaStyle.color.mutedGray
+                }
+                SmallTextType {
+                    Layout.fillWidth: true
+                    visible: TunnelCoreController.accountDeletionRequested
+                    textFormat: Text.PlainText
+                    text: qsTr("Your account deletion request has been received. Support will process it and confirm the result.")
+                    color: AmneziaStyle.color.goldenApricot
+                }
+                BasicButtonType {
+                    objectName: "accountDeletionRequestButton"
+                    Layout.fillWidth: true
+                    visible: !TunnelCoreController.accountDeletionRequested
+                    enabled: !TunnelCoreController.busy && !root.importingProfile
+                             && root.pendingVpnCountry.length === 0
+                    text: qsTr("Request account deletion")
+                    defaultColor: AmneziaStyle.color.transparent
+                    hoveredColor: AmneziaStyle.color.translucentWhite
+                    pressedColor: AmneziaStyle.color.translucentWhite
+                    borderColor: AmneziaStyle.color.vibrantRed
+                    borderWidth: 1
+                    textColor: AmneziaStyle.color.vibrantRed
+                    clickedFunc: function() {
+                        showQuestionDrawer(
+                            qsTr("Request permanent account deletion?"),
+                            qsTr("We will permanently delete your account and associated data after processing your request, except information we must retain by law. Your VPN access will end. This action cannot be undone."),
+                            qsTr("Send deletion request"),
+                            qsTr("Cancel"),
+                            function() { TunnelCoreController.requestAccountDeletion() },
+                            function() {}
+                        )
+                    }
+                }
+                BasicButtonType {
+                    objectName: "accountDeletionWebsiteButton"
+                    Layout.fillWidth: true
+                    text: qsTr("Account deletion information")
+                    defaultColor: AmneziaStyle.color.transparent
+                    textColor: AmneziaStyle.color.goldenApricot
+                    clickedFunc: function() {
+                        Qt.openUrlExternally("https://vnextdev.com/tunnelcore/delete-account")
                     }
                 }
             }
