@@ -1,0 +1,11 @@
+[1;34m+ [0mrm -rf ./deploy/build/macos
+[1;34m+ [0mcmake -S /Volumes/apps/android/Projects/amnezia-client -B ./deploy/build/macos -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/Volumes/apps/Qt/6.10.1/macos -DQT_HOST_PATH=/Volumes/apps/Qt/6.10.1/macos
+CMake Error at cmake/recipes_bootstrap.cmake:1 (find_program):
+  Could not find CONAN_COMMAND using the following names: conan
+Call Stack (most recent call first):
+  CMakeLists.txt:27 (project)
+
+
+CMake Error: CMAKE_C_COMPILER not set, after EnableLanguage
+CMake Error: CMAKE_CXX_COMPILER not set, after EnableLanguage
+-- Configuring incomplete, errors occurred!
