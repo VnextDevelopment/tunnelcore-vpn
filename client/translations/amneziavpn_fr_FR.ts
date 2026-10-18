@@ -6869,4 +6869,14 @@ Supprimez le serveur de l'application pour continuer.</translation>
         <translation>Impossible de supprimer un serveur pendant une connexion active</translation>
     </message>
 </context>
-</TS>
+<context>\n    <name>PageTunnelCoreAccount</name>\n    <message><source>Account deletion information</source><translation>Informations sur la suppression du compte</translation></message>
+    <message><source>Delete account</source><translation>Supprimer le compte</translation></message>
+    <message><source>Request permanent deletion of your TunnelCore VPN account and associated data. Subscriptions billed by other providers must be cancelled separately.</source><translation>Demandez la suppression définitive de votre compte TunnelCore VPN et des données associées. Les abonnements facturés par d&apos;autres fournisseurs doivent être résiliés séparément.</translation></message>
+    <message><source>Your account deletion request has been received. Support will process it and confirm the result.</source><translation>Votre demande de suppression a été reçue. L&apos;assistance la traitera et vous confirmera le résultat.</translation></message>
+    <message><source>Request account deletion</source><translation>Demander la suppression du compte</translation></message>
+    <message><source>Request permanent account deletion?</source><translation>Demander la suppression définitive du compte ?</translation></message>
+    <message><source>We will permanently delete your account and associated data after processing your request, except information we must retain by law. Your VPN access will end. This action cannot be undone.</source><translation>Après traitement, nous supprimerons définitivement votre compte et ses données, sauf celles que la loi nous impose de conserver. Votre accès VPN prendra fin. Cette action est irréversible.</translation></message>
+    <message><source>Send deletion request</source><translation>Envoyer la demande</translation></message>
+</context><context>\n    <name>TunnelCoreController</name>\n    <message><source>Could not confirm the account deletion request. Contact support.</source><translation>Impossible de confirmer la demande de suppression. Contactez l&apos;assistance.</translation></message>
+    <message><source>Could not submit the account deletion request. Try again or use the website.</source><translation>Impossible d&apos;envoyer la demande. Réessayez ou utilisez le site web.</translation></message>
+</context></TS>
