@@ -646,6 +646,32 @@ PageType {
                 textFormat: Text.PlainText
                 color: AmneziaStyle.color.vibrantRed
             }
+
+            SmallTextType {
+                id: privacyPolicyLink
+                objectName: "tunnelCorePrivacyPolicyLink"
+
+                Layout.fillWidth: true
+                Layout.topMargin: 8
+                horizontalAlignment: Text.AlignHCenter
+                textFormat: Text.RichText
+                color: AmneziaStyle.color.mutedGray
+                text: "<a href=\"https://vnextdev.com/tunnelcore/privacy\" style=\"color: "
+                      + AmneziaStyle.color.goldenApricotString + ";\">"
+                      + qsTr("Privacy Policy") + "</a> · <a href=\"https://vnextdev.com/tunnelcore/privacy#account-deletion\" style=\"color: "
+                      + AmneziaStyle.color.goldenApricotString + ";\">"
+                      + qsTr("Request account deletion") + "</a>"
+
+                onLinkActivated: function(link) {
+                    Qt.openUrlExternally(link)
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.NoButton
+                    cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
+                }
+            }
         }
     }
     HomeSplitTunnelingDrawer {
