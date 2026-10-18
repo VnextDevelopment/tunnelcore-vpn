@@ -6866,4 +6866,14 @@ Remove the server from the app to continue.</source>
         <translation>연결이 활성화된 동안에는 서버를 제거할 수 없습니다</translation>
     </message>
 </context>
-</TS>
+<context>\n    <name>PageTunnelCoreAccount</name>\n    <message><source>Account deletion information</source><translation>계정 삭제 안내</translation></message>
+    <message><source>Delete account</source><translation>계정 삭제</translation></message>
+    <message><source>Request permanent deletion of your TunnelCore VPN account and associated data. Subscriptions billed by other providers must be cancelled separately.</source><translation>TunnelCore VPN 계정과 관련 데이터의 영구 삭제를 요청하세요. 다른 제공업체에서 결제하는 구독은 별도로 취소해야 합니다.</translation></message>
+    <message><source>Your account deletion request has been received. Support will process it and confirm the result.</source><translation>계정 삭제 요청이 접수되었습니다. 지원팀이 처리한 후 결과를 알려드립니다.</translation></message>
+    <message><source>Request account deletion</source><translation>계정 삭제 요청</translation></message>
+    <message><source>Request permanent account deletion?</source><translation>계정 영구 삭제를 요청하시겠습니까?</translation></message>
+    <message><source>We will permanently delete your account and associated data after processing your request, except information we must retain by law. Your VPN access will end. This action cannot be undone.</source><translation>요청이 처리되면 법적으로 보관해야 하는 정보를 제외한 계정과 관련 데이터를 영구 삭제합니다. VPN 이용이 종료되며 되돌릴 수 없습니다.</translation></message>
+    <message><source>Send deletion request</source><translation>삭제 요청 보내기</translation></message>
+</context><context>\n    <name>TunnelCoreController</name>\n    <message><source>Could not confirm the account deletion request. Contact support.</source><translation>계정 삭제 요청을 확인할 수 없습니다. 지원팀에 문의하세요.</translation></message>
+    <message><source>Could not submit the account deletion request. Try again or use the website.</source><translation>계정 삭제 요청을 보낼 수 없습니다. 다시 시도하거나 웹사이트를 이용하세요.</translation></message>
+</context></TS>
