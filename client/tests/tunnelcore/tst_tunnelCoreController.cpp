@@ -995,6 +995,7 @@ private slots:
         controller.loginCode("012345");
         QTRY_VERIFY(!controller.busy());
         QVERIFY(controller.accountDeletionRequested());
+        network.responses.enqueue({"{\"ok\":true,\"devices_used\":0}"});
         controller.logout();
         QTRY_VERIFY(!controller.busy());
         QVERIFY(!controller.accountDeletionRequested());
