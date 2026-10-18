@@ -6866,4 +6866,20 @@ Remove the server from the app to continue.</source>
         <translation>存在活动连接时无法移除服务器</translation>
     </message>
 </context>
+<context>
+    <name>PageTunnelCoreAccount</name>
+    <message><source>Account deletion information</source><translation>账户删除说明</translation></message>
+    <message><source>Delete account</source><translation>删除账户</translation></message>
+    <message><source>Request permanent deletion of your TunnelCore VPN account and associated data. Subscriptions billed by other providers must be cancelled separately.</source><translation>申请永久删除 TunnelCore VPN 账户及相关数据。通过其他提供商计费的订阅需要单独取消。</translation></message>
+    <message><source>Your account deletion request has been received. Support will process it and confirm the result.</source><translation>我们已收到您的账户删除申请。支持团队将处理并确认结果。</translation></message>
+    <message><source>Request account deletion</source><translation>申请删除账户</translation></message>
+    <message><source>Request permanent account deletion?</source><translation>确认申请永久删除账户？</translation></message>
+    <message><source>We will permanently delete your account and associated data after processing your request, except information we must retain by law. Your VPN access will end. This action cannot be undone.</source><translation>申请处理完成后，我们将永久删除您的账户及相关数据，但依法必须保留的信息除外。VPN 服务将停止，且操作不可撤销。</translation></message>
+    <message><source>Send deletion request</source><translation>提交删除申请</translation></message>
+</context>
+<context>
+    <name>TunnelCoreController</name>
+    <message><source>Could not confirm the account deletion request. Contact support.</source><translation>无法确认账户删除申请，请联系支持团队。</translation></message>
+    <message><source>Could not submit the account deletion request. Try again or use the website.</source><translation>无法提交删除申请。请重试或通过网站提交。</translation></message>
+</context>
 </TS>

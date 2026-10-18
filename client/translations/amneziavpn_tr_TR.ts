@@ -55,6 +55,14 @@
     <message><source>Automatic</source><translation>Otomatik</translation></message>
     <message><source>Selected: %1</source><translation>Seçili: %1</translation></message>
     <message><source>Automatic selects an available VPN server. Choosing a country moves your VPN access to that country.</source><translation>Otomatik mod, kullanılabilir bir VPN sunucusu seçer. Bir ülke seçtiğinizde VPN erişiminiz o ülkeye taşınır.</translation></message>
+    <message><source>Account deletion information</source><translation>Hesap silme bilgileri</translation></message>
+    <message><source>Delete account</source><translation>Hesabı sil</translation></message>
+    <message><source>Request permanent deletion of your TunnelCore VPN account and associated data. Subscriptions billed by other providers must be cancelled separately.</source><translation>TunnelCore VPN hesabınızın ve ilgili verilerinizin kalıcı olarak silinmesini isteyin. Diğer sağlayıcılardan alınan abonelikleri ayrıca iptal etmeniz gerekir.</translation></message>
+    <message><source>Your account deletion request has been received. Support will process it and confirm the result.</source><translation>Hesap silme isteğiniz alındı. Destek ekibi isteği işleyip sonucu bildirecek.</translation></message>
+    <message><source>Request account deletion</source><translation>Hesabın silinmesini iste</translation></message>
+    <message><source>Request permanent account deletion?</source><translation>Hesabın kalıcı olarak silinmesini istiyor musunuz?</translation></message>
+    <message><source>We will permanently delete your account and associated data after processing your request, except information we must retain by law. Your VPN access will end. This action cannot be undone.</source><translation>İsteğiniz işlendikten sonra hesabınız ve ilgili veriler, yasalar gereği saklanması gerekenler hariç, kalıcı olarak silinecek. VPN erişiminiz sona erecek. Bu işlem geri alınamaz.</translation></message>
+    <message><source>Send deletion request</source><translation>Silme isteği gönder</translation></message>
 </context>
 <context>
     <name>PageHome</name>
@@ -152,5 +160,7 @@
     <message><source>Could not confirm the App Store purchase. Try again.</source><translation>App Store satın alımı onaylanamadı. Yeniden deneyin.</translation></message>
     <message><source>Could not open the TunnelCore bot.</source><translation>TunnelCore botu açılamadı.</translation></message>
     <message><source>Link Telegram to this account before renewing in the bot.</source><translation>Bot üzerinden yenilemeden önce Telegram&apos;ı bu hesaba bağlayın.</translation></message>
+    <message><source>Could not confirm the account deletion request. Contact support.</source><translation>Hesap silme isteği doğrulanamadı. Destek ekibiyle iletişime geçin.</translation></message>
+    <message><source>Could not submit the account deletion request. Try again or use the website.</source><translation>Hesap silme isteği gönderilemedi. Yeniden deneyin veya web sitesini kullanın.</translation></message>
 </context>
 </TS>

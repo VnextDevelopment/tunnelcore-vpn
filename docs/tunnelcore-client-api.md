@@ -95,6 +95,30 @@ Expected failures are `invalid_or_expired_code` (401), `unauthorized` (401),
 `telegram_account_already_linked` (409). An invalid or expired PIN does not end
 the current email session; an explicit `unauthorized` response does.
 
+## Account deletion (Google Play)
+
+The logged-in account page offers **Request account deletion** below account
+controls. It opens a destructive-action confirmation and sends an authenticated
+`POST account/delete-request/` with an empty JSON body and Bearer token. The
+server responds `201` on first receipt, or `200` for an existing request,
+with `ok: true`, `status: "pending"`, `request_id` and
+`already_requested`. A successful request does **not** mean deletion has
+already completed. The account session and VPN access remain until the server
+operator fulfills the request.
+
+`GET me/` returns `deletion_requested: true` while the request is pending.
+The client displays this status after restart or sign-in, and disables duplicate
+submissions. Failures preserve the session and allow retry; 401 expires the
+session. Both signed-in and signed-out users have an in-app link to
+`https://vnextdev.com/tunnelcore/delete-account` for the independent web
+request flow. No password or PIN is ever passed to the deletion page.
+
+Deploy backend PR and migration **before** releasing the updated Android client.
+The server records requests in Django admin under **Запросы на удаление TunnelCore VPN**.
+See the server repository's `docs/account-deletion-operations.md` for the
+manual fulfillment procedure, revocation, personal-data deletion and legal
+retention checks. Without operational handling the workflow is incomplete.
+
 ## Validation
 
 Standalone controller tests (no production credentials or network required):

@@ -172,6 +172,14 @@ jobs:
         py7zrversion: '==0.22.*'
         extra: '--base ${{ env.QT_MIRROR }}'
 
+    - name: 'Test TunnelCore account controller'
+      if: matrix.abi == 'arm64-v8a'
+      shell: bash
+      run: |
+        cmake -S client/tests/tunnelcore -B /tmp/tunnelcore-controller-build -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR"
+        cmake --build /tmp/tunnelcore-controller-build --parallel 2
+        ctest --test-dir /tmp/tunnelcore-controller-build --output-on-failure
+
     - name: 'Install Android Qt ${{ matrix.abi }}'
       uses: jurplel/install-qt-action@v4
       with:

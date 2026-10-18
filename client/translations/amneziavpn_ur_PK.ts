@@ -6879,4 +6879,20 @@ Remove the server from the app to continue.</source>
         <translation>چالو کنکشن کے دوران سرور کو ہٹایا نہیں جا سکتا</translation>
     </message>
 </context>
+<context>
+    <name>PageTunnelCoreAccount</name>
+    <message><source>Account deletion information</source><translation>اکاؤنٹ حذف کرنے کی معلومات</translation></message>
+    <message><source>Delete account</source><translation>اکاؤنٹ حذف کریں</translation></message>
+    <message><source>Request permanent deletion of your TunnelCore VPN account and associated data. Subscriptions billed by other providers must be cancelled separately.</source><translation>اپنے TunnelCore VPN اکاؤنٹ اور متعلقہ ڈیٹا کو مستقل طور پر حذف کرنے کی درخواست دیں۔ دوسرے فراہم کنندگان کی سبسکرپشن الگ منسوخ کرنا ہوگی۔</translation></message>
+    <message><source>Your account deletion request has been received. Support will process it and confirm the result.</source><translation>اکاؤنٹ حذف کرنے کی درخواست موصول ہوگئی ہے۔ سپورٹ ٹیم اس پر کارروائی کرکے نتیجے کی تصدیق کرے گی۔</translation></message>
+    <message><source>Request account deletion</source><translation>اکاؤنٹ حذف کرنے کی درخواست</translation></message>
+    <message><source>Request permanent account deletion?</source><translation>کیا آپ اکاؤنٹ مستقل حذف کرنے کی درخواست کرنا چاہتے ہیں؟</translation></message>
+    <message><source>We will permanently delete your account and associated data after processing your request, except information we must retain by law. Your VPN access will end. This action cannot be undone.</source><translation>درخواست پر کارروائی کے بعد اکاؤنٹ اور متعلقہ ڈیٹا مستقل حذف کر دیا جائے گا، سوائے اس معلومات کے جسے قانوناً رکھنا ضروری ہے۔ VPN رسائی ختم ہو جائے گی۔ یہ عمل واپس نہیں ہوسکتا۔</translation></message>
+    <message><source>Send deletion request</source><translation>حذف کرنے کی درخواست بھیجیں</translation></message>
+</context>
+<context>
+    <name>TunnelCoreController</name>
+    <message><source>Could not confirm the account deletion request. Contact support.</source><translation>اکاؤنٹ حذف کرنے کی درخواست کی تصدیق نہیں ہوسکی۔ سپورٹ سے رابطہ کریں۔</translation></message>
+    <message><source>Could not submit the account deletion request. Try again or use the website.</source><translation>درخواست نہیں بھیجی جاسکی۔ دوبارہ کوشش کریں یا ویب سائٹ استعمال کریں۔</translation></message>
+</context>
 </TS>
