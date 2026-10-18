@@ -6872,7 +6872,9 @@ Remove the server from the app to continue.</source>
         <translation>Неможливо видалити сервер під час активного підключення</translation>
     </message>
 </context>
-<context>\n    <name>PageTunnelCoreAccount</name>\n    <message><source>Account deletion information</source><translation>Інформація про видалення облікового запису</translation></message>
+<context>
+    <name>PageTunnelCoreAccount</name>
+    <message><source>Account deletion information</source><translation>Інформація про видалення облікового запису</translation></message>
     <message><source>Delete account</source><translation>Видалити обліковий запис</translation></message>
     <message><source>Request permanent deletion of your TunnelCore VPN account and associated data. Subscriptions billed by other providers must be cancelled separately.</source><translation>Запросіть остаточне видалення облікового запису TunnelCore VPN та пов’язаних даних. Підписки інших постачальників слід скасувати окремо.</translation></message>
     <message><source>Your account deletion request has been received. Support will process it and confirm the result.</source><translation>Запит на видалення отримано. Служба підтримки опрацює його та повідомить про результат.</translation></message>
@@ -6880,6 +6882,10 @@ Remove the server from the app to continue.</source>
     <message><source>Request permanent account deletion?</source><translation>Запросити остаточне видалення облікового запису?</translation></message>
     <message><source>We will permanently delete your account and associated data after processing your request, except information we must retain by law. Your VPN access will end. This action cannot be undone.</source><translation>Після опрацювання запиту ми остаточно видалимо обліковий запис і пов’язані дані, крім відомостей, які маємо зберігати за законом. Доступ до VPN припиниться. Цю дію неможливо скасувати.</translation></message>
     <message><source>Send deletion request</source><translation>Надіслати запит на видалення</translation></message>
-</context><context>\n    <name>TunnelCoreController</name>\n    <message><source>Could not confirm the account deletion request. Contact support.</source><translation>Не вдалося підтвердити запит на видалення. Зверніться до підтримки.</translation></message>
+</context>
+<context>
+    <name>TunnelCoreController</name>
+    <message><source>Could not confirm the account deletion request. Contact support.</source><translation>Не вдалося підтвердити запит на видалення. Зверніться до підтримки.</translation></message>
     <message><source>Could not submit the account deletion request. Try again or use the website.</source><translation>Не вдалося надіслати запит. Спробуйте ще раз або скористайтеся сайтом.</translation></message>
-</context></TS>
+</context>
+</TS>
