@@ -6866,7 +6866,9 @@ Remove the server from the app to continue.</source>
         <translation>نمی‌توان سرور را در حین اتصال فعال حذف کرد.</translation>
     </message>
 </context>
-<context>\n    <name>PageTunnelCoreAccount</name>\n    <message><source>Account deletion information</source><translation>اطلاعات حذف حساب</translation></message>
+<context>
+    <name>PageTunnelCoreAccount</name>
+    <message><source>Account deletion information</source><translation>اطلاعات حذف حساب</translation></message>
     <message><source>Delete account</source><translation>حذف حساب</translation></message>
     <message><source>Request permanent deletion of your TunnelCore VPN account and associated data. Subscriptions billed by other providers must be cancelled separately.</source><translation>درخواست حذف دائمی حساب TunnelCore VPN و داده‌های مرتبط را ثبت کنید. اشتراک‌های ارائه‌دهندگان دیگر باید جداگانه لغو شوند.</translation></message>
     <message><source>Your account deletion request has been received. Support will process it and confirm the result.</source><translation>درخواست حذف حساب شما دریافت شد. پشتیبانی آن را بررسی و نتیجه را اعلام می‌کند.</translation></message>
@@ -6874,6 +6876,10 @@ Remove the server from the app to continue.</source>
     <message><source>Request permanent account deletion?</source><translation>آیا درخواست حذف دائمی حساب را دارید؟</translation></message>
     <message><source>We will permanently delete your account and associated data after processing your request, except information we must retain by law. Your VPN access will end. This action cannot be undone.</source><translation>پس از بررسی درخواست، حساب و داده‌های مرتبط برای همیشه حذف می‌شوند، به‌جز اطلاعاتی که نگهداری آنها طبق قانون الزامی است. دسترسی VPN پایان می‌یابد. این اقدام برگشت‌ناپذیر است.</translation></message>
     <message><source>Send deletion request</source><translation>ارسال درخواست حذف</translation></message>
-</context><context>\n    <name>TunnelCoreController</name>\n    <message><source>Could not confirm the account deletion request. Contact support.</source><translation>تأیید درخواست حذف حساب ممکن نشد. با پشتیبانی تماس بگیرید.</translation></message>
+</context>
+<context>
+    <name>TunnelCoreController</name>
+    <message><source>Could not confirm the account deletion request. Contact support.</source><translation>تأیید درخواست حذف حساب ممکن نشد. با پشتیبانی تماس بگیرید.</translation></message>
     <message><source>Could not submit the account deletion request. Try again or use the website.</source><translation>ارسال درخواست حذف ناموفق بود. دوباره تلاش کنید یا از وب‌سایت استفاده کنید.</translation></message>
-</context></TS>
+</context>
+</TS>
