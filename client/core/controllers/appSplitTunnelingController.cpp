@@ -3,6 +3,8 @@
 AppSplitTunnelingController::AppSplitTunnelingController(SecureAppSettingsRepository* appSettingsRepository)
     : m_appSettingsRepository(appSettingsRepository)
 {
+    // Disable legacy app routing on upgrades; site/IP routing is unaffected.
+    m_appSettingsRepository->setAppsSplitTunnelingEnabled(false);
     m_currentRouteMode = m_appSettingsRepository->appsRouteMode();
     if (m_currentRouteMode == AppsRouteMode::VpnAllApps) { // for old split tunneling configs
         m_currentRouteMode = AppsRouteMode::VpnAllExceptApps;
@@ -50,7 +52,9 @@ void AppSplitTunnelingController::setRouteMode(AppsRouteMode routeMode)
 
 void AppSplitTunnelingController::toggleSplitTunneling(bool enabled)
 {
-    m_appSettingsRepository->setAppsSplitTunnelingEnabled(enabled);
+    Q_UNUSED(enabled)
+    // App-based split tunneling is intentionally disabled on every platform.
+    m_appSettingsRepository->setAppsSplitTunnelingEnabled(false);
 }
 
 AppsRouteMode AppSplitTunnelingController::getRouteMode() const

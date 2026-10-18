@@ -11,8 +11,6 @@ import "../Config"
 DrawerType2 {
     id: root
 
-    property bool isAppSplitTinnelingEnabled: Qt.platform.os === "windows" || Qt.platform.os === "android"
-
     anchors.fill: parent
     expandedHeight: parent.height * 0.9
 
@@ -32,7 +30,7 @@ DrawerType2 {
             Layout.bottomMargin: 16
 
             headerText: qsTr("Split tunneling")
-            descriptionText:  qsTr("Allows you to connect to some sites or applications through a VPN connection and bypass others")
+            descriptionText: qsTr("Allows you to select which sites you want to access through the VPN")
         }
 
         LabelWithButtonType {
@@ -71,27 +69,5 @@ DrawerType2 {
             }
         }
 
-        DividerType {
-        }
-
-        LabelWithButtonType {
-            id: appSplitTunnelingSwitch
-            visible: isAppSplitTinnelingEnabled
-
-            Layout.fillWidth: true
-
-            text: qsTr("App-based split tunneling")
-            descriptionText: AppSplitTunnelingController.isSplitTunnelingEnabled ? qsTr("Enabled") : qsTr("Disabled")
-            rightImageSource: "qrc:/images/controls/chevron-right.svg"
-
-            clickedFunction: function() {
-                PageController.goToPage(PageEnum.PageSettingsAppSplitTunneling)
-                root.closeTriggered()
-            }
-        }
-
-        DividerType {
-            visible: isAppSplitTinnelingEnabled
-        }
     }
 }

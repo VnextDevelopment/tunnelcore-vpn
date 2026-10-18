@@ -12,8 +12,6 @@ import "../Config"
 PageType {
     id: root
 
-    property bool isAppSplitTinnelingEnabled: Qt.platform.os === "windows" || Qt.platform.os === "android"
-
     BackButtonType {
         id: backButton
 
@@ -112,26 +110,6 @@ PageType {
         footer: ColumnLayout { // TODO(CyAn84): move to delegate,add DelegateChooser when have migrated to 6.9
 
             width: listView.width
-
-            LabelWithButtonType {
-                id: splitTunnelingButton2
-
-                visible: root.isAppSplitTinnelingEnabled
-
-                Layout.fillWidth: true
-
-                text: qsTr("App-based split tunneling")
-                descriptionText: qsTr("Allows you to use the VPN only for certain Apps")
-                rightImageSource: "qrc:/images/controls/chevron-right.svg"
-
-                clickedFunction: function() {
-                    PageController.goToPage(PageEnum.PageSettingsAppSplitTunneling)
-                }
-            }
-
-            DividerType {
-                visible: root.isAppSplitTinnelingEnabled
-            }
 
             LabelWithButtonType {
                 id: killSwitchButton

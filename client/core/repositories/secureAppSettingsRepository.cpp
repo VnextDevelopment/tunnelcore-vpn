@@ -277,15 +277,22 @@ void SecureAppSettingsRepository::setVpnApps(AppsRouteMode mode, const QVector<I
     emit appsChanged(mode);
 }
 
+// Application-based routing is intentionally unavailable on all platforms.
+// Country / site / IP split tunneling remains supported.
 bool SecureAppSettingsRepository::isAppsSplitTunnelingEnabled() const
 {
-    return value("Conf/appsSplitTunnelingEnabled", false).toBool();
+    return false;
 }
 
 void SecureAppSettingsRepository::setAppsSplitTunnelingEnabled(bool enabled)
 {
-    setValue("Conf/appsSplitTunnelingEnabled", enabled);
-    emit appsSplitTunnelingEnabledChanged(enabled);
+    Q_UNUSED(enabled)
+    // Clear legacy preferences so that upgrading users do not retain
+    // app-based VPN routing even though the UI no longer exposes it.
+    if (value("Conf/appsSplitTunnelingEnabled", false).toBool()) {
+        setValue("Conf/appsSplitTunnelingEnabled", false);
+        emit appsSplitTunnelingEnabledChanged(false);
+    }
 }
 
 QString SecureAppSettingsRepository::getGatewayEndpoint(bool isTestPurchase) const
