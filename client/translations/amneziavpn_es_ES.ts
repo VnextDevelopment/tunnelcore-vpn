@@ -6869,7 +6869,9 @@ Quite el servidor de la aplicación para continuar.</translation>
         <translation>No se puede eliminar el servidor durante una conexión activa</translation>
     </message>
 </context>
-<context>\n    <name>PageTunnelCoreAccount</name>\n    <message><source>Account deletion information</source><translation>Información para eliminar la cuenta</translation></message>
+<context>
+    <name>PageTunnelCoreAccount</name>
+    <message><source>Account deletion information</source><translation>Información para eliminar la cuenta</translation></message>
     <message><source>Delete account</source><translation>Eliminar cuenta</translation></message>
     <message><source>Request permanent deletion of your TunnelCore VPN account and associated data. Subscriptions billed by other providers must be cancelled separately.</source><translation>Solicita la eliminación permanente de tu cuenta TunnelCore VPN y sus datos. Debes cancelar por separado las suscripciones facturadas por otros proveedores.</translation></message>
     <message><source>Your account deletion request has been received. Support will process it and confirm the result.</source><translation>Hemos recibido tu solicitud. El equipo de soporte la tramitará y confirmará el resultado.</translation></message>
@@ -6877,6 +6879,10 @@ Quite el servidor de la aplicación para continuar.</translation>
     <message><source>Request permanent account deletion?</source><translation>¿Solicitar la eliminación permanente de la cuenta?</translation></message>
     <message><source>We will permanently delete your account and associated data after processing your request, except information we must retain by law. Your VPN access will end. This action cannot be undone.</source><translation>Tras procesar la solicitud eliminaremos tu cuenta y sus datos, salvo la información que debamos conservar por ley. Perderás el acceso a la VPN. Esta acción no se puede deshacer.</translation></message>
     <message><source>Send deletion request</source><translation>Enviar solicitud de eliminación</translation></message>
-</context><context>\n    <name>TunnelCoreController</name>\n    <message><source>Could not confirm the account deletion request. Contact support.</source><translation>No se pudo confirmar la solicitud de eliminación. Contacta con soporte.</translation></message>
+</context>
+<context>
+    <name>TunnelCoreController</name>
+    <message><source>Could not confirm the account deletion request. Contact support.</source><translation>No se pudo confirmar la solicitud de eliminación. Contacta con soporte.</translation></message>
     <message><source>Could not submit the account deletion request. Try again or use the website.</source><translation>No se pudo enviar la solicitud. Inténtalo de nuevo o utiliza el sitio web.</translation></message>
-</context></TS>
+</context>
+</TS>
