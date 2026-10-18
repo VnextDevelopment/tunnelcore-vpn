@@ -6869,7 +6869,9 @@ Remove the server from the app to continue.</source>
         <translation>सक्रिय कनेक्शन के दौरान सर्वर को हटाया नहीं जा सकता</translation>
     </message>
 </context>
-<context>\n    <name>PageTunnelCoreAccount</name>\n    <message><source>Account deletion information</source><translation>खाता हटाने की जानकारी</translation></message>
+<context>
+    <name>PageTunnelCoreAccount</name>
+    <message><source>Account deletion information</source><translation>खाता हटाने की जानकारी</translation></message>
     <message><source>Delete account</source><translation>खाता हटाएँ</translation></message>
     <message><source>Request permanent deletion of your TunnelCore VPN account and associated data. Subscriptions billed by other providers must be cancelled separately.</source><translation>अपना TunnelCore VPN खाता और उससे जुड़ा डेटा स्थायी रूप से हटाने का अनुरोध करें। अन्य प्रदाताओं की सदस्यताएँ अलग से रद्द करनी होंगी।</translation></message>
     <message><source>Your account deletion request has been received. Support will process it and confirm the result.</source><translation>खाता हटाने का अनुरोध प्राप्त हो गया है। सहायता टीम इसे पूरा करके परिणाम बताएगी।</translation></message>
@@ -6877,6 +6879,10 @@ Remove the server from the app to continue.</source>
     <message><source>Request permanent account deletion?</source><translation>क्या आप खाता स्थायी रूप से हटाने का अनुरोध करना चाहते हैं?</translation></message>
     <message><source>We will permanently delete your account and associated data after processing your request, except information we must retain by law. Your VPN access will end. This action cannot be undone.</source><translation>आपका अनुरोध संसाधित होने पर खाता और संबंधित डेटा स्थायी रूप से हटा दिया जाएगा, सिवाय उस जानकारी के जिसे कानूनन रखना ज़रूरी है। VPN एक्सेस समाप्त हो जाएगा। यह कार्रवाई वापस नहीं ली जा सकती।</translation></message>
     <message><source>Send deletion request</source><translation>हटाने का अनुरोध भेजें</translation></message>
-</context><context>\n    <name>TunnelCoreController</name>\n    <message><source>Could not confirm the account deletion request. Contact support.</source><translation>खाता हटाने के अनुरोध की पुष्टि नहीं हो सकी। सहायता टीम से संपर्क करें।</translation></message>
+</context>
+<context>
+    <name>TunnelCoreController</name>
+    <message><source>Could not confirm the account deletion request. Contact support.</source><translation>खाता हटाने के अनुरोध की पुष्टि नहीं हो सकी। सहायता टीम से संपर्क करें।</translation></message>
     <message><source>Could not submit the account deletion request. Try again or use the website.</source><translation>खाता हटाने का अनुरोध नहीं भेजा जा सका। फिर कोशिश करें या वेबसाइट का उपयोग करें।</translation></message>
-</context></TS>
+</context>
+</TS>
