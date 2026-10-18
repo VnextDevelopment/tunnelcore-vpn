@@ -6948,6 +6948,14 @@ Remove the server from the app to continue.</source>
     <message><source>Automatic</source><translation>Автоматически</translation></message>
     <message><source>Selected: %1</source><translation>Выбрано: %1</translation></message>
     <message><source>Automatic selects an available VPN server. Choosing a country moves your VPN access to that country.</source><translation>В автоматическом режиме выбирается доступный VPN-сервер. Выбор страны перемещает VPN-доступ в эту страну.</translation></message>
+    <message><source>Account deletion information</source><translation>Информация об удалении аккаунта</translation></message>
+    <message><source>Delete account</source><translation>Удаление аккаунта</translation></message>
+    <message><source>Request permanent deletion of your TunnelCore VPN account and associated data. Subscriptions billed by other providers must be cancelled separately.</source><translation>Запросите безвозвратное удаление аккаунта TunnelCore VPN и связанных данных. Подписки у сторонних провайдеров необходимо отменять отдельно.</translation></message>
+    <message><source>Your account deletion request has been received. Support will process it and confirm the result.</source><translation>Запрос на удаление аккаунта получен. Служба поддержки обработает его и сообщит о результате.</translation></message>
+    <message><source>Request account deletion</source><translation>Запросить удаление аккаунта</translation></message>
+    <message><source>Request permanent account deletion?</source><translation>Запросить безвозвратное удаление аккаунта?</translation></message>
+    <message><source>We will permanently delete your account and associated data after processing your request, except information we must retain by law. Your VPN access will end. This action cannot be undone.</source><translation>После обработки запроса мы безвозвратно удалим аккаунт и связанные данные, кроме сведений, которые обязаны хранить по закону. Доступ к VPN прекратится. Отменить удаление будет невозможно.</translation></message>
+    <message><source>Send deletion request</source><translation>Отправить запрос на удаление</translation></message>
 </context>
 <context>
     <name>VpnCountries</name>
@@ -7040,5 +7048,7 @@ Remove the server from the app to continue.</source>
     <message><source>Could not confirm the App Store purchase. Try again.</source><translation>Не удалось подтвердить покупку в App Store. Повторите попытку.</translation></message>
     <message><source>Could not open the TunnelCore bot.</source><translation>Не удалось открыть бот TunnelCore.</translation></message>
     <message><source>Link Telegram to this account before renewing in the bot.</source><translation>Перед продлением в боте привяжите Telegram к этому аккаунту.</translation></message>
+    <message><source>Could not confirm the account deletion request. Contact support.</source><translation>Не удалось подтвердить запрос на удаление аккаунта. Свяжитесь с поддержкой.</translation></message>
+    <message><source>Could not submit the account deletion request. Try again or use the website.</source><translation>Не удалось отправить запрос на удаление. Повторите попытку или воспользуйтесь сайтом.</translation></message>
 </context>
 </TS>
