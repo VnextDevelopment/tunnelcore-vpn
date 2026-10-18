@@ -38,6 +38,7 @@ class TunnelCoreController : public QObject
     Q_PROPERTY(QString error READ error NOTIFY changed)
     Q_PROPERTY(bool emailAccount READ emailAccount NOTIFY changed)
     Q_PROPERTY(bool telegramLinked READ telegramLinked NOTIFY changed)
+    Q_PROPERTY(bool accountDeletionRequested READ accountDeletionRequested NOTIFY changed)
     Q_PROPERTY(QVariantList subscriptions READ subscriptions NOTIFY changed)
     Q_PROPERTY(QVariantMap primarySubscription READ primarySubscription NOTIFY changed)
     Q_PROPERTY(QVariantList configs READ configs NOTIFY changed)
@@ -64,6 +65,7 @@ public:
     QString error() const { return m_error; }
     bool emailAccount() const { return m_emailAccount; }
     bool telegramLinked() const { return m_telegramLinked; }
+    bool accountDeletionRequested() const { return m_accountDeletionRequested; }
     QVariantList subscriptions() const { return m_subscriptions; }
     QVariantMap primarySubscription() const;
     QVariantList configs() const { return m_configs; }
@@ -91,6 +93,7 @@ public:
     Q_INVOKABLE void clearError();
     Q_INVOKABLE void logout();
     Q_INVOKABLE void logoutAll();
+    Q_INVOKABLE void requestAccountDeletion();
     Q_INVOKABLE void refresh();
     Q_INVOKABLE void selectConfig(int index);
     Q_INVOKABLE void selectCurrentConfig();
@@ -159,6 +162,7 @@ private:
     bool m_busy = false;
     bool m_emailAccount = false;
     bool m_telegramLinked = false;
+    bool m_accountDeletionRequested = false;
     bool m_subscriptionKnown = false;
     bool m_subscriptionAutoRenew = false;
     QDateTime m_subscriptionExpiresAt;
