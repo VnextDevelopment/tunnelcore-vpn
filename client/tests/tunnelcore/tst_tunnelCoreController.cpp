@@ -938,6 +938,68 @@ private slots:
         QVERIFY(!controller.error().isEmpty());
         QCOMPARE(network.requests.size(), 1);
     }
+    void accountDeletionRequestIsAuthenticatedAndIdempotent()
+    {
+        Network network;
+        enqueueLogin(network);
+        TunnelCoreController controller(nullptr, &network);
+        controller.loginCode("012345");
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(controller.authenticated());
+        QVERIFY(!controller.accountDeletionRequested());
+
+        network.responses.enqueue({"{\"ok\":true,\"request_id\":42,\"status\":\"pending\",\"already_requested\":false}", 201});
+        controller.requestAccountDeletion();
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(controller.accountDeletionRequested());
+        QVERIFY(controller.authenticated()); // Request is not yet deletion.
+
+        QCOMPARE(network.requests.size(), 8);
+        QCOMPARE(network.requests.last().url().path(),
+                 QString("/api/vpn/v1/account/delete-request/"));
+        QCOMPARE(network.requests.last().rawHeader("Authorization"), QByteArray("Bearer test-token"));
+        QCOMPARE(QJsonDocument::fromJson(network.bodies.last()).object(), QJsonObject());
+
+        controller.requestAccountDeletion();
+        QCOMPARE(network.requests.size(), 8); // Do not submit twice.
+    }
+
+    void accountDeletionFailureCanBeRetried()
+    {
+        Network network;
+        enqueueLogin(network);
+        TunnelCoreController controller(nullptr, &network);
+        controller.loginCode("012345");
+        QTRY_VERIFY(!controller.busy());
+        network.responses.enqueue({"{\"ok\":false,\"error\":\"unavailable\"}", 503});
+        controller.requestAccountDeletion();
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(controller.authenticated());
+        QVERIFY(!controller.accountDeletionRequested());
+        QVERIFY(!controller.error().isEmpty());
+
+        network.responses.enqueue({"{\"ok\":true,\"request_id\":42,\"status\":\"pending\",\"already_requested\":true}"});
+        controller.requestAccountDeletion();
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(controller.accountDeletionRequested());
+    }
+
+    void accountDeletionStatusRestoredFromProfile()
+    {
+        Network network;
+        QJsonObject profile = QJsonDocument::fromJson(
+            accountResponse(QDateTime::currentDateTimeUtc().addDays(3), false)).object();
+        profile.insert(QStringLiteral("deletion_requested"), true);
+        enqueueLoginWithAccount(network, QJsonDocument(profile).toJson(QJsonDocument::Compact));
+        TunnelCoreController controller(nullptr, &network);
+        controller.loginCode("012345");
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(controller.accountDeletionRequested());
+        controller.logout();
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(!controller.accountDeletionRequested());
+    }
+
     void logoutRevokesCurrentDevice()
     {
         Network network;
