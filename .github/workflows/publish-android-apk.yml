@@ -52,7 +52,7 @@ jobs:
           gh release view "v$VERSION" --repo "${{ github.repository }}" --json isDraft,isPrerelease --jq '(.isDraft == false) and (.isPrerelease == false)' | grep -qx true
           echo "ANDROID_RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
           # CMake uses GITHUB_RUN_NUMBER as the fourth component of app version.
-          echo "GITHUB_RUN_NUMBER=${VERSION##*.}" >> "$GITHUB_ENV"
+          # The build command supplies the version without mutating a reserved GitHub variable.
 
       - name: Checkout pinned release tag
         uses: actions/checkout@v4
