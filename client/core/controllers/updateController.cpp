@@ -1,20 +1,28 @@
 #include "updateController.h"
 
+#include <QCryptographicHash>
 #include <QDesktopServices>
+#include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QNetworkReply>
-#include <QTimer>
+#include <QNetworkRequest>
+#include <QProcess>
+#include <QRegularExpression>
+#include <QSaveFile>
+#include <QSharedPointer>
+#include <QStandardPaths>
+#include <QTemporaryDir>
 #include <QUrl>
+#include <QUrlQuery>
+#include <QVersionNumber>
 
 #include "amneziaApplication.h"
 #include "logger.h"
-#include "core/controllers/gatewayController.h"
-#include "core/utils/api/gatewayPayloadBuilder.h"
 #include "core/utils/appUiConfig.h"
-#include "core/utils/constants/apiKeys.h"
 #include "core/utils/selfhosted/scriptsRegistry.h"
+#include "version.h"
 
 #if defined(Q_OS_ANDROID)
     #include "platforms/android/android_controller.h"
@@ -23,6 +31,9 @@
 namespace
 {
     Logger logger("UpdateController");
+
+    // This first-party HTTPS endpoint returns metadata for TunnelCore releases only.
+    const QUrl kUpdatesEndpoint(QStringLiteral("https://vnextdev.com/api/tunnelcore/updates"));
 
 #if defined(Q_OS_WINDOWS)
     const QLatin1String kInstallerRemoteFileNamePattern("TunnelCoreVPN_%1_windows_x64.exe");
@@ -34,6 +45,37 @@ namespace
     const QLatin1String kInstallerRemoteFileNamePattern("TunnelCoreVPN_%1_linux_x64.run");
     const QString kInstallerLocalPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/TunnelCoreVPN.run";
 #endif
+
+    QString platformChannel()
+    {
+#if defined(Q_OS_ANDROID)
+        return AndroidController::instance()->isPlay() ? QStringLiteral("android-play") : QStringLiteral("android-apk");
+#elif defined(Q_OS_IOS)
+        return QStringLiteral("ios");
+#elif defined(MACOS_NE)
+        return QStringLiteral("macos-store");
+#elif defined(Q_OS_MACOS)
+        return QStringLiteral("macos");
+#elif defined(Q_OS_WINDOWS)
+        return QStringLiteral("windows");
+#else
+        return QStringLiteral("linux");
+#endif
+    }
+
+    bool validVersion(const QString &version)
+    {
+        static const QRegularExpression pattern(QStringLiteral(R"(^\d+\.\d+\.\d+(?:\.\d+)?$)"));
+        return pattern.match(version).hasMatch();
+    }
+
+    bool tunnelCoreReleasePage(const QUrl &url)
+    {
+        return url.scheme() == QLatin1String("https")
+            && url.host() == QLatin1String("github.com")
+            && url.path().startsWith(QLatin1String("/VnextDevelopment/tunnelcore-vpn/releases/tag/"))
+            && url.query().isEmpty() && url.fragment().isEmpty();
+    }
 
     QStringList stringListFromJsonValue(const QJsonValue &value)
     {
@@ -48,50 +90,20 @@ namespace
     }
 }
 
-UpdateController::UpdateController(SecureAppSettingsRepository* appSettingsRepository, QObject *parent)
+UpdateController::UpdateController(SecureAppSettingsRepository *appSettingsRepository, QObject *parent)
     : QObject(parent), m_appSettingsRepository(appSettingsRepository)
 {
 }
 
-QString UpdateController::getVersion() const
-{
-    return m_version;
-}
-
-QString UpdateController::getReleaseDate() const
-{
-    return m_releaseDate;
-}
-
-QString UpdateController::getDescription() const
-{
-    return m_description;
-}
-
-QStringList UpdateController::getTags() const
-{
-    return m_tags;
-}
-
-QStringList UpdateController::getNewFeatures() const
-{
-    return m_newFeatures;
-}
-
-QStringList UpdateController::getImprovements() const
-{
-    return m_improvements;
-}
-
-QStringList UpdateController::getBugFixes() const
-{
-    return m_bugFixes;
-}
-
-UpdateState::State UpdateController::getUpdateState() const
-{
-    return m_updateState;
-}
+QString UpdateController::getVersion() const { return m_version; }
+QString UpdateController::getReleaseDate() const { return m_releaseDate; }
+QString UpdateController::getDescription() const { return m_description; }
+QStringList UpdateController::getTags() const { return m_tags; }
+QStringList UpdateController::getNewFeatures() const { return m_newFeatures; }
+QStringList UpdateController::getImprovements() const { return m_improvements; }
+QStringList UpdateController::getBugFixes() const { return m_bugFixes; }
+UpdateState::State UpdateController::getUpdateState() const { return m_updateState; }
+bool UpdateController::isMandatory() const { return m_mandatory; }
 
 bool UpdateController::isStoreUpdate() const
 {
@@ -106,101 +118,143 @@ bool UpdateController::isStoreUpdate() const
 
 void UpdateController::setUpdateState(UpdateState::State state)
 {
-    if (m_updateState == state) {
-        return;
-    }
+    if (m_updateState == state) return;
     m_updateState = state;
     emit updateStateChanged();
 }
 
-bool UpdateController::isUpdateCheckRunning() const
-{
-    return m_updateCheckRunning;
-}
+bool UpdateController::isUpdateCheckRunning() const { return m_updateCheckRunning; }
 
 void UpdateController::setUpdateCheckRunning(bool running)
 {
-    if (m_updateCheckRunning == running) {
-        return;
-    }
+    if (m_updateCheckRunning == running) return;
     m_updateCheckRunning = running;
     emit updateCheckRunningChanged();
 }
 
 void UpdateController::checkForUpdates()
 {
-    if (m_updateCheckRunning || !m_appSettingsRepository) {
-        return;
-    }
+    if (m_updateCheckRunning) return;
     setUpdateCheckRunning(true);
 
-    auto gatewayController = QSharedPointer<GatewayController>::create(m_appSettingsRepository->getGatewayEndpoint(),
-                                                                       m_appSettingsRepository->isDevGatewayEnv(),
-                                                                       7000,
-                                                                       m_appSettingsRepository->isStrictKillSwitchEnabled(),
-                                                                       m_appSettingsRepository);
+    QUrl url(kUpdatesEndpoint);
+    QUrlQuery query;
+    query.addQueryItem(QStringLiteral("platform"), platformChannel());
+    query.addQueryItem(QStringLiteral("version"), QStringLiteral(APP_VERSION));
+    url.setQuery(query);
 
-    QJsonObject apiPayload = GatewayPayloadBuilder(m_appSettingsRepository).build();
+    QNetworkRequest request(url);
+    request.setTransferTimeout(12000);
+    request.setRawHeader("Accept", "application/json");
+    // Do not allow an intermediary to redirect update metadata to an arbitrary host.
+    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::SameOriginRedirectPolicy);
 
-    // Workaround: wait before contacting gateway to avoid rate limit triggered by other requests (news etc.)
-    QTimer::singleShot(1000, this, [this, gatewayController, apiPayload]() {
-        gatewayController->postAsync(QStringLiteral("%1v1/app_update"), apiPayload)
-            .then(this, [this, gatewayController](QPair<ErrorCode, QByteArray> result) {
-                setUpdateCheckRunning(false);
+    auto *reply = amnApp->networkManager()->get(request);
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        setUpdateCheckRunning(false);
+        const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        if (reply->error() != QNetworkReply::NoError || status != 200) {
+            logger.warning() << "TunnelCore update check failed:" << status << reply->errorString();
+            reply->deleteLater();
+            emit updateCheckFailed();
+            return;
+        }
 
-                auto [err, gatewayResponse] = result;
-                if (err != ErrorCode::NoError) {
-                    logger.error() << "Gateway request failed, error code:" << static_cast<int>(err);
-                    emit updateCheckFailed();
-                    return;
-                }
+        QJsonParseError jsonError;
+        const QJsonDocument document = QJsonDocument::fromJson(reply->readAll(), &jsonError);
+        reply->deleteLater();
+        if (jsonError.error != QJsonParseError::NoError || !document.isObject()) {
+            emit updateCheckFailed();
+            return;
+        }
 
-                QJsonObject gatewayData = QJsonDocument::fromJson(gatewayResponse).object();
-                if (!gatewayData.value(apiDefs::key::updateAvailable).toBool()) {
-                    logger.info() << "No application update available";
-                    emit updateNotFound();
-                    return;
-                }
+        const QJsonObject data = document.object();
+        if (!data.value(QStringLiteral("updateAvailable")).toBool()) {
+            setUpdateState(UpdateState::State::Idle);
+            emit updateNotFound();
+            return;
+        }
 
-                m_version = gatewayData.value(apiDefs::key::updateVersion).toString();
-                m_releaseDate = gatewayData.value(apiDefs::key::releaseDate).toString();
-                m_description = gatewayData.value(apiDefs::key::updateDescription).toString();
-                m_tags = stringListFromJsonValue(gatewayData.value(apiDefs::key::updateTags));
-                m_newFeatures = stringListFromJsonValue(gatewayData.value(apiDefs::key::newFeatures));
-                m_improvements = stringListFromJsonValue(gatewayData.value(apiDefs::key::improvements));
-                m_bugFixes = stringListFromJsonValue(gatewayData.value(apiDefs::key::bugFixes));
-                m_downloadBaseUrl = gatewayData.value(apiDefs::key::downloadBaseUrl).toString();
-                if (m_downloadBaseUrl.endsWith('/')) {
-                    m_downloadBaseUrl.chop(1);
-                }
-                m_releasePageUrl = gatewayData.value(apiDefs::key::releasePageUrl).toString();
+        const QString version = data.value(QStringLiteral("updateVersion")).toString();
+        if (!validVersion(version) || QVersionNumber::compare(QVersionNumber::fromString(version),
+                                                               QVersionNumber::fromString(QStringLiteral(APP_VERSION))) <= 0) {
+            emit updateNotFound();
+            return;
+        }
 
-                if (m_version.isEmpty()) {
-                    logger.error() << "Update response has no version, ignoring";
-                    emit updateCheckFailed();
-                    return;
-                }
+        const QUrl releasePage(data.value(QStringLiteral("releasePageUrl")).toString());
+        if (isStoreUpdate()) {
+#if defined(Q_OS_ANDROID)
+            if (releasePage.scheme() != QLatin1String("https") ||
+                releasePage.host() != QLatin1String("play.google.com")) {
+                emit updateCheckFailed();
+                return;
+            }
+#else
+            if (releasePage.scheme() != QLatin1String("https") ||
+                releasePage.host() != QLatin1String("apps.apple.com")) {
+                emit updateCheckFailed();
+                return;
+            }
+#endif
+        } else if (!tunnelCoreReleasePage(releasePage)) {
+            emit updateCheckFailed();
+            return;
+        }
 
-                logger.info() << "Application update available:" << m_version;
-                setUpdateState(UpdateState::State::Idle);
-                emit updateFound();
-            });
+        const QString downloadUrl = data.value(QStringLiteral("downloadUrl")).toString();
+        const QString sha256 = data.value(QStringLiteral("sha256")).toString().toLower();
+        const qint64 size = static_cast<qint64>(data.value(QStringLiteral("downloadSize")).toDouble());
+#if !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS) && !defined(MACOS_NE)
+        // The installer is never launched unless it is a branded asset with a SHA-256 digest.
+        const QUrl installerUrl(downloadUrl);
+        const QString expectedName = QString(kInstallerRemoteFileNamePattern).arg(version);
+        const QRegularExpression hashPattern(QStringLiteral("^[0-9a-f]{64}$"));
+        if (installerUrl.scheme() != QLatin1String("https") ||
+            installerUrl.host() != QLatin1String("github.com") ||
+            !installerUrl.path().startsWith(QLatin1String("/VnextDevelopment/tunnelcore-vpn/releases/download/")) ||
+            !installerUrl.path().endsWith(QLatin1String("/") + expectedName) ||
+            !installerUrl.query().isEmpty() || !installerUrl.fragment().isEmpty() ||
+            !hashPattern.match(sha256).hasMatch() || size < 1 || size > 850000000) {
+            logger.error() << "Invalid TunnelCore installer metadata";
+            emit updateCheckFailed();
+            return;
+        }
+#endif
+
+        m_version = version;
+        m_releaseDate = data.value(QStringLiteral("releaseDate")).toString();
+        m_description = data.value(QStringLiteral("updateDescription")).toString();
+        m_tags = stringListFromJsonValue(data.value(QStringLiteral("updateTags")));
+        m_newFeatures = stringListFromJsonValue(data.value(QStringLiteral("newFeatures")));
+        m_improvements = stringListFromJsonValue(data.value(QStringLiteral("improvements")));
+        m_bugFixes = stringListFromJsonValue(data.value(QStringLiteral("bugFixes")));
+        m_downloadUrl = downloadUrl;
+        m_expectedSha256 = sha256;
+        m_expectedSize = size;
+        m_releasePageUrl = releasePage.toString();
+        m_mandatory = data.value(QStringLiteral("mandatory")).toBool();
+
+        setUpdateState(UpdateState::State::Idle);
+        logger.info() << "TunnelCore update available:" << version;
+        emit updateFound();
     });
 }
 
 void UpdateController::openStorePage() const
 {
+    QUrl url(m_releasePageUrl);
 #if defined(Q_OS_IOS) || defined(MACOS_NE)
-    // No upstream App Store redirect. Configure the TunnelCore URL once published.
-    const QUrl storeUrl(QLatin1String(APP_IOS_STORE_URL_FALLBACK));
-    if (!storeUrl.isEmpty() && storeUrl.isValid()) {
-        QDesktopServices::openUrl(storeUrl);
-    } else {
-        logger.warning() << "TunnelCore App Store URL is not configured yet";
-    }
+    if (url.scheme() != QLatin1String("https") || url.host() != QLatin1String("apps.apple.com"))
+        url = QUrl(QLatin1String(APP_IOS_STORE_URL_FALLBACK));
+    if (url.scheme() == QLatin1String("https") && url.host() == QLatin1String("apps.apple.com"))
+        QDesktopServices::openUrl(url);
+    else
+        logger.warning() << "TunnelCore App Store listing is not configured";
 #elif defined(Q_OS_ANDROID)
-    QDesktopServices::openUrl(
-            QUrl(QStringLiteral("https://play.google.com/store/apps/details?id=%1").arg(QLatin1String(APP_ANDROID_PACKAGE))));
+    if (url.scheme() != QLatin1String("https") || url.host() != QLatin1String("play.google.com"))
+        url = QUrl(QStringLiteral("https://play.google.com/store/apps/details?id=%1").arg(QLatin1String(APP_ANDROID_PACKAGE)));
+    QDesktopServices::openUrl(url);
 #endif
 }
 
@@ -210,15 +264,13 @@ void UpdateController::startUpdate()
         openStorePage();
         return;
     }
-
 #if defined(Q_OS_ANDROID)
-    // GitHub build on Android: open the release page in a browser, the system downloads the APK.
-    if (m_releasePageUrl.isEmpty()) {
-        logger.error() << "Release page URL is empty";
+    // Android APK sideloads use the signed APK from the branded GitHub release.
+    const QUrl url(m_releasePageUrl);
+    if (tunnelCoreReleasePage(url))
+        QDesktopServices::openUrl(url);
+    else
         setUpdateState(UpdateState::State::DownloadError);
-        return;
-    }
-    QDesktopServices::openUrl(QUrl(m_releasePageUrl));
 #elif !defined(Q_OS_IOS) && !defined(MACOS_NE)
     downloadInstaller();
 #endif
@@ -227,11 +279,7 @@ void UpdateController::startUpdate()
 QString UpdateController::composeDownloadUrl() const
 {
 #if !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS) && !defined(MACOS_NE)
-    if (m_downloadBaseUrl.isEmpty() || m_version.isEmpty()) {
-        return QString();
-    }
-    const QString fileName = QString(kInstallerRemoteFileNamePattern).arg(m_version);
-    return m_downloadBaseUrl + "/" + fileName;
+    return m_downloadUrl;
 #else
     return QString();
 #endif
@@ -240,53 +288,58 @@ QString UpdateController::composeDownloadUrl() const
 void UpdateController::downloadInstaller()
 {
 #if !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS) && !defined(MACOS_NE)
-    if (m_updateState == UpdateState::State::Downloading) {
-        return;
-    }
+    if (m_updateState == UpdateState::State::Downloading) return;
 
-    const QString downloadUrl = composeDownloadUrl();
-    if (downloadUrl.isEmpty()) {
-        logger.error() << "Download URL is empty";
+    const QUrl url(composeDownloadUrl());
+    if (url.isEmpty() || m_expectedSha256.size() != 64 || m_expectedSize < 1) {
         setUpdateState(UpdateState::State::DownloadError);
         return;
     }
 
+    auto file = QSharedPointer<QSaveFile>::create(kInstallerLocalPath);
+    if (!file->open(QIODevice::WriteOnly)) {
+        logger.error() << "Cannot create installer:" << file->errorString();
+        setUpdateState(UpdateState::State::DownloadError);
+        return;
+    }
+
+    auto digest = QSharedPointer<QCryptographicHash>::create(QCryptographicHash::Sha256);
+    auto bytesWritten = QSharedPointer<qint64>::create(0);
     setUpdateState(UpdateState::State::Downloading);
 
-    QNetworkRequest request;
-    request.setTransferTimeout(30000);
-    request.setUrl(QUrl(downloadUrl));
+    QNetworkRequest request(url);
+    request.setTransferTimeout(60000);
+    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
+    request.setMaximumRedirectsAllowed(5);
+    auto *reply = amnApp->networkManager()->get(request);
 
-    QNetworkReply *reply = amnApp->networkManager()->get(request);
-
-    QObject::connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+    // Stream to disk: never buffer an unbounded installer in application memory.
+    auto drain = [reply, file, digest, bytesWritten, this]() {
+        while (reply->bytesAvailable() > 0) {
+            const QByteArray chunk = reply->read(64 * 1024);
+            if (chunk.isEmpty()) break;
+            *bytesWritten += chunk.size();
+            if (*bytesWritten > m_expectedSize || file->write(chunk) != chunk.size()) {
+                reply->abort();
+                return;
+            }
+            digest->addData(chunk);
+        }
+    };
+    connect(reply, &QNetworkReply::readyRead, this, drain);
+    connect(reply, &QNetworkReply::finished, this, [this, reply, file, digest, bytesWritten, drain]() {
+        drain();
+        const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        const bool valid = reply->error() == QNetworkReply::NoError && status == 200 &&
+                           *bytesWritten == m_expectedSize &&
+                           QString::fromLatin1(digest->result().toHex()) == m_expectedSha256;
         reply->deleteLater();
-
-        if (reply->error() != QNetworkReply::NoError) {
-            logger.error() << "Installer download failed, network error:" << static_cast<int>(reply->error())
-                           << reply->errorString();
-            logger.error() << "HTTP status:" << reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        if (!valid || !file->commit()) {
+            logger.error() << "TunnelCore installer download/verification failed:" << status;
+            file->cancelWriting();
             setUpdateState(UpdateState::State::DownloadError);
             return;
         }
-
-        QFile file(kInstallerLocalPath);
-        if (!file.open(QIODevice::WriteOnly)) {
-            logger.error() << "Failed to open installer file for writing:" << kInstallerLocalPath
-                           << "Error:" << file.errorString();
-            setUpdateState(UpdateState::State::DownloadError);
-            return;
-        }
-
-        if (file.write(reply->readAll()) == -1) {
-            logger.error() << "Failed to write installer data to file:" << kInstallerLocalPath
-                           << "Error:" << file.errorString();
-            file.close();
-            setUpdateState(UpdateState::State::DownloadError);
-            return;
-        }
-
-        file.close();
         setUpdateState(UpdateState::State::ReadyToInstall);
     });
 #endif
