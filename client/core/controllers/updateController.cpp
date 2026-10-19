@@ -197,7 +197,8 @@ void UpdateController::checkForUpdates()
                 return;
             }
 #endif
-        } else if (!tunnelCoreReleasePage(releasePage)) {
+        } else if (!tunnelCoreReleasePage(releasePage) ||
+                   releasePage.path() != QStringLiteral("/VnextDevelopment/tunnelcore-vpn/releases/tag/v") + version) {
             emit updateCheckFailed();
             return;
         }
@@ -212,8 +213,7 @@ void UpdateController::checkForUpdates()
         const QRegularExpression hashPattern(QStringLiteral("^[0-9a-f]{64}$"));
         if (installerUrl.scheme() != QLatin1String("https") ||
             installerUrl.host() != QLatin1String("github.com") ||
-            !installerUrl.path().startsWith(QLatin1String("/VnextDevelopment/tunnelcore-vpn/releases/download/")) ||
-            !installerUrl.path().endsWith(QLatin1String("/") + expectedName) ||
+            installerUrl.path() != QStringLiteral("/VnextDevelopment/tunnelcore-vpn/releases/download/v") + version + QLatin1String("/") + expectedName ||
             !installerUrl.query().isEmpty() || !installerUrl.fragment().isEmpty() ||
             !hashPattern.match(sha256).hasMatch() || size < 1 || size > 850000000) {
             logger.error() << "Invalid TunnelCore installer metadata";
