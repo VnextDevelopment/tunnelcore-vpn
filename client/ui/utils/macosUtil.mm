@@ -50,9 +50,7 @@ void setDockIconVisible(bool visible)
 + (void)closeButtonAction:(id)sender
 {
     Q_UNUSED(sender);
-    ProcessSerialNumber pn;
-    GetFrontProcess(&pn);
-    ShowHideProcess(&pn, false);
+    [NSApp hide:nil];
 }
 - (void)zoomButtonAction:(id)sender
 {

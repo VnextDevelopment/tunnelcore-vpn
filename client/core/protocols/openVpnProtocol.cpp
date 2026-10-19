@@ -114,7 +114,10 @@ void OpenVpnProtocol::readOpenVpnConfiguration(const QJsonObject &configuration)
         m_configData = configuration;
         QJsonObject jConfig = configuration.value(ProtocolUtils::key_proto_config_data(Proto::OpenVpn)).toObject();
 
-        m_configFile.open();
+        if (!m_configFile.open()) {
+            qWarning() << "Failed to open temporary OpenVPN config file:" << m_configFile.errorString();
+            return;
+        }
         m_configFile.write(jConfig.value(configKey::config).toString().toUtf8());
         m_configFile.close();
         m_configFileName = m_configFile.fileName();

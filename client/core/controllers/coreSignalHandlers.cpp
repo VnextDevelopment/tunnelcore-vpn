@@ -1,6 +1,7 @@
 #include "coreSignalHandlers.h"
 
 #include <QTimer>
+#include <QThreadPool>
 #include <QtConcurrent>
 
 #include "core/utils/selfhosted/sshSession.h"
@@ -145,7 +146,7 @@ void CoreSignalHandlers::initExportControllerHandler()
             });
     connect(m_coreController->m_exportController, &ExportController::revokeClientRequested, this,
             [this](const QString &serverId, int row, DockerContainer container) {
-                QtConcurrent::run([this, serverId, row, container]() {
+                QThreadPool::globalInstance()->start([this, serverId, row, container]() {
                     m_coreController->m_usersController->revokeClient(serverId, row, container);
                 });
             });

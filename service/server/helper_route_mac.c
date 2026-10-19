@@ -203,7 +203,7 @@ union	sockunion {
 typedef union sockunion *sup;
 int	pid, rtm_addrs, uid;
 int	s;
-int	forcehost, forcenet, doflush, nflag, af, qflag, tflag, keyword();
+int	forcehost, forcenet, doflush, nflag, af, qflag, tflag;
 int	iflag, verbose, aflen = sizeof (struct sockaddr_in);
 int	locking, lockrest, debugonly;
 struct	rt_metrics rt_metrics;
@@ -211,22 +211,20 @@ u_long  rtm_inits;
 unsigned int ifscope;
 
 static const char *route_strerror(int);
-const char	*routename(), *netname();
-void	flushroutes(), newroute(), monitor(), sockaddr(), sodump(), bprintf();
-void	print_getmsg(), print_rtmsg(), pmsg_common(), pmsg_addrs(), mask_addr();
-int	getaddr(), rtmsg(), x25_makemask();
-int	prefixlen();
-extern	char *iso_ntoa();
+const char	*routename(struct sockaddr *), *netname(struct sockaddr *);
+void	flushroutes(int, char *[]), newroute(int, char **), monitor(void);
+void	sockaddr(char *, struct sockaddr *), bprintf(FILE *, int, const char *);
+void	print_getmsg(struct rt_msghdr *, int), print_rtmsg(struct rt_msghdr *, int);
+void	pmsg_common(struct rt_msghdr *), pmsg_addrs(char *, int), mask_addr(void);
+int	getaddr(int, char *, struct hostent **), rtmsg(int, int);
+int	prefixlen(char *), keyword(char *);
 
 static void
 inet_makenetandmask(in_addr_t net, struct sockaddr_in *sin,
     struct sockaddr_in *sin_mask, in_addr_t bits);
 
-void usage __P((const char *));
-
 void
-usage(cp)
-	const char *cp;
+usage(const char *cp)
 {
 	if (cp)
 		warnx("bad keyword: %s", cp);
@@ -240,10 +238,8 @@ usage(cp)
 	((a) > 0 ? (1 + (((a) - 1) | (sizeof(uint32_t) - 1))) : sizeof(uint32_t))
 #define ADVANCE(x, n) (x += ROUNDUP((n)->sa_len))
 
-int
-mainRouteIface(argc, argv)
-    int argc;
-    char **argv;
+void
+mainRouteIface(int argc, char **argv)
 {
     // reset static vars
     pid = rtm_addrs = uid = 0;
@@ -318,7 +314,7 @@ mainRouteIface(argc, argv)
         }
     close(s);
     fflush(stdout);
-    return 0;
+    return;
     //usage(*argv);
     /* NOTREACHED */
 }
@@ -328,9 +324,7 @@ mainRouteIface(argc, argv)
  * associated with network interfaces.
  */
 void
-flushroutes(argc, argv)
-	int argc;
-	char *argv[];
+flushroutes(int argc, char *argv[])
 {
 	size_t needed;
 	int mib[6], rlen, seqno;
@@ -416,8 +410,7 @@ bad:			usage(*argv);
 }
 
 const char *
-routename(sa)
-	struct sockaddr *sa;
+routename(struct sockaddr *sa)
 {
 	register char *cp;
 	static char line[MAXHOSTNAMELEN + 1];
@@ -525,8 +518,7 @@ routename(sa)
  * The address is assumed to be that of a net, not a host.
  */
 const char *
-netname(sa)
-	struct sockaddr *sa;
+netname(struct sockaddr *sa)
 {
 	char *cp = NULL;
 	static char line[MAXHOSTNAMELEN + 1];
@@ -635,9 +627,7 @@ route_strerror(int error)
 }
 
 void
-set_metric(value, key)
-	char *value;
-	int key;
+set_metric(char *value, int key)
 {
 	int flag = 0;
 	u_int noval, *valp = &noval;
@@ -662,9 +652,7 @@ set_metric(value, key)
 }
 
 void
-newroute(argc, argv)
-	int argc;
-	register char **argv;
+newroute(int argc, register char **argv)
 {
 	char *cmd, *dest = "", *gateway = "";
 	int ishost = 0, ret, attempts, oerrno, flags = RTF_STATIC;
@@ -947,10 +935,7 @@ inet6_makenetandmask(struct sockaddr_in6 *sin6, const char *plen)
  * returning 1 if a host address, 0 if a network address.
  */
 int
-getaddr(which, s, hpp)
-	int which;
-	char *s;
-	struct hostent **hpp;
+getaddr(int which, char *s, struct hostent **hpp)
 {
 	register sup su = NULL;
 	struct hostent *hp;
@@ -1144,8 +1129,7 @@ netdone:
 }
 
 int
-prefixlen(s)
-	char *s;
+prefixlen(char *s)
 {
 	int len = atoi(s), q, r;
 	int max;
@@ -1190,7 +1174,7 @@ prefixlen(s)
 }
 
 void
-interfaces()
+interfaces(void)
 {
 	size_t needed;
 	int mib[6];
@@ -1217,7 +1201,7 @@ interfaces()
 }
 
 void
-monitor()
+monitor(void)
 {
 	int n;
 	char msg[2048];
@@ -1242,8 +1226,7 @@ struct {
 } m_rtmsg;
 
 int
-rtmsg(cmd, flags)
-	int cmd, flags;
+rtmsg(int cmd, int flags)
 {
 	static int seq;
 	int rlen;
@@ -1311,7 +1294,7 @@ rtmsg(cmd, flags)
 }
 
 void
-mask_addr()
+mask_addr(void)
 {
 	int olen = so_mask.sa.sa_len;
 	register char *cp1 = olen + (char *)&so_mask, *cp2;
@@ -1379,9 +1362,7 @@ char addrnames[] =
 "\1DST\2GATEWAY\3NETMASK\4GENMASK\5IFP\6IFA\7AUTHOR\010BRD";
 
 void
-print_rtmsg(rtm, msglen)
-	register struct rt_msghdr *rtm;
-	int msglen;
+print_rtmsg(register struct rt_msghdr *rtm, int msglen)
 {
 	struct if_msghdr *ifm;
 	struct ifa_msghdr *ifam;
@@ -1432,9 +1413,7 @@ print_rtmsg(rtm, msglen)
 }
 
 void
-print_getmsg(rtm, msglen)
-	register struct rt_msghdr *rtm;
-	int msglen;
+print_getmsg(register struct rt_msghdr *rtm, int msglen)
 {
 	struct sockaddr *dst = NULL, *gate = NULL, *mask = NULL;
 	struct sockaddr_dl *ifp = NULL;
@@ -1528,8 +1507,7 @@ print_getmsg(rtm, msglen)
 }
 
 void
-pmsg_common(rtm)
-	register struct rt_msghdr *rtm;
+pmsg_common(register struct rt_msghdr *rtm)
 {
 	(void) printf("\nlocks: ");
 	bprintf(stdout, rtm->rtm_rmx.rmx_locks, metricnames);
@@ -1539,9 +1517,7 @@ pmsg_common(rtm)
 }
 
 void
-pmsg_addrs(cp, addrs)
-	char	*cp;
-	int	addrs;
+pmsg_addrs(char *cp, int addrs)
 {
 	register struct sockaddr *sa;
 	int i;
@@ -1564,10 +1540,7 @@ pmsg_addrs(cp, addrs)
 }
 
 void
-bprintf(fp, b, s)
-	register FILE *fp;
-	register int b;
-	register u_char *s;
+bprintf(register FILE *fp, register int b, register const char *s)
 {
 	register int i;
 	int gotsome = 0;
@@ -1593,8 +1566,7 @@ bprintf(fp, b, s)
 }
 
 int
-keyword(cp)
-	char *cp;
+keyword(char *cp)
 {
 	register struct keytab *kt = keywords;
 
@@ -1613,9 +1585,7 @@ keyword(cp)
 #define DELIM	(4*2)
 
 void
-sockaddr(addr, sa)
-	register char *addr;
-	register struct sockaddr *sa;
+sockaddr(register char *addr, register struct sockaddr *sa)
 {
 	register char *cp = (char *)sa;
 	int size = sa->sa_len;

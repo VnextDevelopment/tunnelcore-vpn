@@ -7,6 +7,7 @@
 #include <fcntl.h>
 
 #include <libssh/libssh.h>
+#include <libssh/sftp.h>
 
 #include "core/utils/errorCodes.h"
 #include "core/utils/routeModes.h"
@@ -41,15 +42,12 @@ namespace libssh {
         ErrorCode getDecryptedPrivateKey(const ServerCredentials &credentials, QString &decryptedPrivateKey, const std::function<QString()> &passphraseCallback);
     private:
         ErrorCode closeChannel();
-        void closeScpSession();
         ErrorCode fromLibsshErrorCode();
         ErrorCode fromFileErrorCode(QFileDevice::FileError fileError);
         static int callback(const char *prompt, char *buf, size_t len, int echo, int verify, void *userdata);
 
         ssh_session m_session = nullptr;
         ssh_channel m_channel = nullptr;
-        ssh_scp m_scpSession = nullptr;
-
         static std::function<QString()> m_passphraseCallback;
     signals:
         void writeToChannelFinished();

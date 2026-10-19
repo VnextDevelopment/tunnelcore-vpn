@@ -199,7 +199,10 @@ ErrorCode SshSession::uploadFileToHost(const ServerCredentials &credentials, con
     }
 
     QTemporaryFile localFile;
-    localFile.open();
+    if (!localFile.open()) {
+        qWarning() << "Failed to open a temporary file for upload:" << localFile.errorString();
+        return ErrorCode::InternalError;
+    }
     localFile.write(data);
     localFile.close();
 

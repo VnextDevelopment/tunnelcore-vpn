@@ -54,7 +54,7 @@ static QString cfParseString(CFTypeRef ref) {
   auto guard = qScopeGuard([&] { free(buf); });
 
   CFStringGetCharacters(stringref, range, buf);
-  return QString::fromUtf16(buf, range.length);
+  return QString::fromUtf16(reinterpret_cast<const char16_t*>(buf), range.length);
 }
 
 static QStringList cfParseStringList(CFTypeRef ref) {
