@@ -40,6 +40,7 @@ public:
     QStringList getBugFixes() const;
     UpdateState::State getUpdateState() const;
     bool isStoreUpdate() const;
+    bool isMandatory() const;
     bool isUpdateCheckRunning() const;
 
 public slots:
@@ -70,8 +71,11 @@ private:
     QStringList m_newFeatures;
     QStringList m_improvements;
     QStringList m_bugFixes;
-    QString m_downloadBaseUrl;
+    QString m_downloadUrl;
+    QString m_expectedSha256;
+    qint64 m_expectedSize = 0;
     QString m_releasePageUrl;
+    bool m_mandatory = false;
 
     UpdateState::State m_updateState = UpdateState::State::Idle;
     bool m_updateCheckRunning = false;
