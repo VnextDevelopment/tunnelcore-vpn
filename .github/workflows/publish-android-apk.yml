@@ -1,0 +1,160 @@
+name: Publish signed Android APK
+
+# Separate OSS/sideload APK, not the Google Play flavor.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Published desktop release version, e.g. 5.0.2.63"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-sideload-release
+  cancel-in-progress: false
+
+env:
+  QT_MIRROR: https://mirrors.ocf.berkeley.edu/qt/
+  QT_VERSION: 6.10.1
+  NDK_VERSION: 27.0.11718014
+  ANDROID_PLATFORM: android-28
+  QT_DESKTOP_MODULES: 'qtremoteobjects qt5compat qtimageformats qtshadertools'
+  QT_ANDROID_MODULES: 'qtremoteobjects qt5compat qtshadertools'
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      PROD_AGW_PUBLIC_KEY: ${{ secrets.PROD_AGW_PUBLIC_KEY }}
+      PROD_S3_ENDPOINT: ${{ secrets.PROD_S3_ENDPOINT }}
+      FALLBACK_S3_ENDPOINT: ${{ secrets.FALLBACK_S3_ENDPOINT }}
+      DEV_AGW_PUBLIC_KEY: ${{ secrets.DEV_AGW_PUBLIC_KEY }}
+      DEV_AGW_ENDPOINT: ${{ secrets.DEV_AGW_ENDPOINT }}
+      DEV_S3_ENDPOINT: ${{ secrets.DEV_S3_ENDPOINT }}
+      FREE_V2_ENDPOINT: ${{ secrets.FREE_V2_ENDPOINT }}
+      PREM_V1_ENDPOINT: ${{ secrets.PREM_V1_ENDPOINT }}
+      QT_ANDROID_KEYSTORE_PATH: /tmp/tunnelcore-release.keystore
+      QT_ANDROID_KEYSTORE_STORE_PASS: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
+      QT_ANDROID_KEYSTORE_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+    steps:
+      - name: Verify release and version
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          gh release view "v$VERSION" --repo "${{ github.repository }}" --json isDraft,isPrerelease --jq '(.isDraft == false) and (.isPrerelease == false)' | grep -qx true
+          echo "ANDROID_RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
+          # CMake uses GITHUB_RUN_NUMBER as the fourth component of app version.
+          echo "GITHUB_RUN_NUMBER=${VERSION##*.}" >> "$GITHUB_ENV"
+
+      - name: Checkout pinned release tag
+        uses: actions/checkout@v4
+        with:
+          ref: v${{ inputs.version }}
+          submodules: 'true'
+          fetch-depth: 10
+
+      - name: Install desktop Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: linux
+          target: desktop
+          arch: linux_gcc_64
+          modules: ${{ env.QT_DESKTOP_MODULES }}
+          dir: ${{ runner.temp }}
+          py7zrversion: '==0.22.*'
+          extra: '--base ${{ env.QT_MIRROR }}'
+
+      - name: Install Android Qt arm64-v8a
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: all_os
+          target: android
+          arch: android_arm64_v8a
+          modules: ${{ env.QT_ANDROID_MODULES }}
+          dir: ${{ runner.temp }}
+          py7zrversion: '==0.22.*'
+          extra: '--base ${{ env.QT_MIRROR }}'
+
+      - name: Install Android Qt x86_64
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: all_os
+          target: android
+          arch: android_x86_64
+          modules: ${{ env.QT_ANDROID_MODULES }}
+          dir: ${{ runner.temp }}
+          py7zrversion: '==0.22.*'
+          extra: '--base ${{ env.QT_MIRROR }}'
+
+      - name: Set up Java and Android SDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: "platforms;${{ env.ANDROID_PLATFORM }} platforms;android-36 build-tools;36.0.0 ndk;${{ env.NDK_VERSION }}"
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Install Conan
+        run: pip install "conan==2.28.0"
+
+      - name: Restore release keystore
+        shell: bash
+        env:
+          ANDROID_RELEASE_KEYSTORE_BASE64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_RELEASE_KEYSTORE_BASE64"
+          test -n "$QT_ANDROID_KEYSTORE_STORE_PASS"
+          test -n "$QT_ANDROID_KEYSTORE_ALIAS"
+          printf '%s' "$ANDROID_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$QT_ANDROID_KEYSTORE_PATH"
+          chmod 600 "$QT_ANDROID_KEYSTORE_PATH"
+          keytool -list -keystore "$QT_ANDROID_KEYSTORE_PATH" \
+            -storepass "$QT_ANDROID_KEYSTORE_STORE_PASS" \
+            -alias "$QT_ANDROID_KEYSTORE_ALIAS" >/dev/null
+
+      - name: Build signed OSS APK
+        shell: bash
+        env:
+          QT_INSTALL_DIR: ${{ runner.temp }}
+        run: |
+          set -euo pipefail
+          deploy/build.sh -t android --abi arm64-v8a --abi x86_64 \
+            --build ./deploy/build/android-oss-release --sign
+          mkdir -p deploy/artifacts
+          mapfile -t apks < <(find deploy/build/android-oss-release/client/android-build/build/outputs/apk \
+            -type f -name '*release-signed.apk')
+          [[ "${#apks[@]}" == 1 ]] || {
+            echo "::error::Expected a single signed OSS Android APK"
+            exit 1
+          }
+          "${ANDROID_HOME}/build-tools/36.0.0/apksigner" verify --verbose --print-certs "${apks[0]}"
+          cp "${apks[0]}" "deploy/artifacts/TunnelCoreVPN_${ANDROID_RELEASE_VERSION}_android_universal.apk"
+
+      - name: Publish APK to the matching release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release upload "v${ANDROID_RELEASE_VERSION}" \
+            "deploy/artifacts/TunnelCoreVPN_${ANDROID_RELEASE_VERSION}_android_universal.apk" \
+            --repo "${{ github.repository }}"
