@@ -140,7 +140,7 @@ void UpdateController::checkForUpdates()
     QUrl url(kUpdatesEndpoint);
     QUrlQuery query;
     query.addQueryItem(QStringLiteral("platform"), platformChannel());
-    query.addQueryItem(QStringLiteral("version"), QStringLiteral(APP_VERSION));
+    query.addQueryItem(QStringLiteral("version"), QString::fromLatin1(APP_VERSION));
     url.setQuery(query);
 
     QNetworkRequest request(url);
@@ -177,7 +177,7 @@ void UpdateController::checkForUpdates()
 
         const QString version = data.value(QStringLiteral("updateVersion")).toString();
         if (!validVersion(version) || QVersionNumber::compare(QVersionNumber::fromString(version),
-                                                               QVersionNumber::fromString(QStringLiteral(APP_VERSION))) <= 0) {
+                                                               QVersionNumber::fromString(QString::fromLatin1(APP_VERSION))) <= 0) {
             emit updateNotFound();
             return;
         }
