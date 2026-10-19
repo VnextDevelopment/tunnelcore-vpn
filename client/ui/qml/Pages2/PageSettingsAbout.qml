@@ -17,6 +17,10 @@ PageType {
     Connections {
         target: UpdateController
 
+        function onUpdateFound() {
+            PageController.goToPage(PageEnum.PageUpdate)
+        }
+
         function onUpdateNotFound() {
             PageController.showNotificationMessage(qsTr("You have the latest version of AmneziaVPN").replace("AmneziaVPN", "TunnelCore VPN"))
         }
