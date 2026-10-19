@@ -40,8 +40,15 @@ temporary atomic file; partial files and checksum mismatches are never run.
 * **Android APK**: the feed reserves a first-party
   `TunnelCoreVPN_<version>_android_universal.apk` **signed with the real
   TunnelCore release key**. The current CI Android APKs are unsigned test
-  artifacts and MUST NOT be published as updates. Until a signed universal
-  release exists the feed safely reports no update for sideloaded installations.
+  artifacts and MUST NOT be published as updates. After the desktop release
+  is published, run **Publish signed Android APK** with the same version; the
+  workflow builds the OSS (non-Play) flavor using the TunnelCore release
+  keystore, verifies the APK signature with apksigner, and uploads the
+  universal package to the matching GitHub release. It fails closed if the
+  keystore is not configured or the APK is unsigned. Do not try to update
+  a Google Play installation with this APK: Play App Signing may use a
+  different certificate. Until a signed universal release exists the feed
+  safely reports no update for sideloaded installations.
 * **macOS outside App Store**: the feed expects
   `TunnelCoreVPN_<version>_macos_x64.pkg`. Apple CI is presently manual-only,
   so the feed will not show a macOS update before its branded PKG is released.
