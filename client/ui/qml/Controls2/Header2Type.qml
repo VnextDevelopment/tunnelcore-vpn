@@ -15,6 +15,8 @@ Item {
 
     property string headerText
     property string descriptionText
+    property color headerColor: AmneziaStyle.color.paleGray
+    property color descriptionColor: AmneziaStyle.color.mutedGray
 
     implicitWidth: content.implicitWidth
     implicitHeight: content.implicitHeight
@@ -30,6 +32,7 @@ Item {
                 Layout.fillWidth: true
 
                 text: root.headerText
+                color: root.headerColor
             }
 
             ImageButtonType {
@@ -59,7 +62,7 @@ Item {
 
             text: root.descriptionText
 
-            color: AmneziaStyle.color.mutedGray
+            color: root.descriptionColor
 
             visible: root.descriptionText !== ""
         }
