@@ -347,7 +347,7 @@ PageType {
 
             isSelected: tabBar.currentIndex === 0
             image: "qrc:/images/controls/home.svg"
-            caption: qsTr("Home")
+            caption: "VPN"
             selectedColor: AmneziaStyle.color.tcBlue
             defaultColor: AmneziaStyle.color.tcMuted
             clickedFunc: function () {
@@ -363,7 +363,7 @@ PageType {
 
             isSelected: tabBar.currentIndex === 1
             image: (ServersUiController.hasServersFromGatewayApi && NewsModel.hasUnread && SettingsController.isNewsNotificationsEnabled()) ? "qrc:/images/controls/settings-news.svg" : "qrc:/images/controls/settings.svg"
-            caption: qsTr("Settings")
+            caption: qsTranslate("PageSettings", "Settings")
             selectedColor: AmneziaStyle.color.tcBlue
             defaultColor: AmneziaStyle.color.tcMuted
             Binding {
