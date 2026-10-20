@@ -116,8 +116,6 @@ PageType {
                     showQuestionDrawer(headerText, descriptionText, yesButtonText, noButtonText, yesButtonFunction, noButtonFunction)
                 }
             }
-
-            }
             }
         }
     }
