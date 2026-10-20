@@ -9,6 +9,7 @@ Item {
     id: root
 
     property string headerText
+    property color headerColor: AmneziaStyle.color.paleGray
     property int headerTextFormat: Text.AutoText
     property int headerHorizontalAlignment: Text.AlignLeft
     property int headerTextMaximumLineCount: 2
@@ -35,6 +36,7 @@ Item {
                 id: header
                 Layout.fillWidth: true
                 text: root.headerText
+                color: root.headerColor
                 textFormat: root.headerTextFormat
                 horizontalAlignment: root.headerHorizontalAlignment
                 maximumLineCount: root.headerTextMaximumLineCount
