@@ -60,6 +60,7 @@ QtObject {
         readonly property color tcInk: '#0F1938'
         readonly property color tcMuted: '#657897'
         readonly property color tcBlue: '#1478F9'
+        readonly property string tcBlueString: '#1478F9'
         readonly property color tcCyan: '#20CBE3'
         readonly property color tcStroke: '#DBE8F8'
         readonly property color tcSurfaceBlue: '#EAF5FF'
