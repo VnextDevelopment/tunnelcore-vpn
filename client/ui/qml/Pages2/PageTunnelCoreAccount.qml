@@ -627,7 +627,7 @@ PageType {
                         Layout.fillWidth: true
                         visible: TunnelCoreController.vpnCountries.length > 4
                         enabled: !TunnelCoreController.busy
-                        headerText: qsTr("Search")
+                        headerText: qsTranslate("PageShare", "Search")
                         textField.placeholderText: qsTr("VPN location")
                         textField.inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
                         backgroundColor: AmneziaStyle.color.tcCard
