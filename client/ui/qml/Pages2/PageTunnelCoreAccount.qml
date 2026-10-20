@@ -439,7 +439,7 @@ PageType {
 
                         Text {
                             Layout.fillWidth: true
-                            text: qsTr("Secure connection")
+                            text: "TunnelCore VPN"
                             color: AmneziaStyle.color.tcInk
                             font.pixelSize: 20
                             font.weight: Font.DemiBold
