@@ -300,7 +300,7 @@ PageType {
                                 model: [
                                     { title: "VPN", icon: "qrc:/images/controls/globe-2.svg" },
                                     { title: qsTr("VPN location"), icon: "qrc:/images/controls/server.svg" },
-                                    { title: qsTr("Split tunneling"), icon: "qrc:/images/controls/split-tunneling.svg" }
+                                    { title: qsTranslate("HomeSplitTunnelingDrawer", "Split tunneling"), icon: "qrc:/images/controls/split-tunneling.svg" }
                                 ]
                                 delegate: RowLayout {
                                     required property var modelData
@@ -1115,13 +1115,6 @@ PageType {
                             font.pixelSize: 14
                             text: qsTr("Until %1").arg(Qt.formatDateTime(
                                       new Date(TunnelCoreController.primarySubscription.expires_at), "dd.MM.yyyy"))
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            visible: TunnelCoreController.subscriptions.length > 0
-                            color: AmneziaStyle.color.tcBlue
-                            font.pixelSize: 14
-                            text: qsTr("Days remaining: %1").arg(TunnelCoreController.subscriptionDaysRemaining)
                         }
                         BasicButtonType {
                             Layout.fillWidth: true
