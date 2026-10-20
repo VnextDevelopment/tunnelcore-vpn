@@ -53,6 +53,45 @@ PageType {
                 headerText: qsTr("Settings")
                 headerColor: AmneziaStyle.color.tcInk
             }
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
+                Layout.bottomMargin: 16
+                implicitHeight: profileSummary.implicitHeight + 36
+                visible: TunnelCoreController.authenticated
+                radius: 22
+                color: AmneziaStyle.color.tcSurfaceBlue
+                border.color: AmneziaStyle.color.tcStroke
+                border.width: 1
+
+                ColumnLayout {
+                    id: profileSummary
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.margins: 18
+                    spacing: 8
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: TunnelCoreController.username
+                        font.pixelSize: 18
+                        font.weight: Font.DemiBold
+                        color: AmneziaStyle.color.tcInk
+                        elide: Text.ElideMiddle
+                    }
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: TunnelCoreController.subscriptionStatusText
+                        font.pixelSize: 14
+                        color: AmneziaStyle.color.tcMuted
+                        wrapMode: Text.WordWrap
+                    }
+                }
+            }
         }
 
         model: settingsEntries
