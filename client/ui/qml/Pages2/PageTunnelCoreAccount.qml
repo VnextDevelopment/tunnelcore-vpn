@@ -617,10 +617,12 @@ PageType {
                         readonly property bool isSelected: TunnelCoreController.vpnCountryMode === "auto"
                         text: qsTr("Automatic")
                         enabled: !TunnelCoreController.busy && root.pendingVpnCountry.length === 0
-                        defaultColor: isSelected ? AmneziaStyle.color.tcBlue
-                                                 : AmneziaStyle.color.paleGray
-                        hoveredColor: isSelected ? AmneziaStyle.color.tcBlue
-                                                 : AmneziaStyle.color.lightGray
+                        defaultColor: isSelected ? AmneziaStyle.color.tcSurfaceBlue
+                                                 : AmneziaStyle.color.tcCard
+                        hoveredColor: AmneziaStyle.color.tcSurfaceBlue
+                        borderColor: isSelected ? AmneziaStyle.color.tcBlue : AmneziaStyle.color.tcStroke
+                        borderWidth: 1
+                        textColor: isSelected ? AmneziaStyle.color.tcBlue : AmneziaStyle.color.tcInk
                         clickedFunc: function() { root.selectVpnCountry("AUTO") }
                     }
                     Repeater {
@@ -637,10 +639,12 @@ PageType {
                                   + (cities.length > 0 ? " · " + cities : "")
                             buttonTextLabel.elide: Text.ElideRight
                             enabled: !TunnelCoreController.busy && root.pendingVpnCountry.length === 0
-                            defaultColor: isSelected ? AmneziaStyle.color.tcBlue
-                                                     : AmneziaStyle.color.paleGray
-                            hoveredColor: isSelected ? AmneziaStyle.color.tcBlue
-                                                     : AmneziaStyle.color.lightGray
+                            defaultColor: isSelected ? AmneziaStyle.color.tcSurfaceBlue
+                                                 : AmneziaStyle.color.tcCard
+                            hoveredColor: AmneziaStyle.color.tcSurfaceBlue
+                            borderColor: isSelected ? AmneziaStyle.color.tcBlue : AmneziaStyle.color.tcStroke
+                            borderWidth: 1
+                            textColor: isSelected ? AmneziaStyle.color.tcBlue : AmneziaStyle.color.tcInk
                             clickedFunc: function() {
                                 root.selectVpnCountry(countryCode)
                             }
