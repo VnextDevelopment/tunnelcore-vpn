@@ -66,6 +66,11 @@ PageType {
         }
     }
 
+    Rectangle {
+        anchors.fill: parent
+        color: AmneziaStyle.color.tcBackground
+    }
+
     ColumnLayout {
         id: header
 
@@ -80,6 +85,7 @@ PageType {
         }
 
         HeaderTypeWithSwitcher {
+            headerColor: AmneziaStyle.color.tcInk
             Layout.fillWidth: true
             Layout.leftMargin: 16
             Layout.rightMargin: 16
@@ -99,6 +105,12 @@ PageType {
         }
 
         DropDownType {
+            textColor: AmneziaStyle.color.tcInk
+            rootButtonImageColor: AmneziaStyle.color.tcBlue
+            rootButtonBackgroundColor: AmneziaStyle.color.tcCard
+            rootButtonBackgroundHoveredColor: AmneziaStyle.color.tcSurfaceBlue
+            rootButtonBackgroundPressedColor: AmneziaStyle.color.tcSurfaceBlue
+            rootButtonDefaultBorderColor: AmneziaStyle.color.tcStroke
             id: selector
 
             Layout.fillWidth: true
@@ -187,6 +199,8 @@ PageType {
             width: listView.width
 
             LabelWithButtonType {
+            textColor: AmneziaStyle.color.tcInk
+            descriptionColor: AmneziaStyle.color.tcMuted
                 Layout.fillWidth: true
 
                 Layout.leftMargin: 16
@@ -238,6 +252,11 @@ PageType {
             anchors.bottomMargin: 24 + PageController.safeAreaBottomMargin
 
             TextFieldWithHeaderType {
+            backgroundColor: AmneziaStyle.color.tcCard
+            textFieldTextColor: AmneziaStyle.color.tcInk
+            borderColor: AmneziaStyle.color.tcStroke
+            borderFocusedColor: AmneziaStyle.color.tcBlue
+            headerTextColor: AmneziaStyle.color.tcMuted
                 id: searchField
 
                 Layout.fillWidth: true
