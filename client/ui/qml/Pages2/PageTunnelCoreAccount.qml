@@ -17,9 +17,17 @@ PageType {
     property string pendingVpnCountry: ""
     property bool connectAfterImport: false
     property bool importingProfile: false
+    readonly property bool keyboardVisible: Qt.inputMethod.visible || PageController.imeHeight > 0
+
+    onKeyboardVisibleChanged: {
+        if (keyboardVisible)
+            Qt.callLater(root.keepFocusedInputVisible)
+        else
+            scroll.contentY = 0
+    }
 
     // The account page is inside PageStart's IME-adjusted StackView.
-    // Bring the focused input into view when the keyboard reduces its height.
+    // Keep both the active input and the next required field/action visible.
     function keepFocusedInputVisible() {
         if (!root.visible || TunnelCoreController.authenticated || scroll.height <= 0)
             return
@@ -37,15 +45,57 @@ PageType {
 
         var fieldTop = focusedField.mapToItem(content, 0, 0).y
         var fieldBottom = fieldTop + focusedField.height
-        var margin = 16
+        var margin = 12
+        var targetBottom = fieldBottom
+
+        // Focusing Email must not leave Password behind the soft keyboard.
+        // For registration, include Confirm password as well if it fits.
+        // On smaller screens, prioritize the active field and the next input.
+        if (keyboardVisible) {
+            var candidates = []
+            if (focusedField === loginField) {
+                if (emailMode)
+                    candidates = registrationMode
+                                 ? [confirmPasswordField, passwordField]
+                                 : [authSubmitButton, passwordField]
+                else
+                    candidates = [authSubmitButton]
+            } else if (focusedField === passwordField) {
+                candidates = registrationMode
+                             ? [authSubmitButton, confirmPasswordField]
+                             : [authSubmitButton]
+            } else if (focusedField === confirmPasswordField) {
+                candidates = [authSubmitButton]
+            }
+
+            for (var i = 0; i < candidates.length; ++i) {
+                var nextItem = candidates[i]
+                if (!nextItem.visible || nextItem.height <= 0)
+                    continue
+
+                var nextBottom = nextItem.mapToItem(content, 0, 0).y + nextItem.height
+                if (nextBottom - fieldTop + margin * 2 <= scroll.height) {
+                    targetBottom = nextBottom
+                    break
+                }
+            }
+        }
+
         var targetY = scroll.contentY
-        if (fieldBottom + margin > scroll.contentY + scroll.height)
-            targetY = fieldBottom + margin - scroll.height
-        else if (fieldTop - margin < scroll.contentY)
+        if (fieldTop - margin < targetY)
             targetY = fieldTop - margin
+        if (targetBottom + margin > targetY + scroll.height)
+            targetY = targetBottom + margin - scroll.height
 
         scroll.contentY = Math.max(0, Math.min(targetY,
                                               Math.max(0, scroll.contentHeight - scroll.height)))
+    }
+
+    Connections {
+        target: PageController
+        function onImeHeightChanged() {
+            Qt.callLater(root.keepFocusedInputVisible)
+        }
     }
 
     function selectVpnCountry(countryCode) {
@@ -195,6 +245,7 @@ PageType {
         anchors.bottomMargin: PageController.safeAreaBottomMargin + 16
         contentHeight: content.implicitHeight + 24
         onHeightChanged: Qt.callLater(root.keepFocusedInputVisible)
+        onContentHeightChanged: Qt.callLater(root.keepFocusedInputVisible)
         clip: true
         boundsBehavior: Flickable.StopAtBounds
 
@@ -206,7 +257,8 @@ PageType {
 
             Image {
                 source: "qrc:/images/icon.png"
-                visible: !TunnelCoreController.authenticated
+                // Reclaim space for Email, Password and Confirm password while typing.
+                visible: !TunnelCoreController.authenticated && !root.keyboardVisible
                 Layout.alignment: Qt.AlignHCenter
                 Layout.preferredWidth: 88
                 Layout.preferredHeight: 88
@@ -214,6 +266,7 @@ PageType {
             }
             Header2TextType {
                 Layout.fillWidth: true
+                visible: TunnelCoreController.authenticated || !root.keyboardVisible
                 text: "TunnelCore VPN"
                 horizontalAlignment: Text.AlignHCenter
             }
@@ -221,6 +274,7 @@ PageType {
                 Layout.fillWidth: true
                 textFormat: Text.PlainText
                 text: TunnelCoreController.authenticated ? TunnelCoreController.username : qsTr("Sign in to your account")
+                visible: TunnelCoreController.authenticated || !root.keyboardVisible
                 horizontalAlignment: Text.AlignHCenter
             }
 
@@ -248,6 +302,7 @@ PageType {
                 }
                 SmallTextType {
                     Layout.fillWidth: true
+                    visible: !root.keyboardVisible
                     text: root.emailMode
                           ? (root.registrationMode
                              ? qsTr("Create a TunnelCore account with your email and password.")
@@ -304,7 +359,12 @@ PageType {
                     headerText: qsTr("Password")
                     textField.echoMode: TextInput.Password
                     textField.maximumLength: 1024
-                    textField.onAccepted: root.submit()
+                    textField.onAccepted: {
+                        if (root.registrationMode)
+                            confirmPasswordField.textField.forceActiveFocus()
+                        else
+                            root.submit()
+                    }
                 }
                 TextFieldWithHeaderType {
                     id: confirmPasswordField
@@ -329,6 +389,7 @@ PageType {
                     color: AmneziaStyle.color.vibrantRed
                 }
                 BasicButtonType {
+                    id: authSubmitButton
                     Layout.fillWidth: true
                     text: TunnelCoreController.busy
                           ? (root.registrationMode ? qsTr("Creating account…") : qsTr("Signing in…"))
