@@ -218,6 +218,7 @@ PageType {
                 fillMode: Image.PreserveAspectFit
             }
             Header2TextType {
+                    color: AmneziaStyle.color.tcInk
                 Layout.fillWidth: true
                 text: "TunnelCore VPN"
                 color: AmneziaStyle.color.tcInk
@@ -225,6 +226,7 @@ PageType {
                 horizontalAlignment: Text.AlignHCenter
             }
             SmallTextType {
+                    color: AmneziaStyle.color.tcMuted
                 Layout.fillWidth: true
                 textFormat: Text.PlainText
                 text: TunnelCoreController.authenticated ? TunnelCoreController.username : qsTr("Sign in to your account")
@@ -251,6 +253,7 @@ PageType {
                     spacing: 16
 
                     Header2TextType {
+                    color: AmneziaStyle.color.tcInk
                         Layout.fillWidth: true
                         text: root.registrationMode ? qsTr("Create account") : qsTr("Sign in")
                         color: AmneziaStyle.color.tcInk
@@ -283,6 +286,7 @@ PageType {
                     }
                 }
                 SmallTextType {
+                    color: AmneziaStyle.color.tcMuted
                     Layout.fillWidth: true
                     text: root.emailMode
                           ? (root.registrationMode
@@ -375,6 +379,7 @@ PageType {
                     textField.onAccepted: root.submit()
                 }
                 SmallTextType {
+                    color: AmneziaStyle.color.tcMuted
                     Layout.fillWidth: true
                     visible: root.emailMode && root.registrationMode
                              && confirmPasswordField.textField.text.length > 0
@@ -498,11 +503,15 @@ PageType {
                 }
 
                 SmallTextType {
+                    color: AmneziaStyle.color.tcMuted
                     Layout.fillWidth: true
                     visible: TunnelCoreController.busy || root.pendingVpnCountry.length > 0
                     text: qsTr("Loading data…")
                 }
                 LabelWithButtonType {
+                    textColor: AmneziaStyle.color.tcInk
+                    descriptionColor: AmneziaStyle.color.tcMuted
+                    rightImageColor: AmneziaStyle.color.tcBlue
                     Layout.fillWidth: true
                     visible: TunnelCoreController.subscriptions.length > 0
                     text: root.localizedTariffName(TunnelCoreController.primarySubscription)
@@ -534,12 +543,14 @@ PageType {
                         spacing: 10
 
                         Header2TextType {
+                    color: AmneziaStyle.color.tcInk
                             Layout.fillWidth: true
                             text: TunnelCoreController.subscriptionExpired
                                   ? qsTr("VPN subscription inactive")
                                   : qsTr("VPN subscription expires soon")
                         }
                         SmallTextType {
+                    color: AmneziaStyle.color.tcMuted
                             Layout.fillWidth: true
                             textFormat: Text.PlainText
                             text: TunnelCoreController.subscriptionStatusText
@@ -562,6 +573,7 @@ PageType {
                             clickedFunc: function() { TunnelCoreController.renewSubscription() }
                         }
                         SmallTextType {
+                    color: AmneziaStyle.color.tcMuted
                             Layout.fillWidth: true
                             visible: !TunnelCoreController.usesAppleBilling
                                      && !TunnelCoreController.externalRenewalLinkAllowed
@@ -577,10 +589,12 @@ PageType {
                     spacing: 8
 
                     Header2TextType {
+                    color: AmneziaStyle.color.tcInk
                         Layout.fillWidth: true
                         text: qsTr("VPN location")
                     }
                     SmallTextType {
+                    color: AmneziaStyle.color.tcMuted
                         Layout.fillWidth: true
                         textFormat: Text.PlainText
                         text: TunnelCoreController.vpnCountryMode === "auto"
@@ -594,6 +608,7 @@ PageType {
                                         TunnelCoreController.selectedVpnCountry))
                     }
                     SmallTextType {
+                    color: AmneziaStyle.color.tcMuted
                         Layout.fillWidth: true
                         text: qsTr("Automatic selects an available VPN server. Choosing a country moves your VPN access to that country.")
                     }
@@ -633,6 +648,7 @@ PageType {
                     }
                 }
                 SmallTextType {
+                    color: AmneziaStyle.color.tcMuted
                     Layout.fillWidth: true
                     visible: !TunnelCoreController.busy && !TunnelCoreController.error
                              && TunnelCoreController.configs.length === 0
@@ -650,6 +666,7 @@ PageType {
                     Layout.topMargin: 28
                 }
                 Header2TextType {
+                    color: AmneziaStyle.color.tcInk
                     Layout.fillWidth: true
                     Layout.topMargin: 12
                     text: qsTr("Account")
@@ -682,6 +699,7 @@ PageType {
                     }
                 }
                 SmallTextType {
+                    color: AmneziaStyle.color.tcMuted
                     Layout.fillWidth: true
                     text: qsTr("Signing out ends the account session. Imported VPN configurations remain on this device.")
                     color: AmneziaStyle.color.mutedGray
@@ -712,6 +730,7 @@ PageType {
                     }
                 }
                 SmallTextType {
+                    color: AmneziaStyle.color.tcMuted
                     Layout.fillWidth: true
                     text: qsTr("Use this if a device was lost, replaced, or you need to reset all device slots.")
                     color: AmneziaStyle.color.mutedGray
@@ -723,10 +742,12 @@ PageType {
                     spacing: 12
 
                     Header2TextType {
+                    color: AmneziaStyle.color.tcInk
                         Layout.fillWidth: true
                         text: qsTr("Link Telegram")
                     }
                     SmallTextType {
+                    color: AmneziaStyle.color.tcMuted
                         Layout.fillWidth: true
                         visible: !TunnelCoreController.telegramLinked
                         text: qsTr("Request a six-digit code in the TunnelCore bot and enter it here. Your Telegram subscriptions and payments will be transferred to this account.")
@@ -759,6 +780,7 @@ PageType {
                         }
                     }
                     SmallTextType {
+                    color: AmneziaStyle.color.tcMuted
                         Layout.fillWidth: true
                         visible: TunnelCoreController.telegramLinked
                         text: qsTr("Telegram is linked to this account.")
@@ -770,16 +792,19 @@ PageType {
                     Layout.topMargin: 20
                 }
                 Header2TextType {
+                    color: AmneziaStyle.color.tcInk
                     Layout.fillWidth: true
                     text: qsTr("Delete account")
                 }
                 SmallTextType {
+                    color: AmneziaStyle.color.tcMuted
                     Layout.fillWidth: true
                     textFormat: Text.PlainText
                     text: qsTr("Request permanent deletion of your TunnelCore VPN account and associated data. Subscriptions billed by other providers must be cancelled separately.")
                     color: AmneziaStyle.color.mutedGray
                 }
                 SmallTextType {
+                    color: AmneziaStyle.color.tcMuted
                     Layout.fillWidth: true
                     visible: TunnelCoreController.accountDeletionRequested
                     textFormat: Text.PlainText
@@ -823,6 +848,7 @@ PageType {
             }
 
             SmallTextType {
+                    color: AmneziaStyle.color.tcMuted
                 Layout.fillWidth: true
                 visible: TunnelCoreController.error.length > 0
                 text: TunnelCoreController.error
@@ -831,6 +857,7 @@ PageType {
             }
 
             SmallTextType {
+                    color: AmneziaStyle.color.tcMuted
                 id: privacyPolicyLink
                 objectName: "tunnelCorePrivacyPolicyLink"
 
@@ -910,6 +937,9 @@ PageType {
                     spacing: 0
 
                     LabelWithButtonType {
+                    textColor: AmneziaStyle.color.tcInk
+                    descriptionColor: AmneziaStyle.color.tcMuted
+                    rightImageColor: AmneziaStyle.color.tcBlue
                         Layout.fillWidth: true
                         enabled: false
                         textDisabledColor: AmneziaStyle.color.paleGray
