@@ -20,6 +20,22 @@ class AndroidImeIntegrationTests(unittest.TestCase):
         self.assertIn('requestAndroidIme: true', view)
         self.assertIn("SystemController.requestSoftKeyboard()", view)
 
+    def test_email_sign_in_keeps_password_accessible_with_keyboard(self):
+        view = (ROOT / "client/ui/qml/Pages2/PageTunnelCoreAccount.qml").read_text()
+        self.assertIn("readonly property bool keyboardVisible:", view)
+        self.assertIn("onImeHeightChanged()", view)
+        self.assertIn("onContentHeightChanged: Qt.callLater(root.keepFocusedInputVisible)", view)
+        self.assertIn(": [authSubmitButton, passwordField]", view)
+        self.assertIn("nextBottom - fieldTop + margin * 2 <= scroll.height", view)
+        self.assertIn("visible: !TunnelCoreController.authenticated && !root.keyboardVisible", view)
+
+    def test_email_registration_scrolls_to_confirmation_and_next_field(self):
+        view = (ROOT / "client/ui/qml/Pages2/PageTunnelCoreAccount.qml").read_text()
+        self.assertIn("? [confirmPasswordField, passwordField]", view)
+        self.assertIn("? [authSubmitButton, confirmPasswordField]", view)
+        self.assertIn("confirmPasswordField.textField.forceActiveFocus()", view)
+        self.assertIn("id: authSubmitButton", view)
+
 
 if __name__ == "__main__":
     unittest.main()
