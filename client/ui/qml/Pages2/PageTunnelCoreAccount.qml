@@ -508,18 +508,29 @@ PageType {
                     visible: TunnelCoreController.busy || root.pendingVpnCountry.length > 0
                     text: qsTr("Loading data…")
                 }
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: subscriptionLabel.implicitHeight + 12
+                    visible: TunnelCoreController.subscriptions.length > 0
+                    radius: 20
+                    color: AmneziaStyle.color.tcSurfaceBlue
+                    border.width: 1
+                    border.color: AmneziaStyle.color.tcStroke
+
                 LabelWithButtonType {
+                        id: subscriptionLabel
+                        anchors.fill: parent
+                        anchors.margins: 6
                     textColor: AmneziaStyle.color.tcInk
                     descriptionColor: AmneziaStyle.color.tcMuted
                     rightImageColor: AmneziaStyle.color.tcBlue
-                    Layout.fillWidth: true
-                    visible: TunnelCoreController.subscriptions.length > 0
                     text: root.localizedTariffName(TunnelCoreController.primarySubscription)
                     descriptionText: qsTr("Until %1").arg(Qt.formatDateTime(
                                          new Date(TunnelCoreController.primarySubscription.expires_at),
                                          "dd.MM.yyyy"))
                     rightImageSource: "qrc:/images/controls/chevron-right.svg"
                     clickedFunction: function() { subscriptionsDrawer.openTriggered() }
+                }
                 }
 
                 Rectangle {
