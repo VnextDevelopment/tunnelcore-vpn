@@ -16,8 +16,11 @@ must never replace real application state or backend responses.
 - API country selector: selectable cards with flags and the existing
   active-connection safety checks.
 - API device selector: light cards retaining the existing unlink confirmation.
-- Existing real `Home` and `Settings` tabs now have captions; no empty or
-  misleading destinations are introduced.
+- Native five-destination mobile navigation, backed by real views: VPN,
+  available countries, active subscriptions, account and application settings.
+- A welcome/onboarding card directs guests into actual email registration,
+  email sign-in or Telegram-bot-code sign-in.
+- Password visibility actions and country search preserve keyboard scrolling.
 
 ## Important product distinctions
 
@@ -31,8 +34,14 @@ must never replace real application state or backend responses.
   introduced. Payment entry points continue following the platform/store rules.
 - Per-application routing on iOS is not implemented based on an illustration:
   split tunneling remains platform-specific as supported by the actual client.
-- The mockups' standalone onboarding, checkout, profile and five-destination
-  navigation are not yet implemented as independent app routes.
+- The mockup's checkout remains a real subscription-state/renewal screen:
+  tariff prices and checkout offers are **not generated in the VPN client**
+  until exposed by the server and implemented within Apple billing policy.
+- Account profile and connected-device functionality use the current controller.
+  A per-device list and 3-device usage counter are not available in
+  `TunnelCoreController`; global logout is supported and preserved.
+- The five destinations are logically separate views of one account page
+  (QML `viewMode`), not independently instantiated backend sessions.
 
 ## QA before merging
 
@@ -49,6 +58,10 @@ must never replace real application state or backend responses.
 6. API country selection and device unlink confirmations continue to work.
 7. Windows desktop: keyboard/focus navigation; portrait and landscape layouts.
 8. Screen-reader focus, tap targets, foreground contrast and QML runtime warnings.
+9. Five bottom tabs, welcome/sign-in/sign-out flow, country filter, subscription
+   actions and user account sections when authenticated.
+10. App/site split tunneling respects mobile platform constraints and existing
+   settings; no non-functional per-app toggles on iOS.
 
 This visual migration is intentionally scoped to existing working navigation and
 APIs; it is not a wholesale replacement of the VPN application's architecture.
