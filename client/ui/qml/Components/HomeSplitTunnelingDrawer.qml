@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 import PageEnum 1.0
+import Style 1.0
 
 import "../Controls2"
 import "../Controls2/TextTypes"
@@ -11,6 +12,8 @@ import "../Config"
 DrawerType2 {
     id: root
 
+    defaultColor: AmneziaStyle.color.tcBackground
+    borderColor: AmneziaStyle.color.tcStroke
     anchors.fill: parent
     expandedHeight: parent.height * 0.9
 
@@ -30,11 +33,16 @@ DrawerType2 {
             Layout.bottomMargin: 16
 
             headerText: qsTr("Split tunneling")
+            headerColor: AmneziaStyle.color.tcInk
+            descriptionColor: AmneziaStyle.color.tcMuted
             descriptionText: qsTr("Allows you to select which sites you want to access through the VPN")
         }
 
         LabelWithButtonType {
             id: splitTunnelingSwitch
+            textColor: AmneziaStyle.color.tcInk
+            descriptionColor: AmneziaStyle.color.tcMuted
+            rightImageColor: AmneziaStyle.color.tcBlue
             Layout.fillWidth: true
             Layout.topMargin: 16
 
@@ -56,6 +64,9 @@ DrawerType2 {
 
         LabelWithButtonType {
             id: siteBasedSplitTunnelingSwitch
+            textColor: AmneziaStyle.color.tcInk
+            descriptionColor: AmneziaStyle.color.tcMuted
+            rightImageColor: AmneziaStyle.color.tcBlue
             Layout.fillWidth: true
             Layout.topMargin: 16
 
