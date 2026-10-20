@@ -16,6 +16,9 @@ Button {
     property string connectedButtonColor: AmneziaStyle.color.goldenApricot
     property bool buttonActiveFocus: activeFocus && (Qt.platform.os !== "android" || SettingsController.isOnTv())
 
+    // Enable the new dashboard treatment without altering legacy callers.
+    property bool tunnelCoreMode: false
+
     property bool isFocusable: true
     property var clickedFunc: function() { ConnectionController.connectButtonClicked() }
     
@@ -63,8 +66,48 @@ Button {
         implicitHeight: parent.height
         transformOrigin: Item.Center
 
+        Rectangle {
+            id: tunnelCoreCircle
+            anchors.centerIn: parent
+            width: Math.min(parent.width, parent.height) - 12
+            height: width
+            radius: width / 2
+            visible: root.tunnelCoreMode
+            border.color: "#D0E9FF"
+            border.width: 7
+            gradient: Gradient {
+                GradientStop {
+                    position: 0
+                    color: ConnectionController.isConnected ? "#08BC9E" : "#1CDBE0"
+                }
+                GradientStop {
+                    position: 1
+                    color: ConnectionController.isConnected ? "#1478F9" : "#1478F9"
+                }
+            }
+
+            // Uses a platform glyph rather than a raster screenshot; the
+            // control remains accessible, reactive and DPI independent.
+            Text {
+                anchors.centerIn: parent
+                text: "\u23FB"
+                color: "white"
+                font.pixelSize: 76
+                font.weight: Font.Light
+                font.family: "Arial"
+            }
+
+            SequentialAnimation on opacity {
+                running: root.tunnelCoreMode && ConnectionController.isConnectionInProgress
+                loops: Animation.Infinite
+                NumberAnimation { to: 0.62; duration: 550 }
+                NumberAnimation { to: 1.0; duration: 550 }
+            }
+        }
+
         Shape {
             id: backgroundCircle
+            visible: !root.tunnelCoreMode
             width: parent.implicitWidth
             height: parent.implicitHeight
             anchors.bottom: parent.bottom
@@ -139,7 +182,7 @@ Button {
             layer.enabled: true
             layer.samples: 4
 
-            visible: ConnectionController.isConnectionInProgress
+            visible: ConnectionController.isConnectionInProgress && !root.tunnelCoreMode
 
             ShapePath {
                 fillColor: AmneziaStyle.color.transparent
@@ -176,7 +219,7 @@ Button {
         font.pixelSize: 20
 
         color: ConnectionController.isConnected ? connectedButtonColor : defaultButtonColor
-        text: root.text
+        text: root.tunnelCoreMode ? "" : root.text
 
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
