@@ -921,6 +921,8 @@ PageType {
     DrawerType2 {
         id: subscriptionsDrawer
         objectName: "subscriptionsDrawer"
+        defaultColor: AmneziaStyle.color.tcBackground
+        borderColor: AmneziaStyle.color.tcStroke
         parent: root
         anchors.fill: parent
         expandedHeight: root.height * 0.8
@@ -946,6 +948,7 @@ PageType {
                     Layout.leftMargin: 16
                     Layout.rightMargin: 16
                     headerText: qsTr("Subscriptions")
+                    headerColor: AmneziaStyle.color.tcInk
                 }
             }
 
@@ -971,18 +974,20 @@ PageType {
                     rightImageColor: AmneziaStyle.color.tcBlue
                         Layout.fillWidth: true
                         enabled: false
-                        textDisabledColor: AmneziaStyle.color.paleGray
-                        descriptionDisabledColor: AmneziaStyle.color.mutedGray
+                        textDisabledColor: AmneziaStyle.color.tcInk
+                        descriptionDisabledColor: AmneziaStyle.color.tcMuted
                         text: root.localizedTariffName(subscriptionDelegate.modelData)
                         descriptionText: qsTr("Until %1").arg(Qt.formatDateTime(
                                              new Date(subscriptionDelegate.modelData.expires_at),
                                              "dd.MM.yyyy"))
                     }
 
-                    DividerType {
+                    Rectangle {
                         Layout.fillWidth: true
                         Layout.leftMargin: 16
                         Layout.rightMargin: 16
+                        height: 1
+                        color: AmneziaStyle.color.tcStroke
                     }
                 }
             }
