@@ -11,6 +11,7 @@ TabButton {
     property string selectedColor: AmneziaStyle.color.goldenApricot
 
     property string image
+    property string caption: ""
 
     property bool isSelected: false
 
@@ -47,12 +48,27 @@ TabButton {
 
     hoverEnabled: true
 
+    implicitHeight: caption.length > 0 ? 56 : 44
     icon.source: ""
-    contentItem: IconImageType {
-        implicitWidth: root.icon.width > 0 ? root.icon.width : 24
-        implicitHeight: root.icon.height > 0 ? root.icon.height : 24
-        source: root.image
-        tint: root.isSelected ? root.selectedColor : root.defaultColor
+    contentItem: Column {
+        spacing: 3
+
+        IconImageType {
+            anchors.horizontalCenter: parent.horizontalCenter
+            implicitWidth: root.icon.width > 0 ? root.icon.width : 24
+            implicitHeight: root.icon.height > 0 ? root.icon.height : 24
+            source: root.image
+            tint: root.isSelected ? root.selectedColor : root.defaultColor
+        }
+        Text {
+            visible: root.caption.length > 0
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: root.caption
+            font.family: "PT Root UI VF"
+            font.pixelSize: 12
+            font.weight: root.isSelected ? Font.DemiBold : Font.Normal
+            color: root.isSelected ? root.selectedColor : root.defaultColor
+        }
     }
 
     background: Rectangle {
