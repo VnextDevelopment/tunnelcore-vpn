@@ -108,8 +108,8 @@ class TunnelCoreUiTest(unittest.TestCase):
         self.assertNotIn("5 devices", ACCOUNT)
 
     def test_brand_tokens_defined(self):
-        for token in set(re.findall(r"AmneziaStyle\\.color\\.(tc\\w+)", ACCOUNT)):
-            self.assertRegex(PALETTE, rf"property (?:color|string) {re.escape(token)}\\b")
+        for token in set(re.findall(r"AmneziaStyle\.color\.(tc\w+)", ACCOUNT)):
+            self.assertRegex(PALETTE, rf"property (?:color|string) {re.escape(token)}\b")
 
     def test_ime_guard_and_password_visibility(self):
         self.assertIn("root.keepFocusedInputVisible", ACCOUNT)
