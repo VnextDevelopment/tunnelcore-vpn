@@ -12,6 +12,10 @@ import "../Components"
 
 PageType {
     id: root
+    // The tabs reuse the real account controller and the same VPN session.
+    // Separate sections avoid one excessively long mixed-purpose page.
+    property string viewMode: "home" // home | countries | subscription | profile
+    property bool showWelcome: true
     property bool emailMode: true
     property bool registrationMode: false
     property string pendingVpnCountry: ""
@@ -137,6 +141,8 @@ PageType {
     Connections {
         target: TunnelCoreController
         function onSignedIn() {
+            root.viewMode = "home"
+            root.showWelcome = false
             loginField.textField.text = ""
             passwordField.textField.text = ""
             confirmPasswordField.textField.text = ""
@@ -241,7 +247,7 @@ PageType {
                 id: authCard
                 Layout.fillWidth: true
                 implicitHeight: authContent.implicitHeight + 48
-                visible: !TunnelCoreController.authenticated
+                visible: !TunnelCoreController.authenticated && !root.showWelcome
                 radius: 28
                 color: AmneziaStyle.color.tcCard
                 border.width: 1
@@ -423,7 +429,7 @@ PageType {
 
             ColumnLayout {
                 Layout.fillWidth: true
-                visible: TunnelCoreController.authenticated
+                visible: TunnelCoreController.authenticated && root.viewMode === "home"
                 spacing: 16
 
                 Rectangle {
@@ -593,6 +599,14 @@ PageType {
                         }
                     }
                 }
+            }
+
+            // Live VPN country list. Only locations received from the API are displayed.
+            ColumnLayout {
+                Layout.fillWidth: true
+                visible: TunnelCoreController.authenticated && root.viewMode === "countries"
+                spacing: 16
+
                 ColumnLayout {
                     Layout.fillWidth: true
                     visible: TunnelCoreController.vpnCountries.length > 0
@@ -697,15 +711,50 @@ PageType {
                              && !ConnectionController.isConnected && !ConnectionController.isConnectionInProgress
                     clickedFunc: function() { TunnelCoreController.refresh() }
                 }
-                DividerType {
-                    Layout.fillWidth: true
-                    Layout.topMargin: 28
-                }
+            }
+
+            // Account details and destructive actions are intentionally kept away
+            // from the main connect control.
+            ColumnLayout {
+                Layout.fillWidth: true
+                visible: TunnelCoreController.authenticated && root.viewMode === "profile"
+                spacing: 16
+
                 Header2TextType {
                     color: AmneziaStyle.color.tcInk
                     Layout.fillWidth: true
                     Layout.topMargin: 12
                     text: qsTr("Account")
+                }
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: usernameValue.implicitHeight + 32
+                    radius: 20
+                    color: AmneziaStyle.color.tcSurfaceBlue
+                    border.color: AmneziaStyle.color.tcStroke
+                    border.width: 1
+                    Text {
+                        id: usernameValue
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: 16
+                        font.pixelSize: 18
+                        font.weight: Font.DemiBold
+                        color: AmneziaStyle.color.tcInk
+                        text: TunnelCoreController.username
+                        elide: Text.ElideMiddle
+                    }
+                }
+                BasicButtonType {
+                    Layout.fillWidth: true
+                    text: qsTranslate("PageSettings", "Settings")
+                    defaultColor: AmneziaStyle.color.tcCard
+                    hoveredColor: AmneziaStyle.color.tcSurfaceBlue
+                    textColor: AmneziaStyle.color.tcInk
+                    borderColor: AmneziaStyle.color.tcStroke
+                    borderWidth: 1
+                    clickedFunc: function() { PageController.goToPage(PageEnum.PageSettings) }
                 }
                 BasicButtonType {
                     Layout.fillWidth: true
@@ -874,6 +923,116 @@ PageType {
                     textColor: AmneziaStyle.color.tcBlue
                     clickedFunc: function() {
                         Qt.openUrlExternally("https://vnextdev.com/tunnelcore/delete-account")
+                    }
+                }
+            }
+
+            // Subscriptions are read-only data from the real TunnelCore API.
+            // Purchasing remains platform-specific (Apple IAP / external link).
+            ColumnLayout {
+                Layout.fillWidth: true
+                visible: TunnelCoreController.authenticated && root.viewMode === "subscription"
+                spacing: 16
+
+                Header2TextType {
+                    Layout.fillWidth: true
+                    text: qsTr("Subscriptions")
+                    color: AmneziaStyle.color.tcInk
+                }
+                Rectangle {
+                    Layout.fillWidth: true
+                    radius: 24
+                    color: AmneziaStyle.color.tcCard
+                    border.color: AmneziaStyle.color.tcStroke
+                    border.width: 1
+                    implicitHeight: subscriptionPanel.implicitHeight + 40
+
+                    ColumnLayout {
+                        id: subscriptionPanel
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: 20
+                        spacing: 12
+
+                        Text {
+                            Layout.fillWidth: true
+                            color: AmneziaStyle.color.tcInk
+                            font.pixelSize: 19
+                            font.weight: Font.DemiBold
+                            text: TunnelCoreController.subscriptions.length > 0
+                                  ? root.localizedTariffName(TunnelCoreController.primarySubscription)
+                                  : qsTr("VPN subscription inactive")
+                            wrapMode: Text.WordWrap
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            color: AmneziaStyle.color.tcMuted
+                            font.pixelSize: 14
+                            text: TunnelCoreController.subscriptionStatusText
+                            textFormat: Text.PlainText
+                            wrapMode: Text.WordWrap
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            visible: TunnelCoreController.subscriptions.length > 0
+                            color: AmneziaStyle.color.tcMuted
+                            font.pixelSize: 14
+                            text: qsTr("Until %1").arg(Qt.formatDateTime(
+                                      new Date(TunnelCoreController.primarySubscription.expires_at), "dd.MM.yyyy"))
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            visible: TunnelCoreController.subscriptions.length > 0
+                            color: AmneziaStyle.color.tcBlue
+                            font.pixelSize: 14
+                            text: qsTr("Days remaining: %1").arg(TunnelCoreController.subscriptionDaysRemaining)
+                        }
+                        BasicButtonType {
+                            Layout.fillWidth: true
+                            text: qsTr("Subscriptions")
+                            defaultColor: AmneziaStyle.color.tcSurfaceBlue
+                            hoveredColor: "#DCEEFF"
+                            textColor: AmneziaStyle.color.tcBlue
+                            clickedFunc: function() { subscriptionsDrawer.openTriggered() }
+                        }
+                        BasicButtonType {
+                            Layout.fillWidth: true
+                            visible: TunnelCoreController.usesAppleBilling
+                                     || TunnelCoreController.externalRenewalLinkAllowed
+                            enabled: !TunnelCoreController.busy
+                            text: TunnelCoreController.usesAppleBilling
+                                  ? qsTr("Renew in App Store")
+                                  : (TunnelCoreController.emailAccount && !TunnelCoreController.telegramLinked
+                                     ? qsTr("Link Telegram to renew")
+                                     : qsTr("Renew in Telegram"))
+                            defaultColor: AmneziaStyle.color.tcBlue
+                            hoveredColor: "#328BF9"
+                            textColor: "#FFFFFF"
+                            clickedFunc: function() { TunnelCoreController.renewSubscription() }
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            visible: !TunnelCoreController.usesAppleBilling
+                                     && !TunnelCoreController.externalRenewalLinkAllowed
+                            color: AmneziaStyle.color.tcMuted
+                            font.pixelSize: 14
+                            text: qsTr("Renew your TunnelCore subscription outside the app. Telegram users can use @tunnelcoree_bot. After renewal, return here and tap Refresh.")
+                            textFormat: Text.PlainText
+                            wrapMode: Text.WordWrap
+                        }
+                        BasicButtonType {
+                            Layout.fillWidth: true
+                            text: qsTr("Refresh")
+                            enabled: !TunnelCoreController.busy
+                                     && !ConnectionController.isConnected
+                                     && !ConnectionController.isConnectionInProgress
+                            defaultColor: AmneziaStyle.color.tcCard
+                            textColor: AmneziaStyle.color.tcInk
+                            borderColor: AmneziaStyle.color.tcStroke
+                            borderWidth: 1
+                            clickedFunc: function() { TunnelCoreController.refresh() }
+                        }
                     }
                 }
             }
