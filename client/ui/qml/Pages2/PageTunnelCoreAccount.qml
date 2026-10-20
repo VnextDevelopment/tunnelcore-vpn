@@ -12,7 +12,7 @@ import "../Components"
 
 PageType {
     id: root
-    property bool emailMode: false
+    property bool emailMode: true
     property bool registrationMode: false
     property string pendingVpnCountry: ""
     property bool connectAfterImport: false
@@ -186,6 +186,11 @@ PageType {
         }
     }
 
+    Rectangle {
+        anchors.fill: parent
+        color: AmneziaStyle.color.tcBackground
+    }
+
     Flickable {
         id: scroll
         anchors.fill: parent
@@ -208,26 +213,49 @@ PageType {
                 source: "qrc:/images/icon.png"
                 visible: !TunnelCoreController.authenticated
                 Layout.alignment: Qt.AlignHCenter
-                Layout.preferredWidth: 88
-                Layout.preferredHeight: 88
+                Layout.preferredWidth: 72
+                Layout.preferredHeight: 72
                 fillMode: Image.PreserveAspectFit
             }
             Header2TextType {
                 Layout.fillWidth: true
                 text: "TunnelCore VPN"
+                color: AmneziaStyle.color.tcInk
+                font.pixelSize: 29
                 horizontalAlignment: Text.AlignHCenter
             }
             SmallTextType {
                 Layout.fillWidth: true
                 textFormat: Text.PlainText
                 text: TunnelCoreController.authenticated ? TunnelCoreController.username : qsTr("Sign in to your account")
+                color: AmneziaStyle.color.tcMuted
                 horizontalAlignment: Text.AlignHCenter
             }
 
-            ColumnLayout {
+            Rectangle {
+                id: authCard
                 Layout.fillWidth: true
+                implicitHeight: authContent.implicitHeight + 48
                 visible: !TunnelCoreController.authenticated
-                spacing: 16
+                radius: 28
+                color: AmneziaStyle.color.tcCard
+                border.width: 1
+                border.color: AmneziaStyle.color.tcStroke
+
+                ColumnLayout {
+                    id: authContent
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.margins: 24
+                    spacing: 16
+
+                    Header2TextType {
+                        Layout.fillWidth: true
+                        text: root.registrationMode ? qsTr("Create account") : qsTr("Sign in")
+                        color: AmneziaStyle.color.tcInk
+                        horizontalAlignment: Text.AlignHCenter
+                    }
 
                 RowLayout {
                     Layout.fillWidth: true
@@ -235,14 +263,22 @@ PageType {
                         Layout.fillWidth: true
                         text: qsTr("Bot code")
                         enabled: !TunnelCoreController.busy
-                        defaultColor: root.emailMode ? AmneziaStyle.color.charcoalGray : AmneziaStyle.color.paleGray
+                        defaultColor: root.emailMode ? AmneziaStyle.color.tcCard : AmneziaStyle.color.tcSurfaceBlue
+                        hoveredColor: AmneziaStyle.color.tcSurfaceBlue
+                        textColor: root.emailMode ? AmneziaStyle.color.tcMuted : AmneziaStyle.color.tcBlue
+                        borderColor: AmneziaStyle.color.tcStroke
+                        borderWidth: 1
                         clickedFunc: function() { root.selectMode(false) }
                     }
                     BasicButtonType {
                         Layout.fillWidth: true
                         text: "Email"
                         enabled: !TunnelCoreController.busy
-                        defaultColor: root.emailMode ? AmneziaStyle.color.paleGray : AmneziaStyle.color.charcoalGray
+                        defaultColor: root.emailMode ? AmneziaStyle.color.tcSurfaceBlue : AmneziaStyle.color.tcCard
+                        hoveredColor: AmneziaStyle.color.tcSurfaceBlue
+                        textColor: root.emailMode ? AmneziaStyle.color.tcBlue : AmneziaStyle.color.tcMuted
+                        borderColor: AmneziaStyle.color.tcStroke
+                        borderWidth: 1
                         clickedFunc: function() { root.selectMode(true) }
                     }
                 }
@@ -262,7 +298,7 @@ PageType {
                           : qsTr("Create account")
                     enabled: !TunnelCoreController.busy
                     defaultColor: AmneziaStyle.color.transparent
-                    textColor: AmneziaStyle.color.goldenApricot
+                    textColor: AmneziaStyle.color.tcBlue
                     clickedFunc: function() {
                         root.registrationMode = !root.registrationMode
                         passwordField.textField.text = ""
@@ -272,6 +308,12 @@ PageType {
                 }
                 TextFieldWithHeaderType {
                     id: loginField
+                    backgroundColor: AmneziaStyle.color.tcCard
+                    backgroundDisabledColor: AmneziaStyle.color.tcCard
+                    headerTextColor: AmneziaStyle.color.tcMuted
+                    textFieldTextColor: AmneziaStyle.color.tcInk
+                    borderColor: AmneziaStyle.color.tcStroke
+                    borderFocusedColor: AmneziaStyle.color.tcBlue
                     textField.onActiveFocusChanged: {
                         if (loginField.textField.activeFocus)
                             Qt.callLater(root.keepFocusedInputVisible)
@@ -294,6 +336,12 @@ PageType {
                 }
                 TextFieldWithHeaderType {
                     id: passwordField
+                    backgroundColor: AmneziaStyle.color.tcCard
+                    backgroundDisabledColor: AmneziaStyle.color.tcCard
+                    headerTextColor: AmneziaStyle.color.tcMuted
+                    textFieldTextColor: AmneziaStyle.color.tcInk
+                    borderColor: AmneziaStyle.color.tcStroke
+                    borderFocusedColor: AmneziaStyle.color.tcBlue
                     textField.onActiveFocusChanged: {
                         if (passwordField.textField.activeFocus)
                             Qt.callLater(root.keepFocusedInputVisible)
@@ -308,6 +356,12 @@ PageType {
                 }
                 TextFieldWithHeaderType {
                     id: confirmPasswordField
+                    backgroundColor: AmneziaStyle.color.tcCard
+                    backgroundDisabledColor: AmneziaStyle.color.tcCard
+                    headerTextColor: AmneziaStyle.color.tcMuted
+                    textFieldTextColor: AmneziaStyle.color.tcInk
+                    borderColor: AmneziaStyle.color.tcStroke
+                    borderFocusedColor: AmneziaStyle.color.tcBlue
                     textField.onActiveFocusChanged: {
                         if (confirmPasswordField.textField.activeFocus)
                             Qt.callLater(root.keepFocusedInputVisible)
@@ -340,6 +394,11 @@ PageType {
                                    && (!root.registrationMode
                                        || passwordField.textField.text === confirmPasswordField.textField.text)
                                  : loginField.textField.text.trim().length === 6)
+                    defaultColor: AmneziaStyle.color.tcBlue
+                    hoveredColor: "#328BF9"
+                    pressedColor: "#0C62C9"
+                    disabledColor: "#A8C5E7"
+                    textColor: "#FFFFFF"
                     clickedFunc: root.submit
                 }
                 BasicButtonType {
@@ -348,10 +407,11 @@ PageType {
                     text: qsTr("Account deletion information")
                     enabled: !TunnelCoreController.busy
                     defaultColor: AmneziaStyle.color.transparent
-                    textColor: AmneziaStyle.color.goldenApricot
+                    textColor: AmneziaStyle.color.tcBlue
                     clickedFunc: function() {
                         Qt.openUrlExternally("https://vnextdev.com/tunnelcore/delete-account")
                     }
+                }
                 }
             }
 
@@ -381,8 +441,11 @@ PageType {
                                        : qsTranslate("PageHome", "Split tunneling disabled")
                     leftImageSource: "qrc:/images/controls/split-tunneling.svg"
                     rightImageSource: "qrc:/images/controls/chevron-down.svg"
-                    defaultColor: AmneziaStyle.color.charcoalGray
-                    textColor: AmneziaStyle.color.paleGray
+                    defaultColor: AmneziaStyle.color.tcCard
+                    hoveredColor: AmneziaStyle.color.tcSurfaceBlue
+                    borderWidth: 1
+                    borderColor: AmneziaStyle.color.tcStroke
+                    textColor: AmneziaStyle.color.tcInk
                     clickedFunc: function() { splitTunnelingDrawer.openTriggered() }
                 }
 
@@ -491,9 +554,9 @@ PageType {
                         readonly property bool isSelected: TunnelCoreController.vpnCountryMode === "auto"
                         text: qsTr("Automatic")
                         enabled: !TunnelCoreController.busy && root.pendingVpnCountry.length === 0
-                        defaultColor: isSelected ? AmneziaStyle.color.goldenApricot
+                        defaultColor: isSelected ? AmneziaStyle.color.tcBlue
                                                  : AmneziaStyle.color.paleGray
-                        hoveredColor: isSelected ? AmneziaStyle.color.goldenApricot
+                        hoveredColor: isSelected ? AmneziaStyle.color.tcBlue
                                                  : AmneziaStyle.color.lightGray
                         clickedFunc: function() { root.selectVpnCountry("AUTO") }
                     }
@@ -511,9 +574,9 @@ PageType {
                                   + (cities.length > 0 ? " · " + cities : "")
                             buttonTextLabel.elide: Text.ElideRight
                             enabled: !TunnelCoreController.busy && root.pendingVpnCountry.length === 0
-                            defaultColor: isSelected ? AmneziaStyle.color.goldenApricot
+                            defaultColor: isSelected ? AmneziaStyle.color.tcBlue
                                                      : AmneziaStyle.color.paleGray
-                            hoveredColor: isSelected ? AmneziaStyle.color.goldenApricot
+                            hoveredColor: isSelected ? AmneziaStyle.color.tcBlue
                                                      : AmneziaStyle.color.lightGray
                             clickedFunc: function() {
                                 root.selectVpnCountry(countryCode)
@@ -622,6 +685,12 @@ PageType {
                     }
                     TextFieldWithHeaderType {
                         id: telegramCodeField
+                    backgroundColor: AmneziaStyle.color.tcCard
+                    backgroundDisabledColor: AmneziaStyle.color.tcCard
+                    headerTextColor: AmneziaStyle.color.tcMuted
+                    textFieldTextColor: AmneziaStyle.color.tcInk
+                    borderColor: AmneziaStyle.color.tcStroke
+                    borderFocusedColor: AmneziaStyle.color.tcBlue
                         Layout.fillWidth: true
                         visible: !TunnelCoreController.telegramLinked
                         enabled: !TunnelCoreController.busy
@@ -645,7 +714,7 @@ PageType {
                         Layout.fillWidth: true
                         visible: TunnelCoreController.telegramLinked
                         text: qsTr("Telegram is linked to this account.")
-                        color: AmneziaStyle.color.goldenApricot
+                        color: AmneziaStyle.color.tcBlue
                     }
                 }
                 DividerType {
@@ -667,7 +736,7 @@ PageType {
                     visible: TunnelCoreController.accountDeletionRequested
                     textFormat: Text.PlainText
                     text: qsTr("Your account deletion request has been received. Support will process it and confirm the result.")
-                    color: AmneziaStyle.color.goldenApricot
+                    color: AmneziaStyle.color.tcBlue
                 }
                 BasicButtonType {
                     objectName: "accountDeletionRequestButton"
@@ -698,7 +767,7 @@ PageType {
                     Layout.fillWidth: true
                     text: qsTr("Account deletion information")
                     defaultColor: AmneziaStyle.color.transparent
-                    textColor: AmneziaStyle.color.goldenApricot
+                    textColor: AmneziaStyle.color.tcBlue
                     clickedFunc: function() {
                         Qt.openUrlExternally("https://vnextdev.com/tunnelcore/delete-account")
                     }
@@ -723,9 +792,9 @@ PageType {
                 textFormat: Text.RichText
                 color: AmneziaStyle.color.mutedGray
                 text: "<a href=\"https://vnextdev.com/tunnelcore/privacy\" style=\"color: "
-                      + AmneziaStyle.color.goldenApricotString + ";\">"
+                      + AmneziaStyle.color.tcBlueString + ";\">"
                       + qsTr("Privacy Policy") + "</a> · <a href=\"https://vnextdev.com/tunnelcore/privacy#account-deletion\" style=\"color: "
-                      + AmneziaStyle.color.goldenApricotString + ";\">"
+                      + AmneziaStyle.color.tcBlueString + ";\">"
                       + qsTr("Request account deletion") + "</a>"
 
                 onLinkActivated: function(link) {
