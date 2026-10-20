@@ -312,8 +312,8 @@ PageType {
 
         topPadding: 8
         bottomPadding: 8 + PageController.safeAreaBottomMargin
-        leftPadding: 96
-        rightPadding: 96
+        leftPadding: 48
+        rightPadding: 48
 
         height: visible ? homeTabButton.implicitHeight + tabBar.topPadding + tabBar.bottomPadding : 0
 
@@ -336,8 +336,8 @@ PageType {
                 PathLine { x: 0; y: 0 }
 
                 strokeWidth: 1
-                strokeColor: AmneziaStyle.color.slateGray
-                fillColor: AmneziaStyle.color.onyxBlack
+                strokeColor: AmneziaStyle.color.tcStroke
+                fillColor: AmneziaStyle.color.tcCard
             }
         }
 
@@ -347,6 +347,9 @@ PageType {
 
             isSelected: tabBar.currentIndex === 0
             image: "qrc:/images/controls/home.svg"
+            caption: qsTr("Home")
+            selectedColor: AmneziaStyle.color.tcBlue
+            defaultColor: AmneziaStyle.color.tcMuted
             clickedFunc: function () {
                 tabBarStackView.goToTabBarPage(PageEnum.PageHome)
                 ServersUiController.setProcessedServerId(ServersUiController.defaultServerId)
@@ -360,6 +363,9 @@ PageType {
 
             isSelected: tabBar.currentIndex === 1
             image: (ServersUiController.hasServersFromGatewayApi && NewsModel.hasUnread && SettingsController.isNewsNotificationsEnabled()) ? "qrc:/images/controls/settings-news.svg" : "qrc:/images/controls/settings.svg"
+            caption: qsTr("Settings")
+            selectedColor: AmneziaStyle.color.tcBlue
+            defaultColor: AmneziaStyle.color.tcMuted
             Binding {
                 target: settingsTabButton
                 property: "defaultColor"
