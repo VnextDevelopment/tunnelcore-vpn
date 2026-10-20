@@ -19,6 +19,11 @@ import "../Components"
 PageType {
     id: root
 
+    Rectangle {
+        anchors.fill: parent
+        color: AmneziaStyle.color.tcBackground
+    }
+
     ListViewType {
         id: listView
 
@@ -43,6 +48,7 @@ PageType {
                 Layout.leftMargin: 16
 
                 headerText: qsTr("Active Devices")
+                headerColor: AmneziaStyle.color.tcInk
                 descriptionText: qsTr("Manage currently connected devices")
             }
 
@@ -59,12 +65,31 @@ PageType {
             }
         }
 
-        delegate: ColumnLayout {
+        delegate: Item {
             width: listView.width
+            height: deviceCard.implicitHeight + 12
+
+            Rectangle {
+                id: deviceCard
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.leftMargin: 16
+                anchors.rightMargin: 16
+                anchors.topMargin: 4
+                implicitHeight: deviceRow.implicitHeight + 8
+                radius: 20
+                color: AmneziaStyle.color.tcCard
+                border.width: 1
+                border.color: AmneziaStyle.color.tcStroke
 
             LabelWithButtonType {
-                Layout.fillWidth: true
-                Layout.topMargin: 6
+                id: deviceRow
+                anchors.fill: parent
+                anchors.margins: 4
+                textColor: AmneziaStyle.color.tcInk
+                descriptionColor: AmneziaStyle.color.tcMuted
+                rightImageColor: AmneziaStyle.color.tcBlue
 
                 text: osVersion + (isCurrentDevice ? qsTr(" (current device)") : "")
                 descriptionText: qsTr("Support tag: ") + "\n" + supportTag + "\n" + qsTr("Last updated: ") + lastUpdate
@@ -92,7 +117,8 @@ PageType {
                 }
             }
 
-            DividerType {}
+            }
+            }
         }
     }
 
