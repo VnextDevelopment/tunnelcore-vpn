@@ -243,6 +243,127 @@ PageType {
                 horizontalAlignment: Text.AlignHCenter
             }
 
+            // Lightweight native onboarding. All actions lead to the real
+            // email / bot-code forms; no hypothetical proxy mode is exposed.
+            Rectangle {
+                Layout.fillWidth: true
+                visible: !TunnelCoreController.authenticated && root.showWelcome
+                implicitHeight: welcomeContent.implicitHeight + 48
+                radius: 28
+                color: AmneziaStyle.color.tcCard
+                border.color: AmneziaStyle.color.tcStroke
+                border.width: 1
+
+                ColumnLayout {
+                    id: welcomeContent
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.margins: 24
+                    spacing: 18
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: qsTr("TunnelCore VPN")
+                        color: AmneziaStyle.color.tcInk
+                        font.pixelSize: 26
+                        font.weight: Font.Bold
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.WordWrap
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: qsTr("Sign in to your account")
+                        color: AmneziaStyle.color.tcMuted
+                        font.pixelSize: 16
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.WordWrap
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        radius: 20
+                        color: AmneziaStyle.color.tcSurfaceBlue
+                        border.color: AmneziaStyle.color.tcStroke
+                        border.width: 1
+                        implicitHeight: welcomeFeatures.implicitHeight + 24
+
+                        ColumnLayout {
+                            id: welcomeFeatures
+                            anchors.top: parent.top
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.margins: 12
+                            spacing: 12
+
+                            Repeater {
+                                model: [
+                                    { title: "VPN", icon: "qrc:/images/controls/globe-2.svg" },
+                                    { title: qsTr("VPN location"), icon: "qrc:/images/controls/server.svg" },
+                                    { title: qsTr("Split tunneling"), icon: "qrc:/images/controls/split-tunneling.svg" }
+                                ]
+                                delegate: RowLayout {
+                                    required property var modelData
+                                    Layout.fillWidth: true
+                                    spacing: 12
+                                    IconImageType {
+                                        source: modelData.icon
+                                        tint: AmneziaStyle.color.tcBlue
+                                        implicitWidth: 24
+                                        implicitHeight: 24
+                                    }
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: modelData.title
+                                        color: AmneziaStyle.color.tcInk
+                                        font.pixelSize: 16
+                                        wrapMode: Text.WordWrap
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    BasicButtonType {
+                        Layout.fillWidth: true
+                        text: qsTr("Sign in")
+                        defaultColor: AmneziaStyle.color.tcBlue
+                        hoveredColor: "#328BF9"
+                        textColor: "#FFFFFF"
+                        clickedFunc: function() {
+                            root.emailMode = true
+                            root.registrationMode = false
+                            root.showWelcome = false
+                        }
+                    }
+                    BasicButtonType {
+                        Layout.fillWidth: true
+                        text: qsTr("Create account")
+                        defaultColor: AmneziaStyle.color.tcCard
+                        hoveredColor: AmneziaStyle.color.tcSurfaceBlue
+                        textColor: AmneziaStyle.color.tcBlue
+                        borderWidth: 1
+                        borderColor: AmneziaStyle.color.tcBlue
+                        clickedFunc: function() {
+                            root.emailMode = true
+                            root.registrationMode = true
+                            root.showWelcome = false
+                        }
+                    }
+                    BasicButtonType {
+                        Layout.fillWidth: true
+                        text: qsTr("Bot code")
+                        defaultColor: AmneziaStyle.color.tcSurfaceBlue
+                        hoveredColor: AmneziaStyle.color.tcCard
+                        textColor: AmneziaStyle.color.tcBlue
+                        clickedFunc: function() {
+                            root.emailMode = false
+                            root.registrationMode = false
+                            root.showWelcome = false
+                        }
+                    }
+                }
+            }
+
             Rectangle {
                 id: authCard
                 Layout.fillWidth: true
