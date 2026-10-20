@@ -420,14 +420,62 @@ PageType {
                 visible: TunnelCoreController.authenticated
                 spacing: 16
 
-                ConnectButton {
-                    objectName: "accountConnectButton"
-                    Layout.alignment: Qt.AlignHCenter
-                    Layout.topMargin: 16
-                    Layout.bottomMargin: 16
-                    enabled: !TunnelCoreController.busy && !root.importingProfile
-                             && root.pendingVpnCountry.length === 0
-                    clickedFunc: root.connectSelectedLocation
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: heroContent.implicitHeight + 40
+                    color: AmneziaStyle.color.tcCard
+                    radius: 28
+                    border.color: AmneziaStyle.color.tcStroke
+                    border.width: 1
+
+                    ColumnLayout {
+                        id: heroContent
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: 20
+                        spacing: 12
+
+                        Text {
+                            Layout.fillWidth: true
+                            text: qsTr("Secure connection")
+                            color: AmneziaStyle.color.tcInk
+                            font.pixelSize: 20
+                            font.weight: Font.DemiBold
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+                        ConnectButton {
+                            objectName: "accountConnectButton"
+                            tunnelCoreMode: true
+                            Layout.alignment: Qt.AlignHCenter
+                            Layout.topMargin: 8
+                            Layout.bottomMargin: 4
+                            enabled: !TunnelCoreController.busy && !root.importingProfile
+                                     && root.pendingVpnCountry.length === 0
+                            clickedFunc: root.connectSelectedLocation
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            text: ConnectionController.connectionStateText
+                            color: AmneziaStyle.color.tcInk
+                            font.pixelSize: 22
+                            font.weight: Font.Bold
+                            horizontalAlignment: Text.AlignHCenter
+                            wrapMode: Text.WordWrap
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            text: TunnelCoreController.vpnCountryMode === "auto"
+                                  ? (TunnelCoreController.effectiveVpnCountry.length > 0
+                                     ? TunnelCoreController.vpnCountryDisplayName(TunnelCoreController.effectiveVpnCountry)
+                                     : qsTr("Automatic"))
+                                  : TunnelCoreController.vpnCountryDisplayName(TunnelCoreController.selectedVpnCountry)
+                            color: AmneziaStyle.color.tcMuted
+                            font.pixelSize: 14
+                            horizontalAlignment: Text.AlignHCenter
+                            wrapMode: Text.WordWrap
+                        }
+                    }
                 }
                 BasicButtonType {
                     objectName: "accountSplitTunnelingButton"
