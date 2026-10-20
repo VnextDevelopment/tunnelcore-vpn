@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 
 import Style 1.0
 
@@ -50,24 +51,28 @@ TabButton {
 
     implicitHeight: caption.length > 0 ? 56 : 44
     icon.source: ""
-    contentItem: Column {
-        spacing: 3
+    contentItem: ColumnLayout {
+        spacing: 2
 
         IconImageType {
-            anchors.horizontalCenter: parent.horizontalCenter
-            implicitWidth: root.icon.width > 0 ? root.icon.width : 24
-            implicitHeight: root.icon.height > 0 ? root.icon.height : 24
+            Layout.alignment: Qt.AlignHCenter
+            Layout.preferredWidth: root.icon.width > 0 ? root.icon.width : 24
+            Layout.preferredHeight: root.icon.height > 0 ? root.icon.height : 24
             source: root.image
             tint: root.isSelected ? root.selectedColor : root.defaultColor
         }
         Text {
+            Layout.fillWidth: true
             visible: root.caption.length > 0
-            anchors.horizontalCenter: parent.horizontalCenter
             text: root.caption
             font.family: "PT Root UI VF"
-            font.pixelSize: 12
+            font.pixelSize: 11
             font.weight: root.isSelected ? Font.DemiBold : Font.Normal
             color: root.isSelected ? root.selectedColor : root.defaultColor
+            horizontalAlignment: Text.AlignHCenter
+            elide: Text.ElideRight
+            maximumLineCount: 1
+            wrapMode: Text.NoWrap
         }
     }
 
