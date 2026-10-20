@@ -469,6 +469,7 @@ PageType {
                 }
                 TextFieldWithHeaderType {
                     id: passwordField
+                    property bool passwordVisible: false
                     backgroundColor: AmneziaStyle.color.tcCard
                     backgroundDisabledColor: AmneziaStyle.color.tcCard
                     headerTextColor: AmneziaStyle.color.tcMuted
@@ -483,12 +484,19 @@ PageType {
                     visible: root.emailMode
                     enabled: !TunnelCoreController.busy
                     headerText: qsTr("Password")
-                    textField.echoMode: TextInput.Password
+                    textField.echoMode: passwordVisible ? TextInput.Normal : TextInput.Password
+                    buttonImageSource: passwordVisible
+                                       ? "qrc:/images/controls/eye-off.svg"
+                                       : "qrc:/images/controls/eye.svg"
+                    clickedFunc: function() {
+                        passwordField.passwordVisible = !passwordField.passwordVisible
+                    }
                     textField.maximumLength: 1024
                     textField.onAccepted: root.submit()
                 }
                 TextFieldWithHeaderType {
                     id: confirmPasswordField
+                    property bool passwordVisible: false
                     backgroundColor: AmneziaStyle.color.tcCard
                     backgroundDisabledColor: AmneziaStyle.color.tcCard
                     headerTextColor: AmneziaStyle.color.tcMuted
@@ -503,7 +511,13 @@ PageType {
                     visible: root.emailMode && root.registrationMode
                     enabled: !TunnelCoreController.busy
                     headerText: qsTr("Confirm password")
-                    textField.echoMode: TextInput.Password
+                    textField.echoMode: passwordVisible ? TextInput.Normal : TextInput.Password
+                    buttonImageSource: passwordVisible
+                                       ? "qrc:/images/controls/eye-off.svg"
+                                       : "qrc:/images/controls/eye.svg"
+                    clickedFunc: function() {
+                        confirmPasswordField.passwordVisible = !confirmPasswordField.passwordVisible
+                    }
                     textField.maximumLength: 1024
                     textField.onAccepted: root.submit()
                 }
