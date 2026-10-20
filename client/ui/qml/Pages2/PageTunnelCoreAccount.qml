@@ -17,20 +17,25 @@ PageType {
     property string pendingVpnCountry: ""
     property bool connectAfterImport: false
     property bool importingProfile: false
+    property string countryFilter: ""
 
     // The account page is inside PageStart's IME-adjusted StackView.
     // Bring the focused input into view when the keyboard reduces its height.
     function keepFocusedInputVisible() {
-        if (!root.visible || TunnelCoreController.authenticated || scroll.height <= 0)
+        if (!root.visible || scroll.height <= 0)
             return
 
         var focusedField = null
-        if (loginField.textField.activeFocus)
+        if (TunnelCoreController.authenticated) {
+            if (vpnCountrySearch.visible && vpnCountrySearch.textField.activeFocus)
+                focusedField = vpnCountrySearch
+        } else if (loginField.textField.activeFocus) {
             focusedField = loginField
-        else if (passwordField.visible && passwordField.textField.activeFocus)
+        } else if (passwordField.visible && passwordField.textField.activeFocus) {
             focusedField = passwordField
-        else if (confirmPasswordField.visible && confirmPasswordField.textField.activeFocus)
+        } else if (confirmPasswordField.visible && confirmPasswordField.textField.activeFocus) {
             focusedField = confirmPasswordField
+        }
 
         if (!focusedField)
             return
@@ -617,6 +622,25 @@ PageType {
                         Layout.fillWidth: true
                         text: qsTr("Automatic selects an available VPN server. Choosing a country moves your VPN access to that country.")
                     }
+                    TextFieldWithHeaderType {
+                        id: vpnCountrySearch
+                        Layout.fillWidth: true
+                        visible: TunnelCoreController.vpnCountries.length > 4
+                        enabled: !TunnelCoreController.busy
+                        headerText: qsTr("Search")
+                        textField.placeholderText: qsTr("VPN location")
+                        textField.inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
+                        backgroundColor: AmneziaStyle.color.tcCard
+                        textFieldTextColor: AmneziaStyle.color.tcInk
+                        headerTextColor: AmneziaStyle.color.tcMuted
+                        borderColor: AmneziaStyle.color.tcStroke
+                        borderFocusedColor: AmneziaStyle.color.tcBlue
+                        textField.onTextChanged: root.countryFilter = vpnCountrySearch.textField.text.trim().toLowerCase()
+                        textField.onActiveFocusChanged: {
+                            if (vpnCountrySearch.textField.activeFocus)
+                                Qt.callLater(root.keepFocusedInputVisible)
+                        }
+                    }
                     BasicButtonType {
                         Layout.fillWidth: true
                         readonly property bool isSelected: TunnelCoreController.vpnCountryMode === "auto"
@@ -636,6 +660,9 @@ PageType {
                             required property var modelData
                             Layout.fillWidth: true
                             readonly property string countryCode: modelData.code ? String(modelData.code) : ""
+                            visible: root.countryFilter.length === 0
+                                     || (TunnelCoreController.vpnCountryDisplayName(countryCode) + " " + cities)
+                                           .toLowerCase().includes(root.countryFilter)
                             readonly property string cities: modelData.cities && modelData.cities.length > 0
                                                              ? modelData.cities.join(", ") : ""
                             readonly property bool isSelected: TunnelCoreController.vpnCountryMode === "country"
