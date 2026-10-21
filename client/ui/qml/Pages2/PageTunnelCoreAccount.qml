@@ -220,13 +220,13 @@ PageType {
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: 16
 
-            Image {
+            IconImageType {
                 source: "qrc:/images/icon.png"
+                tint: ""
                 visible: !TunnelCoreController.authenticated
                 Layout.alignment: Qt.AlignHCenter
                 Layout.preferredWidth: 72
                 Layout.preferredHeight: 72
-                fillMode: Image.PreserveAspectFit
             }
             Header2TextType {
                 Layout.fillWidth: true

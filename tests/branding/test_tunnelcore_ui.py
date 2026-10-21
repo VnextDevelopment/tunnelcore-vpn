@@ -137,7 +137,19 @@ class TunnelCoreUiTest(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn('source: "qrc:/images/controls/power.svg"', connect_button)
+        self.assertIn("PaintedIcon {", connect_button)
         self.assertNotIn('text: "\\u23FB"', connect_button)
+        for path in (
+            "Pages2/PageTunnelCoreAccount.qml",
+            "Pages2/PageSetupWizardStart.qml",
+            "Pages2/PageSettingsAbout.qml",
+        ):
+            with self.subTest(path=path):
+                source = (QML / path).read_text(encoding="utf-8")
+                self.assertRegex(
+                    source,
+                    r'IconImageType\s*\{[^}]*source:\s*"qrc:/images/icon\.png"',
+                )
 
     def test_ime_guard_and_password_visibility(self):
         self.assertIn("root.keepFocusedInputVisible", ACCOUNT)

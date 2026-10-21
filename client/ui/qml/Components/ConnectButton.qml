@@ -5,6 +5,7 @@ import QtQuick.Shapes
 import Qt5Compat.GraphicalEffects
 
 import ConnectionState 1.0
+import AppIcons 1.0
 import PageEnum 1.0
 import Style 1.0
 
@@ -86,12 +87,12 @@ Button {
                 }
             }
 
-            Image {
+            PaintedIcon {
                 anchors.centerIn: parent
                 source: "qrc:/images/controls/power.svg"
                 width: 76
                 height: 76
-                fillMode: Image.PreserveAspectFit
+                tint: ""
             }
 
             SequentialAnimation on opacity {

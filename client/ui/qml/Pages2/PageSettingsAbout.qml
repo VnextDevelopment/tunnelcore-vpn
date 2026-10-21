@@ -58,14 +58,13 @@ PageType {
         header: ColumnLayout {
             width: listView.width
 
-            Image {
+            IconImageType {
                 source: "qrc:/images/icon.png"
+                tint: ""
                 Layout.alignment: Qt.AlignCenter
                 Layout.topMargin: 24
                 Layout.preferredWidth: 144
                 Layout.preferredHeight: 144
-                fillMode: Image.PreserveAspectFit
-                smooth: true
             }
 
             Header2TextType {
