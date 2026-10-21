@@ -13,16 +13,26 @@ QML = ROOT / "client" / "ui" / "qml"
 ACCOUNT = (QML / "Pages2" / "PageTunnelCoreAccount.qml").read_text(encoding="utf-8")
 PAGE_START = (QML / "Pages2" / "PageStart.qml").read_text(encoding="utf-8")
 PALETTE = (QML / "Modules" / "Style" / "AmneziaStyle.qml").read_text(encoding="utf-8")
+IMAGES_QRC = (ROOT / "client" / "images" / "images.qrc").read_text(encoding="utf-8")
+
+LIGHT_SETTINGS_PAGES = (
+    "Pages2/PageSettingsConnection.qml",
+    "Pages2/PageSettingsApplication.qml",
+    "Pages2/PageSettingsBackup.qml",
+    "Pages2/PageSettingsAbout.qml",
+)
 
 CHANGED_PAGES = (
     "Pages2/PageTunnelCoreAccount.qml",
     "Pages2/PageStart.qml",
     "Pages2/PageSettings.qml",
+    *LIGHT_SETTINGS_PAGES,
     "Pages2/PageSettingsApiDevices.qml",
     "Pages2/PageSettingsApiAvailableCountries.qml",
     "Pages2/PageSettingsSplitTunneling.qml",
     "Pages2/PageSettingsAppSplitTunneling.qml",
     "Controls2/TabImageButtonType.qml",
+    "Controls2/BackButtonType.qml",
     "Controls2/BaseHeaderType.qml",
     "Controls2/Header2Type.qml",
     "Components/ConnectButton.qml",
@@ -110,6 +120,24 @@ class TunnelCoreUiTest(unittest.TestCase):
     def test_brand_tokens_defined(self):
         for token in set(re.findall(r"AmneziaStyle\.color\.(tc\w+)", ACCOUNT)):
             self.assertRegex(PALETTE, rf"property (?:color|string) {re.escape(token)}\b")
+
+    def test_secondary_settings_pages_use_light_palette(self):
+        for path in LIGHT_SETTINGS_PAGES:
+            with self.subTest(path=path):
+                source = (QML / path).read_text(encoding="utf-8")
+                self.assertIn("color: AmneziaStyle.color.tcBackground", source)
+                self.assertIn("imageColor: AmneziaStyle.color.tcInk", source)
+
+    def test_android_safe_brand_and_connection_icons(self):
+        self.assertIn(
+            '<file alias="icon.png">../android/res/mipmap-xxxhdpi/icon.png</file>',
+            IMAGES_QRC,
+        )
+        connect_button = (QML / "Components" / "ConnectButton.qml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('source: "qrc:/images/controls/power.svg"', connect_button)
+        self.assertNotIn('text: "\\u23FB"', connect_button)
 
     def test_ime_guard_and_password_visibility(self):
         self.assertIn("root.keepFocusedInputVisible", ACCOUNT)

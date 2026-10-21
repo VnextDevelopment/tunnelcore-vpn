@@ -14,6 +14,11 @@ import "../Components"
 PageType {
     id: root
 
+    Rectangle {
+        anchors.fill: parent
+        color: AmneziaStyle.color.tcBackground
+    }
+
     Connections {
         target: UpdateController
 
@@ -33,6 +38,7 @@ PageType {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.topMargin: 20 + PageController.safeAreaTopMargin
+        imageColor: AmneziaStyle.color.tcInk
 
         onActiveFocusChanged: {
             if(backButton.enabled && backButton.activeFocus) {
@@ -69,6 +75,7 @@ PageType {
                 Layout.rightMargin: 16
 
                 text: "TunnelCore VPN"
+                color: AmneziaStyle.color.tcInk
                 horizontalAlignment: Text.AlignHCenter
             }
 
@@ -80,7 +87,7 @@ PageType {
 
                 horizontalAlignment: Text.AlignHCenter
                 text: qsTr("Open-source VPN client")
-                color: AmneziaStyle.color.paleGray
+                color: AmneziaStyle.color.tcMuted
             }
 
             ParagraphTextType {
@@ -90,6 +97,7 @@ PageType {
                 Layout.rightMargin: 16
 
                 text: qsTr("Contacts")
+                color: AmneziaStyle.color.tcInk
             }
         }
 
@@ -105,11 +113,14 @@ PageType {
                 text: title
                 descriptionText: description
                 leftImageSource: imageSource
+                textColor: AmneziaStyle.color.tcInk
+                descriptionColor: AmneziaStyle.color.tcMuted
+                leftImageColor: AmneziaStyle.color.tcBlue
 
                 clickedFunction: handler
             }
 
-            DividerType {}
+            DividerType { color: AmneziaStyle.color.tcStroke }
         }
 
         footer: ColumnLayout {
@@ -122,7 +133,7 @@ PageType {
                 horizontalAlignment: Text.AlignHCenter
 
                 text: qsTr("Software version: %1").arg(SettingsController.getAppVersion())
-                color: AmneziaStyle.color.mutedGray
+                color: AmneziaStyle.color.tcMuted
 
                 MouseArea {
                     property int clickCount: 0
@@ -145,13 +156,13 @@ PageType {
                 Layout.bottomMargin: 16
                 implicitHeight: 48
 
-                defaultColor: AmneziaStyle.color.surfaceBase
-                hoveredColor: AmneziaStyle.color.surfaceHovered
-                pressedColor: AmneziaStyle.color.surfacePressed
-                disabledColor: AmneziaStyle.color.surfaceBase
-                textColor: AmneziaStyle.color.surfaceInverse
+                defaultColor: AmneziaStyle.color.tcCard
+                hoveredColor: AmneziaStyle.color.tcSurfaceBlue
+                pressedColor: AmneziaStyle.color.tcStroke
+                disabledColor: AmneziaStyle.color.tcBackground
+                textColor: AmneziaStyle.color.tcBlue
                 borderWidth: 1
-                borderColor: AmneziaStyle.color.borderSoft
+                borderColor: AmneziaStyle.color.tcBlue
 
                 enabled: !UpdateController.isCheckRunning
 

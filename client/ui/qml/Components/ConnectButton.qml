@@ -86,15 +86,12 @@ Button {
                 }
             }
 
-            // Uses a platform glyph rather than a raster screenshot; the
-            // control remains accessible, reactive and DPI independent.
-            Text {
+            Image {
                 anchors.centerIn: parent
-                text: "\u23FB"
-                color: "white"
-                font.pixelSize: 76
-                font.weight: Font.Light
-                font.family: "Arial"
+                source: "qrc:/images/controls/power.svg"
+                width: 76
+                height: 76
+                fillMode: Image.PreserveAspectFit
             }
 
             SequentialAnimation on opacity {

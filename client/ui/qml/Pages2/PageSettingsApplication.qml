@@ -14,6 +14,11 @@ import "../Components"
 PageType {
     id: root
 
+    Rectangle {
+        anchors.fill: parent
+        color: AmneziaStyle.color.tcBackground
+    }
+
     BackButtonType {
         id: backButton
 
@@ -21,6 +26,7 @@ PageType {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.topMargin: 20 + PageController.safeAreaTopMargin
+        imageColor: AmneziaStyle.color.tcInk
 
         onActiveFocusChanged: {
             if(backButton.enabled && backButton.activeFocus) {
@@ -46,6 +52,7 @@ PageType {
                 Layout.rightMargin: 16
 
                 headerText: qsTr("Application")
+                headerColor: AmneziaStyle.color.tcInk
             }
         }
 
@@ -64,6 +71,13 @@ PageType {
                 Layout.margins: 16
 
                 text: qsTr("Allow application screenshots")
+                textColor: AmneziaStyle.color.tcInk
+                descriptionTextColor: AmneziaStyle.color.tcMuted
+                checkedIndicatorColor: AmneziaStyle.color.tcBlue
+                checkedIndicatorBorderColor: AmneziaStyle.color.tcBlue
+                checkedInnerCircleColor: AmneziaStyle.color.tcCard
+                defaultIndicatorBorderColor: AmneziaStyle.color.tcStroke
+                defaultInnerCircleColor: AmneziaStyle.color.tcMuted
 
                 checked: SettingsController.isScreenshotsEnabled()
                 onToggled: function() {
@@ -75,6 +89,7 @@ PageType {
 
             DividerType {
                 visible: GC.isMobile()
+                color: AmneziaStyle.color.tcStroke
             }
 
             LabelWithButtonType {
@@ -87,6 +102,9 @@ PageType {
                 text: qsTr("Enable notifications")
                 descriptionText: qsTr("Enable notifications to show the VPN state in the status bar")
                 rightImageSource: "qrc:/images/controls/chevron-right.svg"
+                textColor: AmneziaStyle.color.tcInk
+                descriptionColor: AmneziaStyle.color.tcMuted
+                rightImageColor: AmneziaStyle.color.tcBlue
 
                 clickedFunction: function() {
                     SettingsController.requestNotificationPermission()
@@ -95,6 +113,7 @@ PageType {
 
             DividerType {
                 visible: Qt.platform.os === "android" && !SettingsController.isNotificationPermissionGranted
+                color: AmneziaStyle.color.tcStroke
             }
 
             SwitcherType {
@@ -107,6 +126,13 @@ PageType {
 
                 text: qsTr("Auto start")
                 descriptionText: qsTr("Launch the application every time the device is starts")
+                textColor: AmneziaStyle.color.tcInk
+                descriptionTextColor: AmneziaStyle.color.tcMuted
+                checkedIndicatorColor: AmneziaStyle.color.tcBlue
+                checkedIndicatorBorderColor: AmneziaStyle.color.tcBlue
+                checkedInnerCircleColor: AmneziaStyle.color.tcCard
+                defaultIndicatorBorderColor: AmneziaStyle.color.tcStroke
+                defaultInnerCircleColor: AmneziaStyle.color.tcMuted
 
                 checked: SettingsController.autoStartEnabled
                 onToggled: function() {
@@ -118,6 +144,7 @@ PageType {
 
             DividerType {
                 visible: !GC.isMobile()
+                color: AmneziaStyle.color.tcStroke
             }
 
             SwitcherType {
@@ -130,6 +157,13 @@ PageType {
 
                 text: qsTr("Auto connect")
                 descriptionText: qsTr("Connect to VPN on app start")
+                textColor: AmneziaStyle.color.tcInk
+                descriptionTextColor: AmneziaStyle.color.tcMuted
+                checkedIndicatorColor: AmneziaStyle.color.tcBlue
+                checkedIndicatorBorderColor: AmneziaStyle.color.tcBlue
+                checkedInnerCircleColor: AmneziaStyle.color.tcCard
+                defaultIndicatorBorderColor: AmneziaStyle.color.tcStroke
+                defaultInnerCircleColor: AmneziaStyle.color.tcMuted
 
                 checked: SettingsController.isAutoConnectEnabled()
                 onToggled: function() {
@@ -141,6 +175,7 @@ PageType {
 
             DividerType {
                 visible: !GC.isMobile() && !IsMacOsNeBuild
+                color: AmneziaStyle.color.tcStroke
             }
 
             SwitcherType {
@@ -153,6 +188,13 @@ PageType {
 
                 text: qsTr("Start minimized")
                 descriptionText: qsTr("Launch application minimized (works with autostart option turned on)")
+                textColor: AmneziaStyle.color.tcInk
+                descriptionTextColor: AmneziaStyle.color.tcMuted
+                checkedIndicatorColor: AmneziaStyle.color.tcBlue
+                checkedIndicatorBorderColor: AmneziaStyle.color.tcBlue
+                checkedInnerCircleColor: AmneziaStyle.color.tcCard
+                defaultIndicatorBorderColor: AmneziaStyle.color.tcStroke
+                defaultInnerCircleColor: AmneziaStyle.color.tcMuted
 
                 enabled: SettingsController.autoStartEnabled
                 opacity: enabled ? 1.0 : 0.5
@@ -167,6 +209,7 @@ PageType {
 
             DividerType {
                 visible: !GC.isMobile() && ServersUiController.hasServersFromGatewayApi
+                color: AmneziaStyle.color.tcStroke
             }
 
             SwitcherType {
@@ -179,6 +222,13 @@ PageType {
 
                 text: qsTr("News Notification")
                 descriptionText: qsTr("Show a notification icon for unread news")
+                textColor: AmneziaStyle.color.tcInk
+                descriptionTextColor: AmneziaStyle.color.tcMuted
+                checkedIndicatorColor: AmneziaStyle.color.tcBlue
+                checkedIndicatorBorderColor: AmneziaStyle.color.tcBlue
+                checkedInnerCircleColor: AmneziaStyle.color.tcCard
+                defaultIndicatorBorderColor: AmneziaStyle.color.tcStroke
+                defaultInnerCircleColor: AmneziaStyle.color.tcMuted
 
                 checked: SettingsController.isNewsNotificationsEnabled()
                 onToggled: function() {
@@ -190,6 +240,7 @@ PageType {
 
             DividerType {
                 visible: ServersUiController.hasServersFromGatewayApi
+                color: AmneziaStyle.color.tcStroke
             }
 
             SwitcherType {
@@ -200,6 +251,13 @@ PageType {
 
                 text: qsTr("Check for updates automatically")
                 descriptionText: qsTr("Check for a new app version at startup")
+                textColor: AmneziaStyle.color.tcInk
+                descriptionTextColor: AmneziaStyle.color.tcMuted
+                checkedIndicatorColor: AmneziaStyle.color.tcBlue
+                checkedIndicatorBorderColor: AmneziaStyle.color.tcBlue
+                checkedInnerCircleColor: AmneziaStyle.color.tcCard
+                defaultIndicatorBorderColor: AmneziaStyle.color.tcStroke
+                defaultInnerCircleColor: AmneziaStyle.color.tcMuted
 
                 checked: SettingsController.isAutoUpdateCheckEnabled()
                 onToggled: function() {
@@ -211,6 +269,7 @@ PageType {
 
             DividerType {
                 visible: !GC.isMobile()
+                color: AmneziaStyle.color.tcStroke
             }
         }
 
@@ -226,13 +285,16 @@ PageType {
                 text: qsTr("Language")
                 descriptionText: LanguageUiController.currentLanguageName
                 rightImageSource: "qrc:/images/controls/chevron-right.svg"
+                textColor: AmneziaStyle.color.tcInk
+                descriptionColor: AmneziaStyle.color.tcMuted
+                rightImageColor: AmneziaStyle.color.tcBlue
 
                 clickedFunction: function() {
                     selectLanguageDrawer.openTriggered()
                 }
             }
 
-            DividerType {}
+            DividerType { color: AmneziaStyle.color.tcStroke }
 
             LabelWithButtonType {
                 id: labelWithButtonLogging
@@ -242,13 +304,16 @@ PageType {
                 text: qsTr("Logging")
                 descriptionText: SettingsController.isLoggingEnabled ? qsTr("Enabled") : qsTr("Disabled")
                 rightImageSource: "qrc:/images/controls/chevron-right.svg"
+                textColor: AmneziaStyle.color.tcInk
+                descriptionColor: AmneziaStyle.color.tcMuted
+                rightImageColor: AmneziaStyle.color.tcBlue
 
                 clickedFunction: function() {
                     PageController.goToPage(PageEnum.PageSettingsLogging)
                 }
             }
 
-            DividerType {}
+            DividerType { color: AmneziaStyle.color.tcStroke }
 
             LabelWithButtonType {
                 id: labelWithButtonReset
@@ -258,6 +323,7 @@ PageType {
                 text: qsTr("Reset settings and remove all data from the application")
                 rightImageSource: "qrc:/images/controls/chevron-right.svg"
                 textColor: AmneziaStyle.color.vibrantRed
+                rightImageColor: AmneziaStyle.color.vibrantRed
 
                 clickedFunction: function() {
                     var headerText = qsTr("Reset settings and remove all data from the application?")
@@ -281,7 +347,7 @@ PageType {
                 }
             }
 
-            DividerType {}
+            DividerType { color: AmneziaStyle.color.tcStroke }
         }
     }
 

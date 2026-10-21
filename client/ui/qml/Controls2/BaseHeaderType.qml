@@ -15,6 +15,7 @@ Item {
     property int headerTextMaximumLineCount: 2
     property int headerTextElide: Qt.ElideRight
     property string descriptionText
+    property color descriptionColor: AmneziaStyle.color.mutedGray
     property string descriptionLinkText
     property string descriptionLinkUrl
     property alias headerRow: headerRow
@@ -49,7 +50,7 @@ Item {
             Layout.topMargin: 16
             Layout.fillWidth: true
             text: root.descriptionText
-            color: AmneziaStyle.color.mutedGray
+            color: root.descriptionColor
             visible: root.descriptionText !== ""
         }
 
