@@ -21,6 +21,7 @@ PageType {
     property string pendingVpnCountry: ""
     property bool connectAfterImport: false
     property bool importingProfile: false
+    property bool pendingLogoutAll: false
     property string countryFilter: ""
 
     // The account page is inside PageStart's IME-adjusted StackView.
@@ -90,6 +91,19 @@ PageType {
             connectAfterImport = true
             TunnelCoreController.selectCurrentConfig()
         }
+    }
+
+    function signOutEverywhere() {
+        if (TunnelCoreController.busy || root.pendingLogoutAll)
+            return
+
+        if (ConnectionController.isConnected || ConnectionController.isConnectionInProgress) {
+            root.pendingLogoutAll = true
+            ConnectionController.closeConnection()
+            return
+        }
+
+        TunnelCoreController.logoutAll()
     }
 
     function localizedTariffName(subscription) {
@@ -185,6 +199,14 @@ PageType {
     Connections {
         target: ConnectionController
         function onConnectionStateChanged() {
+            if (root.pendingLogoutAll
+                    && !ConnectionController.isConnected
+                    && !ConnectionController.isConnectionInProgress) {
+                root.pendingLogoutAll = false
+                TunnelCoreController.logoutAll()
+                return
+            }
+
             if (root.pendingVpnCountry.length === 0
                     || ConnectionController.isConnected
                     || ConnectionController.isConnectionInProgress) {
@@ -910,7 +932,7 @@ PageType {
                     Layout.topMargin: 8
                     text: qsTr("Sign out on all devices")
                     enabled: !TunnelCoreController.busy && !root.importingProfile
-                             && root.pendingVpnCountry.length === 0
+                             && root.pendingVpnCountry.length === 0 && !root.pendingLogoutAll
                     defaultColor: AmneziaStyle.color.vibrantRed
                     hoveredColor: AmneziaStyle.color.vibrantRed
                     pressedColor: AmneziaStyle.color.vibrantRed
@@ -922,9 +944,7 @@ PageType {
                             qsTr("Sign out everywhere"),
                             qsTr("Cancel"),
                             function() {
-                                if (ConnectionController.isConnected || ConnectionController.isConnectionInProgress)
-                                    ConnectionController.closeConnection()
-                                TunnelCoreController.logoutAll()
+                                root.signOutEverywhere()
                             },
                             function() {}
                         )

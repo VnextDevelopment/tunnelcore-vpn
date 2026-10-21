@@ -124,6 +124,18 @@ class TunnelCoreUiTest(unittest.TestCase):
         self.assertNotIn("Осталось 7 дней", ACCOUNT)
         self.assertNotIn("5 devices", ACCOUNT)
 
+    def test_logout_all_waits_for_vpn_disconnect(self):
+        self.assertIn("property bool pendingLogoutAll: false", ACCOUNT)
+        sign_out_flow = ACCOUNT.split("function signOutEverywhere()", 1)[1].split(
+            "function localizedTariffName", 1
+        )[0]
+        self.assertLess(
+            sign_out_flow.index("ConnectionController.closeConnection()"),
+            sign_out_flow.index("TunnelCoreController.logoutAll()"),
+        )
+        self.assertIn("if (root.pendingLogoutAll", ACCOUNT)
+        self.assertIn("root.signOutEverywhere()", ACCOUNT)
+
     def test_brand_tokens_defined(self):
         for token in set(re.findall(r"AmneziaStyle\.color\.(tc\w+)", ACCOUNT)):
             self.assertRegex(PALETTE, rf"property (?:color|string) {re.escape(token)}\b")
