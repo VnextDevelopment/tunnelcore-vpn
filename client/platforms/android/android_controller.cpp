@@ -307,6 +307,11 @@ void AndroidController::requestNotificationPermission()
     callActivityMethod("requestNotificationPermission", "()V");
 }
 
+void AndroidController::requestQuickSettingsTile()
+{
+    callActivityMethod("requestQuickSettingsTile", "()V");
+}
+
 void AndroidController::showSubscriptionNotification(const QString &title, const QString &message)
 {
     callActivityMethod("showSubscriptionNotification",

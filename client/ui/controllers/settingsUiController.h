@@ -87,6 +87,7 @@ public slots:
 
     bool isNotificationPermissionGranted();
     void requestNotificationPermission();
+    void requestQuickSettingsTile();
 
     QString getInstallationUuid();
 

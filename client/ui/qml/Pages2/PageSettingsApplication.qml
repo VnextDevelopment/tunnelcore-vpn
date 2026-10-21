@@ -116,6 +116,29 @@ PageType {
                 color: AmneziaStyle.color.tcStroke
             }
 
+            LabelWithButtonType {
+                id: labelQuickSettingsTile
+
+                visible: Qt.platform.os === "android" && !SettingsController.isOnTv()
+                Layout.fillWidth: true
+
+                text: qsTr("Add VPN to Quick Settings")
+                descriptionText: qsTr("Connect or disconnect TunnelCore VPN from the Android Quick Settings panel")
+                rightImageSource: "qrc:/images/controls/chevron-right.svg"
+                textColor: AmneziaStyle.color.tcInk
+                descriptionColor: AmneziaStyle.color.tcMuted
+                rightImageColor: AmneziaStyle.color.tcBlue
+
+                clickedFunction: function() {
+                    SettingsController.requestQuickSettingsTile()
+                }
+            }
+
+            DividerType {
+                visible: Qt.platform.os === "android" && !SettingsController.isOnTv()
+                color: AmneziaStyle.color.tcStroke
+            }
+
             SwitcherType {
                 id: switcherAutoStart
 

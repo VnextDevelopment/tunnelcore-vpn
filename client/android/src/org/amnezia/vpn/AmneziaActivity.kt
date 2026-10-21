@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.app.NotificationManager
+import android.app.StatusBarManager
 import android.content.ActivityNotFoundException
 import android.content.BroadcastReceiver
 import android.content.ComponentName
@@ -14,6 +15,7 @@ import android.content.Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.drawable.Icon
 import android.net.Uri
 import android.net.VpnService
 import android.os.Build
@@ -1064,6 +1066,54 @@ class AmneziaActivity : QtActivity() {
     fun getAppIcon(packageName: String, width: Int, height: Int): Bitmap {
         Log.v(TAG, "Get app icon")
         return AppListProvider.getAppIcon(packageManager, packageName, width, height)
+    }
+
+    /**
+     * Android 13+ allows apps to ask the user to add a Quick Settings tile.
+     * On Android 7-12 the user must add the tile manually in Quick Settings.
+     */
+    @Suppress("unused")
+    fun requestQuickSettingsTile() {
+        runOnUiThread {
+            val showManualInstructions = {
+                Toast.makeText(this, R.string.quickTileManualAdd, Toast.LENGTH_LONG).show()
+            }
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                showManualInstructions()
+                return@runOnUiThread
+            }
+
+            val statusBarManager = getSystemService(StatusBarManager::class.java)
+            if (statusBarManager == null) {
+                showManualInstructions()
+                return@runOnUiThread
+            }
+
+            try {
+                statusBarManager.requestAddTileService(
+                    ComponentName(this, AmneziaTileService::class.java),
+                    getString(R.string.quickTileLabel),
+                    Icon.createWithResource(this, R.drawable.ic_tunnelcore_round),
+                    mainExecutor
+                ) { result ->
+                    when (result) {
+                        StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED ->
+                            Log.d(TAG, "Quick Settings tile added")
+                        StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED ->
+                            Toast.makeText(this, R.string.quickTileAlreadyAdded, Toast.LENGTH_SHORT).show()
+                        StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_NOT_ADDED ->
+                            Log.d(TAG, "User chose not to add Quick Settings tile")
+                        else -> {
+                            Log.w(TAG, "Quick Settings tile request failed: $result")
+                            showManualInstructions()
+                        }
+                    }
+                }
+            } catch (e: RuntimeException) {
+                Log.w(TAG, "Unable to request Quick Settings tile: $e")
+                showManualInstructions()
+            }
+        }
     }
 
     @Suppress("unused")
