@@ -29,7 +29,6 @@ import org.amnezia.vpn.protocol.ProtocolState.UNKNOWN
 import org.amnezia.vpn.util.Log
 
 private const val TAG = "AmneziaTileService"
-private const val DEFAULT_TILE_LABEL = "AmneziaVPN"
 
 class AmneziaTileService : TileService() {
 
@@ -134,12 +133,17 @@ class AmneziaTileService : TileService() {
     private fun onClickInternal() {
         if (isVpnConfigExists && vpnProto != null) {
             Log.d(TAG, "Change VPN state")
-            if (qsTile.state == Tile.STATE_INACTIVE) {
+            val tile = qsTile ?: return
+            if (tile.state == Tile.STATE_INACTIVE) {
                 Log.d(TAG, "Start VPN")
+                tile.state = Tile.STATE_UNAVAILABLE // Ignore repeated taps while starting
+                tile.updateTile()
                 updateVpnState(CONNECTING)
                 startVpn()
-            } else if (qsTile.state == Tile.STATE_ACTIVE) {
-                Log.d(TAG, "Stop vpn")
+            } else if (tile.state == Tile.STATE_ACTIVE) {
+                Log.d(TAG, "Stop VPN")
+                tile.state = Tile.STATE_UNAVAILABLE
+                tile.updateTile()
                 updateVpnState(DISCONNECTING)
                 stopVpn()
             }
@@ -156,10 +160,13 @@ class AmneziaTileService : TileService() {
     private fun doBindService() {
         Log.d(TAG, "Bind service")
         vpnProto?.let { proto ->
-            Intent(this, proto.serviceClass).also {
-                bindService(it, serviceConnection, BIND_ABOVE_CLIENT)
+            isInBoundState = bindService(
+                Intent(this, proto.serviceClass), serviceConnection, BIND_ABOVE_CLIENT
+            )
+            if (!isInBoundState) {
+                Log.w(TAG, "Unable to bind VPN service")
+                updateVpnState(DISCONNECTED)
             }
-            isInBoundState = true
         }
     }
 
@@ -178,8 +185,11 @@ class AmneziaTileService : TileService() {
             connectToVpn()
         } else {
             if (checkPermission()) {
-                startVpnService()
-                doBindService()
+                if (startVpnService()) {
+                    doBindService()
+                } else {
+                    updateVpnState(DISCONNECTED)
+                }
             } else {
                 updateVpnState(DISCONNECTED)
             }
@@ -199,17 +209,21 @@ class AmneziaTileService : TileService() {
             true
         }
 
-    private fun startVpnService() {
-        vpnProto?.let { proto ->
-            try {
-                ContextCompat.startForegroundService(
-                    applicationContext,
-                    Intent(this, proto.serviceClass)
-                )
-            } catch (e: SecurityException) {
-                Log.e(TAG, "Failed to start ${proto.serviceClass.simpleName}: $e")
-            }
-        } ?: Log.e(TAG, "Failed to start vpn service: vpnProto is null")
+    private fun startVpnService(): Boolean {
+        val proto = vpnProto ?: return false
+        return try {
+            ContextCompat.startForegroundService(
+                applicationContext,
+                Intent(this, proto.serviceClass)
+            )
+            true
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Failed to start ${proto.serviceClass.simpleName}: $e")
+            false
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Foreground VPN service start was not allowed: $e")
+            false
+        }
     }
 
     private fun connectToVpn() = vpnServiceMessenger.send(Action.CONNECT)
@@ -241,20 +255,24 @@ class AmneziaTileService : TileService() {
 
     private fun updateTile(vpnState: VpnState) {
         Log.d(TAG, "Update tile: $vpnState")
-        isVpnConfigExists = vpnState.serverName != null
+        isVpnConfigExists = vpnState.vpnProto != null
         vpnProto = vpnState.vpnProto
         val tile = qsTile ?: return
         tile.apply {
-            label = (vpnState.serverName ?: DEFAULT_TILE_LABEL) + (vpnProto?.let { " ${it.label}" } ?: "")
+            label = getString(R.string.quickTileLabel)
             when (val protocolState = vpnState.protocolState) {
                 CONNECTED -> {
                     state = Tile.STATE_ACTIVE
-                    subtitleCompat = null
+                    subtitleCompat = vpnState.serverName ?: getString(R.string.connected)
                 }
 
                 DISCONNECTED, UNKNOWN -> {
                     state = Tile.STATE_INACTIVE
-                    subtitleCompat = null
+                    subtitleCompat = when {
+                        !isVpnConfigExists -> getString(R.string.quickTileNotConfigured)
+                        vpnState.serverName != null -> vpnState.serverName
+                        else -> getString(R.string.disconnected)
+                    }
                 }
 
                 CONNECTING, DISCONNECTING, RECONNECTING -> {

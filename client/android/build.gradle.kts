@@ -43,7 +43,7 @@ android {
         targetSdk = qtTargetSdkVersion.toInt()
 
         // keeps language resources for only the locales specified below
-        resourceConfigurations += listOf("en", "ru", "b+zh+Hans")
+        resourceConfigurations += listOf("en", "ru", "tr", "b+zh+Hans")
         // ndk.abiFilters is only used for single-ABI builds; multi-ABI uses splits below
         if (abiList.size == 1) {
             ndk.abiFilters += abiList

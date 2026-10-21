@@ -1,5 +1,9 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
+    <string name="quickTileLabel">TunnelCore VPN</string>
+    <string name="quickTileNotConfigured">Откройте приложение для настройки VPN</string>
+    <string name="quickTileManualAdd">Дважды проведите вниз, нажмите «Изменить» и добавьте TunnelCore VPN в быстрые настройки.</string>
+    <string name="quickTileAlreadyAdded">TunnelCore VPN уже добавлен в быстрые настройки</string>
     <string name="disconnected">Не подключено</string>
     <string name="connected">Подключено</string>
     <string name="connecting">Подключение…</string>

@@ -1,5 +1,9 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
+    <string name="quickTileLabel">TunnelCore VPN</string>
+    <string name="quickTileNotConfigured">VPN kurulumu için uygulamayı açın</string>
+    <string name="quickTileManualAdd">İki kez aşağı kaydırın, Düzenle’ye dokunun ve TunnelCore VPN’i Hızlı Ayarlar’a ekleyin.</string>
+    <string name="quickTileAlreadyAdded">TunnelCore VPN zaten Hızlı Ayarlar’da</string>
     <string name="disconnected">Bağlı değil</string>
     <string name="connected">Bağlandı</string>
     <string name="connecting">Bağlanıyor…</string>
