@@ -1,0 +1,98 @@
+name: Publish TunnelCore VPN release
+
+# Publishing is an explicit release decision. Only artifacts from a green main-branch
+# desktop build may be promoted; CI builds alone are not public updates.
+on:
+  workflow_dispatch:
+    inputs:
+      build_run_id:
+        description: "Successful Deploy workflow run ID on main (Windows + Linux)"
+        required: true
+        type: string
+      version:
+        description: "Exact artifact version, e.g. 5.0.2.63"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: publish-tunnelcore-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Verify green main build and selected version
+        id: verify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD_RUN_ID: ${{ inputs.build_run_id }}
+          VERSION: ${{ inputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
+          [[ "$BUILD_RUN_ID" =~ ^[0-9]+$ ]] || exit 1
+          META=$(gh api "repos/${{ github.repository }}/actions/runs/$BUILD_RUN_ID")
+          BRANCH=$(jq -r .head_branch <<< "$META")
+          NAME=$(jq -r .name <<< "$META")
+          CONCLUSION=$(jq -r .conclusion <<< "$META")
+          SHA=$(jq -r .head_sha <<< "$META")
+          RUN_NUMBER=$(jq -r .run_number <<< "$META")
+          [[ "$BRANCH" == "main" && "$NAME" == "Deploy workflow" && "$CONCLUSION" == "success" ]] || {
+            echo "::error::Only a green Deploy workflow run from main may be published"
+            exit 1
+          }
+          # The deploy build derives its fourth version component from GITHUB_RUN_NUMBER.
+          [[ "$VERSION" == "5.0.2.$RUN_NUMBER" ]] || {
+            echo "::error::Version does not match the selected build run number"
+            exit 1
+          }
+          echo "commit=$SHA" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Download artifacts from verified run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD_RUN_ID: ${{ inputs.build_run_id }}
+          VERSION: ${{ inputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh run download "$BUILD_RUN_ID" --repo "${{ github.repository }}" --dir dist
+          mkdir -p release
+          for suffix in windows_x64.exe windows_x64.msi linux_x64.run; do
+            file="TunnelCoreVPN_${VERSION}_$suffix"
+            mapfile -t matches < <(find dist -type f -name "$file")
+            [[ "${#matches[@]}" == 1 ]] || {
+              echo "::error::Missing or duplicate build artifact $file"
+              exit 1
+            }
+            cp -- "${matches[0]}" "release/$file"
+          done
+          ( cd release && sha256sum TunnelCoreVPN_* > SHA256SUMS.txt )
+          test "$(find release -type f | wc -l)" -eq 4
+
+      - name: Publish immutable GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.verify.outputs.tag }}
+          SHA: ${{ steps.verify.outputs.commit }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            echo "::error::Release already exists. Update artifacts via an audited process, not this workflow."
+            exit 1
+          fi
+          gh release create "$TAG" release/* \
+            --repo "${{ github.repository }}" \
+            --target "$SHA" \
+            --title "TunnelCore VPN $TAG" \
+            --notes "TunnelCore VPN desktop release. SHA-256 checksums are attached. Update only from the official TunnelCore application and GitHub organization." \
+            --latest

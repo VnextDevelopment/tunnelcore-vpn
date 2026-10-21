@@ -28,6 +28,13 @@ Window  {
         }
     }
 
+    Connections {
+        target: UpdateController
+        function onUpdateFound() {
+            PageController.showNotificationMessage(qsTr("A new TunnelCore VPN version is available"))
+        }
+    }
+
     // Hide the window immediately when Android Activity.onPause() fires so that
     // Qt's render loop stops before the EGL surface is disconnected.  This
     // prevents "QRhiGles2: Failed to make context current" and the resulting

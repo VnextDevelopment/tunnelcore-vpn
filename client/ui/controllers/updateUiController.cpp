@@ -72,6 +72,11 @@ bool UpdateUiController::isStoreUpdate() const
     return m_updateController ? m_updateController->isStoreUpdate() : false;
 }
 
+bool UpdateUiController::isMandatory() const
+{
+    return m_updateController ? m_updateController->isMandatory() : false;
+}
+
 bool UpdateUiController::isCheckRunning() const
 {
     return m_updateController ? m_updateController->isUpdateCheckRunning() : false;

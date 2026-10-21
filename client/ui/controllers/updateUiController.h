@@ -18,6 +18,7 @@ class UpdateUiController : public QObject
     Q_PROPERTY(QStringList bugFixes READ getBugFixes NOTIFY updateFound)
     Q_PROPERTY(int updateState READ getUpdateState NOTIFY updateStateChanged)
     Q_PROPERTY(bool isStoreUpdate READ isStoreUpdate CONSTANT)
+    Q_PROPERTY(bool isMandatory READ isMandatory NOTIFY updateFound)
     Q_PROPERTY(bool isCheckRunning READ isCheckRunning NOTIFY isCheckRunningChanged)
 
 public:
@@ -32,6 +33,7 @@ public:
     QStringList getBugFixes() const;
     int getUpdateState() const;
     bool isStoreUpdate() const;
+    bool isMandatory() const;
     bool isCheckRunning() const;
 
 public slots:

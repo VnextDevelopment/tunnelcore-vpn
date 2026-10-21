@@ -23,7 +23,7 @@ PageType {
             if (UpdateController.updateState === UpdateState.ReadyToInstall) {
                 PageController.showNotificationMessage(qsTr("Done. Install the update"))
             } else if (UpdateController.updateState === UpdateState.DownloadError) {
-                PageController.showNotificationMessage(qsTr("Download failed. Download manually from amnezia.org"))
+                PageController.showNotificationMessage(qsTr("Download failed. Please try again or get the installer from the official TunnelCore release page."))
             }
         }
     }
@@ -166,7 +166,7 @@ PageType {
                 AppH1TextType {
                     Layout.fillWidth: true
 
-                    text: qsTr("New version available")
+                    text: UpdateController.isMandatory ? qsTr("Security update recommended") : qsTr("New version available")
                 }
 
                 AppH3TextType {
