@@ -163,4 +163,15 @@
     <message><source>Could not confirm the account deletion request. Contact support.</source><translation>Hesap silme isteği doğrulanamadı. Destek ekibiyle iletişime geçin.</translation></message>
     <message><source>Could not submit the account deletion request. Try again or use the website.</source><translation>Hesap silme isteği gönderilemedi. Yeniden deneyin veya web sitesini kullanın.</translation></message>
 </context>
+<context>
+    <name>PageSettingsApplication</name>
+    <message>
+        <source>Add VPN to Quick Settings</source>
+        <translation>VPN&apos;yi Hızlı Ayarlar&apos;a ekle</translation>
+    </message>
+    <message>
+        <source>Connect or disconnect TunnelCore VPN from the Android Quick Settings panel</source>
+        <translation>TunnelCore VPN&apos;i Android Hızlı Ayarlar panelinden bağlayın veya bağlantısını kesin</translation>
+    </message>
+</context>
 </TS>
