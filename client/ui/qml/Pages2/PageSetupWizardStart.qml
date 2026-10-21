@@ -36,15 +36,14 @@ PageType {
             y: Math.max(0, (content.height - implicitHeight) / 2)
             spacing: 16
 
-            Image {
+            IconImageType {
                 source: "qrc:/images/icon.png"
+                tint: ""
                 Layout.alignment: Qt.AlignHCenter
                 Layout.preferredWidth: 160
                 Layout.preferredHeight: 160
                 Layout.maximumWidth: 160
                 Layout.maximumHeight: 160
-                fillMode: Image.PreserveAspectFit
-                smooth: true
             }
 
             Header2TextType {

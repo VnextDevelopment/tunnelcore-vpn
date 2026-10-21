@@ -8,6 +8,7 @@ FocusScope {
     id: root
 
     property string backButtonImage: "qrc:/images/controls/arrow-left.svg"
+    property string imageColor: AmneziaStyle.color.paleGray
     property var backButtonFunction
 
     implicitWidth: content.implicitWidth
@@ -24,7 +25,7 @@ FocusScope {
         ImageButtonType {
             id: backButton
             image: backButtonImage
-            imageColor: AmneziaStyle.color.paleGray
+            imageColor: root.imageColor
 
             implicitWidth: 40
             implicitHeight: 40

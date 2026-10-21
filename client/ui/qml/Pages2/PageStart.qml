@@ -29,7 +29,7 @@ PageType {
         }
 
         function onGoToPageSettings() {
-            tabBar.setCurrentIndex(1)
+            tabBar.setCurrentIndex(4)
             tabBarStackView.goToTabBarPage(PageEnum.PageSettings)
         }
 
@@ -268,11 +268,14 @@ PageType {
 
         enabled: !root.isControlsDisabled
 
-        function goToTabBarPage(page) {
-            var pagePath = PageController.getPagePath(page === PageEnum.PageHome
-                                                      ? PageEnum.PageTunnelCoreAccount : page)
+        function goToTabBarPage(page, section) {
+            var effectivePage = page === PageEnum.PageHome ? PageEnum.PageTunnelCoreAccount : page
+            var pagePath = PageController.getPagePath(effectivePage)
+            var properties = { "objectName": pagePath }
+            if (effectivePage === PageEnum.PageTunnelCoreAccount)
+                properties.viewMode = section || "home"
             tabBarStackView.clear(StackView.Immediate)
-            tabBarStackView.replace(pagePath, { "objectName" : pagePath }, StackView.Immediate)
+            tabBarStackView.replace(pagePath, properties, StackView.Immediate)
         }
 
         Component.onCompleted: {
@@ -312,8 +315,8 @@ PageType {
 
         topPadding: 8
         bottomPadding: 8 + PageController.safeAreaBottomMargin
-        leftPadding: 96
-        rightPadding: 96
+        leftPadding: 4
+        rightPadding: 4
 
         height: visible ? homeTabButton.implicitHeight + tabBar.topPadding + tabBar.bottomPadding : 0
 
@@ -336,8 +339,8 @@ PageType {
                 PathLine { x: 0; y: 0 }
 
                 strokeWidth: 1
-                strokeColor: AmneziaStyle.color.slateGray
-                fillColor: AmneziaStyle.color.onyxBlack
+                strokeColor: AmneziaStyle.color.tcStroke
+                fillColor: AmneziaStyle.color.tcCard
             }
         }
 
@@ -347,6 +350,9 @@ PageType {
 
             isSelected: tabBar.currentIndex === 0
             image: "qrc:/images/controls/home.svg"
+            caption: "VPN"
+            selectedColor: AmneziaStyle.color.tcBlue
+            defaultColor: AmneziaStyle.color.tcMuted
             clickedFunc: function () {
                 tabBarStackView.goToTabBarPage(PageEnum.PageHome)
                 ServersUiController.setProcessedServerId(ServersUiController.defaultServerId)
@@ -354,12 +360,58 @@ PageType {
             }
         }
 
+
+        TabImageButtonType {
+            id: countryTabButton
+            objectName: "countryTabButton"
+            isSelected: tabBar.currentIndex === 1
+            image: "qrc:/images/controls/globe-2.svg"
+            caption: qsTranslate("PageTunnelCoreAccount", "VPN location")
+            selectedColor: AmneziaStyle.color.tcBlue
+            defaultColor: AmneziaStyle.color.tcMuted
+            clickedFunc: function () {
+                tabBarStackView.goToTabBarPage(PageEnum.PageTunnelCoreAccount, "countries")
+                tabBar.currentIndex = 1
+            }
+        }
+
+        TabImageButtonType {
+            id: subscriptionTabButton
+            objectName: "subscriptionTabButton"
+            isSelected: tabBar.currentIndex === 2
+            image: "qrc:/images/controls/server.svg"
+            caption: qsTranslate("PageTunnelCoreAccount", "Subscriptions")
+            selectedColor: AmneziaStyle.color.tcBlue
+            defaultColor: AmneziaStyle.color.tcMuted
+            clickedFunc: function () {
+                tabBarStackView.goToTabBarPage(PageEnum.PageTunnelCoreAccount, "subscription")
+                tabBar.currentIndex = 2
+            }
+        }
+
+        TabImageButtonType {
+            id: profileTabButton
+            objectName: "profileTabButton"
+            isSelected: tabBar.currentIndex === 3
+            image: "qrc:/images/controls/app.svg"
+            caption: qsTranslate("PageTunnelCoreAccount", "Account")
+            selectedColor: AmneziaStyle.color.tcBlue
+            defaultColor: AmneziaStyle.color.tcMuted
+            clickedFunc: function () {
+                tabBarStackView.goToTabBarPage(PageEnum.PageTunnelCoreAccount, "profile")
+                tabBar.currentIndex = 3
+            }
+        }
+
         TabImageButtonType {
             id: settingsTabButton
             objectName: "settingsTabButton"
 
-            isSelected: tabBar.currentIndex === 1
+            isSelected: tabBar.currentIndex === 4
             image: (ServersUiController.hasServersFromGatewayApi && NewsModel.hasUnread && SettingsController.isNewsNotificationsEnabled()) ? "qrc:/images/controls/settings-news.svg" : "qrc:/images/controls/settings.svg"
+            caption: qsTranslate("PageSettings", "Settings")
+            selectedColor: AmneziaStyle.color.tcBlue
+            defaultColor: AmneziaStyle.color.tcMuted
             Binding {
                 target: settingsTabButton
                 property: "defaultColor"
@@ -368,7 +420,7 @@ PageType {
             }
             clickedFunc: function () {
                 tabBarStackView.goToTabBarPage(PageEnum.PageSettings)
-                tabBar.currentIndex = 1
+                tabBar.currentIndex = 4
             }
         }
 

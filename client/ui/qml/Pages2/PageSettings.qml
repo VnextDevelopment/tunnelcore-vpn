@@ -29,6 +29,11 @@ PageType {
         }
     }
 
+    Rectangle {
+        anchors.fill: parent
+        color: AmneziaStyle.color.tcBackground
+    }
+
     ListViewType {
         id: listView
 
@@ -46,30 +51,80 @@ PageType {
                 Layout.leftMargin: 16
 
                 headerText: qsTr("Settings")
+                headerColor: AmneziaStyle.color.tcInk
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
+                Layout.bottomMargin: 16
+                implicitHeight: profileSummary.implicitHeight + 36
+                visible: TunnelCoreController.authenticated
+                radius: 22
+                color: AmneziaStyle.color.tcSurfaceBlue
+                border.color: AmneziaStyle.color.tcStroke
+                border.width: 1
+
+                ColumnLayout {
+                    id: profileSummary
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.margins: 18
+                    spacing: 8
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: TunnelCoreController.username
+                        font.pixelSize: 18
+                        font.weight: Font.DemiBold
+                        color: AmneziaStyle.color.tcInk
+                        elide: Text.ElideMiddle
+                    }
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: TunnelCoreController.subscriptionStatusText
+                        font.pixelSize: 14
+                        color: AmneziaStyle.color.tcMuted
+                        wrapMode: Text.WordWrap
+                    }
+                }
             }
         }
 
         model: settingsEntries
 
-        delegate: ColumnLayout {
+        delegate: Item {
             width: listView.width
+            height: isVisible ? 84 : 0
+            visible: isVisible
 
-            spacing: 0
+            Rectangle {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.leftMargin: 16
+                anchors.rightMargin: 16
+                anchors.topMargin: 4
+                height: 76
+                radius: 18
+                color: AmneziaStyle.color.tcCard
+                border.width: 1
+                border.color: AmneziaStyle.color.tcStroke
 
-            LabelWithButtonType {
-                Layout.fillWidth: true
-
-                visible: isVisible
-
-                text: title
-                rightImageSource: "qrc:/images/controls/chevron-right.svg"
-                leftImageSource: leftImagePath
-
-                clickedFunction: clickedHandler
-            }
-
-            DividerType {
-                visible: isVisible
+                LabelWithButtonType {
+                    anchors.fill: parent
+                    text: title
+                    textColor: AmneziaStyle.color.tcInk
+                    descriptionColor: AmneziaStyle.color.tcMuted
+                    rightImageColor: AmneziaStyle.color.tcBlue
+                    leftImageColor: AmneziaStyle.color.tcBlue
+                    rightImageSource: "qrc:/images/controls/chevron-right.svg"
+                    leftImageSource: leftImagePath
+                    clickedFunction: clickedHandler
+                }
             }
         }
 
@@ -83,6 +138,8 @@ PageType {
                 Layout.fillWidth: true
 
                 text: qsTr("Close application")
+                textColor: AmneziaStyle.color.tcInk
+                leftImageColor: AmneziaStyle.color.tcBlue
                 leftImageSource: "qrc:/images/controls/x-circle.svg"
                 isLeftImageHoverEnabled: false
 

@@ -52,5 +52,18 @@ QtObject {
         readonly property color borderSoft: '#3F3F46'
         readonly property color accentSuccess: '#4ADE80'
         readonly property color accentWarning: '#EAB308'
+        
+        // TunnelCore light surfaces. These tokens deliberately coexist with
+        // Amnezia's original dark palette while screens are migrated.
+        readonly property color tcBackground: '#F4F8FD'
+        readonly property color tcCard: '#FFFFFF'
+        readonly property color tcInk: '#0F1938'
+        readonly property color tcMuted: '#657897'
+        readonly property color tcBlue: '#1478F9'
+        readonly property string tcBlueString: '#1478F9'
+        readonly property color tcCyan: '#20CBE3'
+        readonly property color tcStroke: '#DBE8F8'
+        readonly property color tcSurfaceBlue: '#EAF5FF'
+        readonly property color tcSuccess: '#0BBE9C'
     }
 }

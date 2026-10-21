@@ -129,6 +129,11 @@ PageType {
         return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
     }
 
+    Rectangle {
+        anchors.fill: parent
+        color: AmneziaStyle.color.tcBackground
+    }
+
     ColumnLayout {
         id: header
 
@@ -143,6 +148,7 @@ PageType {
         }
 
         HeaderTypeWithSwitcher {
+            headerColor: AmneziaStyle.color.tcInk
             Layout.fillWidth: true
             Layout.leftMargin: 16
             Layout.rightMargin: 16
@@ -162,6 +168,12 @@ PageType {
         }
 
         DropDownType {
+            textColor: AmneziaStyle.color.tcInk
+            rootButtonImageColor: AmneziaStyle.color.tcBlue
+            rootButtonBackgroundColor: AmneziaStyle.color.tcCard
+            rootButtonBackgroundHoveredColor: AmneziaStyle.color.tcSurfaceBlue
+            rootButtonBackgroundPressedColor: AmneziaStyle.color.tcSurfaceBlue
+            rootButtonDefaultBorderColor: AmneziaStyle.color.tcStroke
             id: countryBypassSelector
 
             Layout.fillWidth: true
@@ -354,6 +366,12 @@ PageType {
         }
 
         DropDownType {
+            textColor: AmneziaStyle.color.tcInk
+            rootButtonImageColor: AmneziaStyle.color.tcBlue
+            rootButtonBackgroundColor: AmneziaStyle.color.tcCard
+            rootButtonBackgroundHoveredColor: AmneziaStyle.color.tcSurfaceBlue
+            rootButtonBackgroundPressedColor: AmneziaStyle.color.tcSurfaceBlue
+            rootButtonDefaultBorderColor: AmneziaStyle.color.tcStroke
             id: selector
 
             Layout.fillWidth: true
@@ -439,6 +457,8 @@ PageType {
             width: listView.width
 
             LabelWithButtonType {
+            textColor: AmneziaStyle.color.tcInk
+            descriptionColor: AmneziaStyle.color.tcMuted
                 id: site
                 Layout.fillWidth: true
 
@@ -495,6 +515,11 @@ PageType {
             anchors.bottomMargin: 24
 
             TextFieldWithHeaderType {
+            backgroundColor: AmneziaStyle.color.tcCard
+            textFieldTextColor: AmneziaStyle.color.tcInk
+            borderColor: AmneziaStyle.color.tcStroke
+            borderFocusedColor: AmneziaStyle.color.tcBlue
+            headerTextColor: AmneziaStyle.color.tcMuted
                 id: searchField
 
                 Layout.fillWidth: true
@@ -551,6 +576,9 @@ PageType {
             }
 
             LabelWithButtonType {
+            textColor: AmneziaStyle.color.tcInk
+            descriptionColor: AmneziaStyle.color.tcMuted
+            rightImageColor: AmneziaStyle.color.tcBlue
                 id: importSitesButton
                 Layout.fillWidth: true
 
@@ -565,6 +593,9 @@ PageType {
             DividerType {}
 
             LabelWithButtonType {
+            textColor: AmneziaStyle.color.tcInk
+            descriptionColor: AmneziaStyle.color.tcMuted
+            rightImageColor: AmneziaStyle.color.tcBlue
                 id: exportSitesButton
                 Layout.fillWidth: true
                 text: qsTr("Save site list")
@@ -592,6 +623,9 @@ PageType {
             DividerType {}
             
             LabelWithButtonType {
+            textColor: AmneziaStyle.color.tcInk
+            descriptionColor: AmneziaStyle.color.tcMuted
+            rightImageColor: AmneziaStyle.color.tcBlue
                 id: clearSitesButton
                 Layout.fillWidth: true
 
@@ -673,6 +707,9 @@ PageType {
                     width: importSitesDrawerListView.width
 
                     LabelWithButtonType {
+            textColor: AmneziaStyle.color.tcInk
+            descriptionColor: AmneziaStyle.color.tcMuted
+            rightImageColor: AmneziaStyle.color.tcBlue
                         Layout.fillWidth: true
                         Layout.leftMargin: 16
                         Layout.rightMargin: 16

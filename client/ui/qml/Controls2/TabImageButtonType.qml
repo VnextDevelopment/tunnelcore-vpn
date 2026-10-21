@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 
 import Style 1.0
 
@@ -11,6 +12,7 @@ TabButton {
     property string selectedColor: AmneziaStyle.color.goldenApricot
 
     property string image
+    property string caption: ""
 
     property bool isSelected: false
 
@@ -47,12 +49,31 @@ TabButton {
 
     hoverEnabled: true
 
+    implicitHeight: caption.length > 0 ? 56 : 44
     icon.source: ""
-    contentItem: IconImageType {
-        implicitWidth: root.icon.width > 0 ? root.icon.width : 24
-        implicitHeight: root.icon.height > 0 ? root.icon.height : 24
-        source: root.image
-        tint: root.isSelected ? root.selectedColor : root.defaultColor
+    contentItem: ColumnLayout {
+        spacing: 2
+
+        IconImageType {
+            Layout.alignment: Qt.AlignHCenter
+            Layout.preferredWidth: root.icon.width > 0 ? root.icon.width : 24
+            Layout.preferredHeight: root.icon.height > 0 ? root.icon.height : 24
+            source: root.image
+            tint: root.isSelected ? root.selectedColor : root.defaultColor
+        }
+        Text {
+            Layout.fillWidth: true
+            visible: root.caption.length > 0
+            text: root.caption
+            font.family: "PT Root UI VF"
+            font.pixelSize: 11
+            font.weight: root.isSelected ? Font.DemiBold : Font.Normal
+            color: root.isSelected ? root.selectedColor : root.defaultColor
+            horizontalAlignment: Text.AlignHCenter
+            elide: Text.ElideRight
+            maximumLineCount: 1
+            wrapMode: Text.NoWrap
+        }
     }
 
     background: Rectangle {

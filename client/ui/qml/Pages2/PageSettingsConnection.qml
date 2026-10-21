@@ -12,6 +12,11 @@ import "../Config"
 PageType {
     id: root
 
+    Rectangle {
+        anchors.fill: parent
+        color: AmneziaStyle.color.tcBackground
+    }
+
     BackButtonType {
         id: backButton
 
@@ -19,6 +24,7 @@ PageType {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.topMargin: 20 + PageController.safeAreaTopMargin
+        imageColor: AmneziaStyle.color.tcInk
 
         onActiveFocusChanged: {
             if(backButton.enabled && backButton.activeFocus) {
@@ -45,6 +51,7 @@ PageType {
                 Layout.rightMargin: 16
 
                 headerText: qsTr("Connection")
+                headerColor: AmneziaStyle.color.tcInk
             }
         }
 
@@ -62,6 +69,13 @@ PageType {
 
                 text: qsTr("Use AmneziaDNS")
                 descriptionText: qsTr("If AmneziaDNS is installed on the server")
+                textColor: AmneziaStyle.color.tcInk
+                descriptionTextColor: AmneziaStyle.color.tcMuted
+                checkedIndicatorColor: AmneziaStyle.color.tcBlue
+                checkedIndicatorBorderColor: AmneziaStyle.color.tcBlue
+                checkedInnerCircleColor: AmneziaStyle.color.tcCard
+                defaultIndicatorBorderColor: AmneziaStyle.color.tcStroke
+                defaultInnerCircleColor: AmneziaStyle.color.tcMuted
 
                 checked: SettingsController.isAmneziaDnsEnabled()
                 onToggled: function() {
@@ -71,7 +85,7 @@ PageType {
                 }
             }
 
-            DividerType {}
+            DividerType { color: AmneziaStyle.color.tcStroke }
 
             LabelWithButtonType {
                 id: dnsServersButton
@@ -81,13 +95,16 @@ PageType {
                 text: qsTr("DNS servers")
                 descriptionText: qsTr("When AmneziaDNS is not used or installed")
                 rightImageSource: "qrc:/images/controls/chevron-right.svg"
+                textColor: AmneziaStyle.color.tcInk
+                descriptionColor: AmneziaStyle.color.tcMuted
+                rightImageColor: AmneziaStyle.color.tcBlue
 
                 clickedFunction: function() {
                     PageController.goToPage(PageEnum.PageSettingsDns)
                 }
             }
 
-            DividerType {}
+            DividerType { color: AmneziaStyle.color.tcStroke }
 
             LabelWithButtonType {
                 id: splitTunnelingButton
@@ -97,13 +114,16 @@ PageType {
                 text: qsTr("Site-based split tunneling")
                 descriptionText: qsTr("Allows you to select which sites you want to access through the VPN")
                 rightImageSource: "qrc:/images/controls/chevron-right.svg"
+                textColor: AmneziaStyle.color.tcInk
+                descriptionColor: AmneziaStyle.color.tcMuted
+                rightImageColor: AmneziaStyle.color.tcBlue
 
                 clickedFunction: function() {
                     PageController.goToPage(PageEnum.PageSettingsSplitTunneling)
                 }
             }
 
-            DividerType {}
+            DividerType { color: AmneziaStyle.color.tcStroke }
 
         }
 
@@ -120,6 +140,9 @@ PageType {
                 text: qsTr("KillSwitch")
                 descriptionText: qsTr("Blocks network connections without VPN")
                 rightImageSource: "qrc:/images/controls/chevron-right.svg"
+                textColor: AmneziaStyle.color.tcInk
+                descriptionColor: AmneziaStyle.color.tcMuted
+                rightImageColor: AmneziaStyle.color.tcBlue
 
                 clickedFunction: function() {
                     PageController.goToPage(PageEnum.PageSettingsKillSwitch)
@@ -128,6 +151,7 @@ PageType {
 
             DividerType {
                 visible: GC.isDesktop()
+                color: AmneziaStyle.color.tcStroke
             }
         }
     }

@@ -86,6 +86,11 @@ PageType {
         }
     }
 
+    Rectangle {
+        anchors.fill: parent
+        color: AmneziaStyle.color.tcBackground
+    }
+
     ListViewType {
         id: menuContent
 
@@ -123,6 +128,7 @@ PageType {
                 actionButtonImage: "qrc:/images/controls/settings.svg"
 
                 headerText: root.processedServer.name
+                headerColor: AmneziaStyle.color.tcInk
 
                 actionButtonFunction: function() {
                     PageController.showBusyIndicator(true)
@@ -158,10 +164,10 @@ PageType {
                 Layout.topMargin: 28
                 Layout.bottomMargin: 0
 
-                defaultColor: AmneziaStyle.color.paleGray
-                hoveredColor: AmneziaStyle.color.lightGray
-                pressedColor: AmneziaStyle.color.mutedGray
-                textColor: AmneziaStyle.color.midnightBlack
+                defaultColor: AmneziaStyle.color.tcBlue
+                hoveredColor: "#318DF9"
+                pressedColor: "#0C62C9"
+                textColor: "#FFFFFF"
 
                 text: qsTr("Renew subscription")
 
@@ -188,7 +194,21 @@ PageType {
             width: menuContent.width
             height: content.implicitHeight
 
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.leftMargin: 12
+                Layout.rightMargin: 12
+                Layout.topMargin: 6
+                implicitHeight: 72
+                radius: 18
+                color: index === ApiCountryModel.currentIndex
+                       ? AmneziaStyle.color.tcSurfaceBlue : AmneziaStyle.color.tcCard
+                border.width: 1
+                border.color: index === ApiCountryModel.currentIndex
+                              ? AmneziaStyle.color.tcBlue : AmneziaStyle.color.tcStroke
+
             RowLayout {
+                anchors.fill: parent
                 VerticalRadioButton {
                     id: containerRadioButton
 
@@ -196,6 +216,11 @@ PageType {
                     Layout.leftMargin: 16
 
                     text: countryName
+                    textColor: AmneziaStyle.color.tcInk
+                    selectedTextColor: AmneziaStyle.color.tcBlue
+                    descriptionColor: AmneziaStyle.color.tcMuted
+                    hoveredColor: AmneziaStyle.color.tcSurfaceBlue
+                    selectedColor: AmneziaStyle.color.tcSurfaceBlue
 
                     ButtonGroup.group: containersRadioButtonGroup
 
@@ -239,7 +264,9 @@ PageType {
                 }
             }
 
+            }
             DividerType {
+                visible: false
                 Layout.fillWidth: true
             }
         }

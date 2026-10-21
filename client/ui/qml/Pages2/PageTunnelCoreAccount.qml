@@ -12,25 +12,35 @@ import "../Components"
 
 PageType {
     id: root
-    property bool emailMode: false
+    // The tabs reuse the real account controller and the same VPN session.
+    // Separate sections avoid one excessively long mixed-purpose page.
+    property string viewMode: "home" // home | countries | subscription | profile
+    property bool showWelcome: true
+    property bool emailMode: true
     property bool registrationMode: false
     property string pendingVpnCountry: ""
     property bool connectAfterImport: false
     property bool importingProfile: false
+    property bool pendingLogoutAll: false
+    property string countryFilter: ""
 
     // The account page is inside PageStart's IME-adjusted StackView.
     // Bring the focused input into view when the keyboard reduces its height.
     function keepFocusedInputVisible() {
-        if (!root.visible || TunnelCoreController.authenticated || scroll.height <= 0)
+        if (!root.visible || scroll.height <= 0)
             return
 
         var focusedField = null
-        if (loginField.textField.activeFocus)
+        if (TunnelCoreController.authenticated) {
+            if (vpnCountrySearch.visible && vpnCountrySearch.textField.activeFocus)
+                focusedField = vpnCountrySearch
+        } else if (loginField.textField.activeFocus) {
             focusedField = loginField
-        else if (passwordField.visible && passwordField.textField.activeFocus)
+        } else if (passwordField.visible && passwordField.textField.activeFocus) {
             focusedField = passwordField
-        else if (confirmPasswordField.visible && confirmPasswordField.textField.activeFocus)
+        } else if (confirmPasswordField.visible && confirmPasswordField.textField.activeFocus) {
             focusedField = confirmPasswordField
+        }
 
         if (!focusedField)
             return
@@ -83,6 +93,19 @@ PageType {
         }
     }
 
+    function signOutEverywhere() {
+        if (TunnelCoreController.busy || root.pendingLogoutAll)
+            return
+
+        if (ConnectionController.isConnected || ConnectionController.isConnectionInProgress) {
+            root.pendingLogoutAll = true
+            ConnectionController.closeConnection()
+            return
+        }
+
+        TunnelCoreController.logoutAll()
+    }
+
     function localizedTariffName(subscription) {
         const tariffCode = subscription.tariff_code ? String(subscription.tariff_code) : ""
         const tariffName = subscription.tariff ? String(subscription.tariff) : ""
@@ -132,6 +155,8 @@ PageType {
     Connections {
         target: TunnelCoreController
         function onSignedIn() {
+            root.viewMode = "home"
+            root.showWelcome = false
             loginField.textField.text = ""
             passwordField.textField.text = ""
             confirmPasswordField.textField.text = ""
@@ -174,6 +199,14 @@ PageType {
     Connections {
         target: ConnectionController
         function onConnectionStateChanged() {
+            if (root.pendingLogoutAll
+                    && !ConnectionController.isConnected
+                    && !ConnectionController.isConnectionInProgress) {
+                root.pendingLogoutAll = false
+                TunnelCoreController.logoutAll()
+                return
+            }
+
             if (root.pendingVpnCountry.length === 0
                     || ConnectionController.isConnected
                     || ConnectionController.isConnectionInProgress) {
@@ -184,6 +217,11 @@ PageType {
             root.pendingVpnCountry = ""
             TunnelCoreController.selectVpnCountry(countryCode)
         }
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        color: AmneziaStyle.color.tcBackground
     }
 
     Flickable {
@@ -204,30 +242,156 @@ PageType {
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: 16
 
-            Image {
+            IconImageType {
                 source: "qrc:/images/icon.png"
+                tint: ""
                 visible: !TunnelCoreController.authenticated
                 Layout.alignment: Qt.AlignHCenter
-                Layout.preferredWidth: 88
-                Layout.preferredHeight: 88
-                fillMode: Image.PreserveAspectFit
+                Layout.preferredWidth: 72
+                Layout.preferredHeight: 72
             }
             Header2TextType {
                 Layout.fillWidth: true
                 text: "TunnelCore VPN"
+                color: AmneziaStyle.color.tcInk
+                font.pixelSize: 29
                 horizontalAlignment: Text.AlignHCenter
             }
             SmallTextType {
                 Layout.fillWidth: true
                 textFormat: Text.PlainText
                 text: TunnelCoreController.authenticated ? TunnelCoreController.username : qsTr("Sign in to your account")
+                color: AmneziaStyle.color.tcMuted
                 horizontalAlignment: Text.AlignHCenter
             }
 
-            ColumnLayout {
+            // Lightweight native onboarding. All actions lead to the real
+            // email / bot-code forms; no hypothetical proxy mode is exposed.
+            Rectangle {
                 Layout.fillWidth: true
-                visible: !TunnelCoreController.authenticated
-                spacing: 16
+                visible: !TunnelCoreController.authenticated && root.showWelcome
+                implicitHeight: welcomeContent.implicitHeight + 48
+                radius: 28
+                color: AmneziaStyle.color.tcCard
+                border.color: AmneziaStyle.color.tcStroke
+                border.width: 1
+
+                ColumnLayout {
+                    id: welcomeContent
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.margins: 24
+                    spacing: 18
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        radius: 20
+                        color: AmneziaStyle.color.tcSurfaceBlue
+                        border.color: AmneziaStyle.color.tcStroke
+                        border.width: 1
+                        implicitHeight: welcomeFeatures.implicitHeight + 24
+
+                        ColumnLayout {
+                            id: welcomeFeatures
+                            anchors.top: parent.top
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.margins: 12
+                            spacing: 12
+
+                            Repeater {
+                                model: [
+                                    { title: "VPN", icon: "qrc:/images/controls/globe-2.svg" },
+                                    { title: qsTr("VPN location"), icon: "qrc:/images/controls/server.svg" },
+                                    { title: qsTranslate("HomeSplitTunnelingDrawer", "Split tunneling"), icon: "qrc:/images/controls/split-tunneling.svg" }
+                                ]
+                                delegate: RowLayout {
+                                    required property var modelData
+                                    Layout.fillWidth: true
+                                    spacing: 12
+                                    IconImageType {
+                                        source: modelData.icon
+                                        tint: AmneziaStyle.color.tcBlue
+                                        implicitWidth: 24
+                                        implicitHeight: 24
+                                    }
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: modelData.title
+                                        color: AmneziaStyle.color.tcInk
+                                        font.pixelSize: 16
+                                        wrapMode: Text.WordWrap
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    BasicButtonType {
+                        Layout.fillWidth: true
+                        text: qsTr("Sign in")
+                        defaultColor: AmneziaStyle.color.tcBlue
+                        hoveredColor: "#328BF9"
+                        textColor: "#FFFFFF"
+                        clickedFunc: function() {
+                            root.emailMode = true
+                            root.registrationMode = false
+                            root.showWelcome = false
+                        }
+                    }
+                    BasicButtonType {
+                        Layout.fillWidth: true
+                        text: qsTr("Create account")
+                        defaultColor: AmneziaStyle.color.tcCard
+                        hoveredColor: AmneziaStyle.color.tcSurfaceBlue
+                        textColor: AmneziaStyle.color.tcBlue
+                        borderWidth: 1
+                        borderColor: AmneziaStyle.color.tcBlue
+                        clickedFunc: function() {
+                            root.emailMode = true
+                            root.registrationMode = true
+                            root.showWelcome = false
+                        }
+                    }
+                    BasicButtonType {
+                        Layout.fillWidth: true
+                        text: qsTr("Bot code")
+                        defaultColor: AmneziaStyle.color.tcSurfaceBlue
+                        hoveredColor: AmneziaStyle.color.tcCard
+                        textColor: AmneziaStyle.color.tcBlue
+                        clickedFunc: function() {
+                            root.emailMode = false
+                            root.registrationMode = false
+                            root.showWelcome = false
+                        }
+                    }
+                }
+            }
+
+            Rectangle {
+                id: authCard
+                Layout.fillWidth: true
+                implicitHeight: authContent.implicitHeight + 48
+                visible: !TunnelCoreController.authenticated && !root.showWelcome
+                radius: 28
+                color: AmneziaStyle.color.tcCard
+                border.width: 1
+                border.color: AmneziaStyle.color.tcStroke
+
+                ColumnLayout {
+                    id: authContent
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.margins: 24
+                    spacing: 16
+
+                    Header2TextType {
+                        Layout.fillWidth: true
+                        text: root.registrationMode ? qsTr("Create account") : qsTr("Sign in")
+                        color: AmneziaStyle.color.tcInk
+                        horizontalAlignment: Text.AlignHCenter
+                    }
 
                 RowLayout {
                     Layout.fillWidth: true
@@ -235,18 +399,27 @@ PageType {
                         Layout.fillWidth: true
                         text: qsTr("Bot code")
                         enabled: !TunnelCoreController.busy
-                        defaultColor: root.emailMode ? AmneziaStyle.color.charcoalGray : AmneziaStyle.color.paleGray
+                        defaultColor: root.emailMode ? AmneziaStyle.color.tcCard : AmneziaStyle.color.tcSurfaceBlue
+                        hoveredColor: AmneziaStyle.color.tcSurfaceBlue
+                        textColor: root.emailMode ? AmneziaStyle.color.tcMuted : AmneziaStyle.color.tcBlue
+                        borderColor: AmneziaStyle.color.tcStroke
+                        borderWidth: 1
                         clickedFunc: function() { root.selectMode(false) }
                     }
                     BasicButtonType {
                         Layout.fillWidth: true
                         text: "Email"
                         enabled: !TunnelCoreController.busy
-                        defaultColor: root.emailMode ? AmneziaStyle.color.paleGray : AmneziaStyle.color.charcoalGray
+                        defaultColor: root.emailMode ? AmneziaStyle.color.tcSurfaceBlue : AmneziaStyle.color.tcCard
+                        hoveredColor: AmneziaStyle.color.tcSurfaceBlue
+                        textColor: root.emailMode ? AmneziaStyle.color.tcBlue : AmneziaStyle.color.tcMuted
+                        borderColor: AmneziaStyle.color.tcStroke
+                        borderWidth: 1
                         clickedFunc: function() { root.selectMode(true) }
                     }
                 }
                 SmallTextType {
+                    color: AmneziaStyle.color.tcMuted
                     Layout.fillWidth: true
                     text: root.emailMode
                           ? (root.registrationMode
@@ -262,7 +435,7 @@ PageType {
                           : qsTr("Create account")
                     enabled: !TunnelCoreController.busy
                     defaultColor: AmneziaStyle.color.transparent
-                    textColor: AmneziaStyle.color.goldenApricot
+                    textColor: AmneziaStyle.color.tcBlue
                     clickedFunc: function() {
                         root.registrationMode = !root.registrationMode
                         passwordField.textField.text = ""
@@ -272,6 +445,12 @@ PageType {
                 }
                 TextFieldWithHeaderType {
                     id: loginField
+                    backgroundColor: AmneziaStyle.color.tcCard
+                    backgroundDisabledColor: AmneziaStyle.color.tcCard
+                    headerTextColor: AmneziaStyle.color.tcMuted
+                    textFieldTextColor: AmneziaStyle.color.tcInk
+                    borderColor: AmneziaStyle.color.tcStroke
+                    borderFocusedColor: AmneziaStyle.color.tcBlue
                     textField.onActiveFocusChanged: {
                         if (loginField.textField.activeFocus)
                             Qt.callLater(root.keepFocusedInputVisible)
@@ -294,6 +473,13 @@ PageType {
                 }
                 TextFieldWithHeaderType {
                     id: passwordField
+                    property bool passwordVisible: false
+                    backgroundColor: AmneziaStyle.color.tcCard
+                    backgroundDisabledColor: AmneziaStyle.color.tcCard
+                    headerTextColor: AmneziaStyle.color.tcMuted
+                    textFieldTextColor: AmneziaStyle.color.tcInk
+                    borderColor: AmneziaStyle.color.tcStroke
+                    borderFocusedColor: AmneziaStyle.color.tcBlue
                     textField.onActiveFocusChanged: {
                         if (passwordField.textField.activeFocus)
                             Qt.callLater(root.keepFocusedInputVisible)
@@ -302,12 +488,25 @@ PageType {
                     visible: root.emailMode
                     enabled: !TunnelCoreController.busy
                     headerText: qsTr("Password")
-                    textField.echoMode: TextInput.Password
+                    textField.echoMode: passwordVisible ? TextInput.Normal : TextInput.Password
+                    buttonImageSource: passwordVisible
+                                       ? "qrc:/images/controls/eye-off.svg"
+                                       : "qrc:/images/controls/eye.svg"
+                    clickedFunc: function() {
+                        passwordField.passwordVisible = !passwordField.passwordVisible
+                    }
                     textField.maximumLength: 1024
                     textField.onAccepted: root.submit()
                 }
                 TextFieldWithHeaderType {
                     id: confirmPasswordField
+                    property bool passwordVisible: false
+                    backgroundColor: AmneziaStyle.color.tcCard
+                    backgroundDisabledColor: AmneziaStyle.color.tcCard
+                    headerTextColor: AmneziaStyle.color.tcMuted
+                    textFieldTextColor: AmneziaStyle.color.tcInk
+                    borderColor: AmneziaStyle.color.tcStroke
+                    borderFocusedColor: AmneziaStyle.color.tcBlue
                     textField.onActiveFocusChanged: {
                         if (confirmPasswordField.textField.activeFocus)
                             Qt.callLater(root.keepFocusedInputVisible)
@@ -316,7 +515,13 @@ PageType {
                     visible: root.emailMode && root.registrationMode
                     enabled: !TunnelCoreController.busy
                     headerText: qsTr("Confirm password")
-                    textField.echoMode: TextInput.Password
+                    textField.echoMode: passwordVisible ? TextInput.Normal : TextInput.Password
+                    buttonImageSource: passwordVisible
+                                       ? "qrc:/images/controls/eye-off.svg"
+                                       : "qrc:/images/controls/eye.svg"
+                    clickedFunc: function() {
+                        confirmPasswordField.passwordVisible = !confirmPasswordField.passwordVisible
+                    }
                     textField.maximumLength: 1024
                     textField.onAccepted: root.submit()
                 }
@@ -340,6 +545,11 @@ PageType {
                                    && (!root.registrationMode
                                        || passwordField.textField.text === confirmPasswordField.textField.text)
                                  : loginField.textField.text.trim().length === 6)
+                    defaultColor: AmneziaStyle.color.tcBlue
+                    hoveredColor: "#328BF9"
+                    pressedColor: "#0C62C9"
+                    disabledColor: "#A8C5E7"
+                    textColor: "#FFFFFF"
                     clickedFunc: root.submit
                 }
                 BasicButtonType {
@@ -348,26 +558,75 @@ PageType {
                     text: qsTr("Account deletion information")
                     enabled: !TunnelCoreController.busy
                     defaultColor: AmneziaStyle.color.transparent
-                    textColor: AmneziaStyle.color.goldenApricot
+                    textColor: AmneziaStyle.color.tcBlue
                     clickedFunc: function() {
                         Qt.openUrlExternally("https://vnextdev.com/tunnelcore/delete-account")
                     }
+                }
                 }
             }
 
             ColumnLayout {
                 Layout.fillWidth: true
-                visible: TunnelCoreController.authenticated
+                visible: TunnelCoreController.authenticated && root.viewMode === "home"
                 spacing: 16
 
-                ConnectButton {
-                    objectName: "accountConnectButton"
-                    Layout.alignment: Qt.AlignHCenter
-                    Layout.topMargin: 16
-                    Layout.bottomMargin: 16
-                    enabled: !TunnelCoreController.busy && !root.importingProfile
-                             && root.pendingVpnCountry.length === 0
-                    clickedFunc: root.connectSelectedLocation
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: heroContent.implicitHeight + 40
+                    color: AmneziaStyle.color.tcCard
+                    radius: 28
+                    border.color: AmneziaStyle.color.tcStroke
+                    border.width: 1
+
+                    ColumnLayout {
+                        id: heroContent
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: 20
+                        spacing: 12
+
+                        Text {
+                            Layout.fillWidth: true
+                            text: "TunnelCore VPN"
+                            color: AmneziaStyle.color.tcInk
+                            font.pixelSize: 20
+                            font.weight: Font.DemiBold
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+                        ConnectButton {
+                            objectName: "accountConnectButton"
+                            tunnelCoreMode: true
+                            Layout.alignment: Qt.AlignHCenter
+                            Layout.topMargin: 8
+                            Layout.bottomMargin: 4
+                            enabled: !TunnelCoreController.busy && !root.importingProfile
+                                     && root.pendingVpnCountry.length === 0
+                            clickedFunc: root.connectSelectedLocation
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            text: ConnectionController.connectionStateText
+                            color: AmneziaStyle.color.tcInk
+                            font.pixelSize: 22
+                            font.weight: Font.Bold
+                            horizontalAlignment: Text.AlignHCenter
+                            wrapMode: Text.WordWrap
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            text: TunnelCoreController.vpnCountryMode === "auto"
+                                  ? (TunnelCoreController.effectiveVpnCountry.length > 0
+                                     ? TunnelCoreController.vpnCountryDisplayName(TunnelCoreController.effectiveVpnCountry)
+                                     : qsTr("Automatic"))
+                                  : TunnelCoreController.vpnCountryDisplayName(TunnelCoreController.selectedVpnCountry)
+                            color: AmneziaStyle.color.tcMuted
+                            font.pixelSize: 14
+                            horizontalAlignment: Text.AlignHCenter
+                            wrapMode: Text.WordWrap
+                        }
+                    }
                 }
                 BasicButtonType {
                     objectName: "accountSplitTunnelingButton"
@@ -381,25 +640,43 @@ PageType {
                                        : qsTranslate("PageHome", "Split tunneling disabled")
                     leftImageSource: "qrc:/images/controls/split-tunneling.svg"
                     rightImageSource: "qrc:/images/controls/chevron-down.svg"
-                    defaultColor: AmneziaStyle.color.charcoalGray
-                    textColor: AmneziaStyle.color.paleGray
+                    defaultColor: AmneziaStyle.color.tcCard
+                    hoveredColor: AmneziaStyle.color.tcSurfaceBlue
+                    borderWidth: 1
+                    borderColor: AmneziaStyle.color.tcStroke
+                    textColor: AmneziaStyle.color.tcInk
                     clickedFunc: function() { splitTunnelingDrawer.openTriggered() }
                 }
 
                 SmallTextType {
+                    color: AmneziaStyle.color.tcMuted
                     Layout.fillWidth: true
                     visible: TunnelCoreController.busy || root.pendingVpnCountry.length > 0
                     text: qsTr("Loading data…")
                 }
-                LabelWithButtonType {
+                Rectangle {
                     Layout.fillWidth: true
+                    implicitHeight: subscriptionLabel.implicitHeight + 12
                     visible: TunnelCoreController.subscriptions.length > 0
+                    radius: 20
+                    color: AmneziaStyle.color.tcSurfaceBlue
+                    border.width: 1
+                    border.color: AmneziaStyle.color.tcStroke
+
+                LabelWithButtonType {
+                        id: subscriptionLabel
+                        anchors.fill: parent
+                        anchors.margins: 6
+                    textColor: AmneziaStyle.color.tcInk
+                    descriptionColor: AmneziaStyle.color.tcMuted
+                    rightImageColor: AmneziaStyle.color.tcBlue
                     text: root.localizedTariffName(TunnelCoreController.primarySubscription)
                     descriptionText: qsTr("Until %1").arg(Qt.formatDateTime(
                                          new Date(TunnelCoreController.primarySubscription.expires_at),
                                          "dd.MM.yyyy"))
                     rightImageSource: "qrc:/images/controls/chevron-right.svg"
                     clickedFunction: function() { subscriptionsDrawer.openTriggered() }
+                }
                 }
 
                 Rectangle {
@@ -423,6 +700,7 @@ PageType {
                         spacing: 10
 
                         Header2TextType {
+                    color: AmneziaStyle.color.tcInk
                             Layout.fillWidth: true
                             text: TunnelCoreController.subscriptionExpired
                                   ? qsTr("VPN subscription inactive")
@@ -460,16 +738,26 @@ PageType {
                         }
                     }
                 }
+            }
+
+            // Live VPN country list. Only locations received from the API are displayed.
+            ColumnLayout {
+                Layout.fillWidth: true
+                visible: TunnelCoreController.authenticated && root.viewMode === "countries"
+                spacing: 16
+
                 ColumnLayout {
                     Layout.fillWidth: true
                     visible: TunnelCoreController.vpnCountries.length > 0
                     spacing: 8
 
                     Header2TextType {
+                    color: AmneziaStyle.color.tcInk
                         Layout.fillWidth: true
                         text: qsTr("VPN location")
                     }
                     SmallTextType {
+                    color: AmneziaStyle.color.tcMuted
                         Layout.fillWidth: true
                         textFormat: Text.PlainText
                         text: TunnelCoreController.vpnCountryMode === "auto"
@@ -483,18 +771,40 @@ PageType {
                                         TunnelCoreController.selectedVpnCountry))
                     }
                     SmallTextType {
+                    color: AmneziaStyle.color.tcMuted
                         Layout.fillWidth: true
                         text: qsTr("Automatic selects an available VPN server. Choosing a country moves your VPN access to that country.")
+                    }
+                    TextFieldWithHeaderType {
+                        id: vpnCountrySearch
+                        Layout.fillWidth: true
+                        visible: TunnelCoreController.vpnCountries.length > 4
+                        enabled: !TunnelCoreController.busy
+                        headerText: qsTranslate("PageShare", "Search")
+                        textField.placeholderText: qsTr("VPN location")
+                        textField.inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
+                        backgroundColor: AmneziaStyle.color.tcCard
+                        textFieldTextColor: AmneziaStyle.color.tcInk
+                        headerTextColor: AmneziaStyle.color.tcMuted
+                        borderColor: AmneziaStyle.color.tcStroke
+                        borderFocusedColor: AmneziaStyle.color.tcBlue
+                        textField.onTextChanged: root.countryFilter = vpnCountrySearch.textField.text.trim().toLowerCase()
+                        textField.onActiveFocusChanged: {
+                            if (vpnCountrySearch.textField.activeFocus)
+                                Qt.callLater(root.keepFocusedInputVisible)
+                        }
                     }
                     BasicButtonType {
                         Layout.fillWidth: true
                         readonly property bool isSelected: TunnelCoreController.vpnCountryMode === "auto"
                         text: qsTr("Automatic")
                         enabled: !TunnelCoreController.busy && root.pendingVpnCountry.length === 0
-                        defaultColor: isSelected ? AmneziaStyle.color.goldenApricot
-                                                 : AmneziaStyle.color.paleGray
-                        hoveredColor: isSelected ? AmneziaStyle.color.goldenApricot
-                                                 : AmneziaStyle.color.lightGray
+                        defaultColor: isSelected ? AmneziaStyle.color.tcSurfaceBlue
+                                                 : AmneziaStyle.color.tcCard
+                        hoveredColor: AmneziaStyle.color.tcSurfaceBlue
+                        borderColor: isSelected ? AmneziaStyle.color.tcBlue : AmneziaStyle.color.tcStroke
+                        borderWidth: 1
+                        textColor: isSelected ? AmneziaStyle.color.tcBlue : AmneziaStyle.color.tcInk
                         clickedFunc: function() { root.selectVpnCountry("AUTO") }
                     }
                     Repeater {
@@ -503,6 +813,9 @@ PageType {
                             required property var modelData
                             Layout.fillWidth: true
                             readonly property string countryCode: modelData.code ? String(modelData.code) : ""
+                            visible: root.countryFilter.length === 0
+                                     || (TunnelCoreController.vpnCountryDisplayName(countryCode) + " " + cities)
+                                           .toLowerCase().includes(root.countryFilter)
                             readonly property string cities: modelData.cities && modelData.cities.length > 0
                                                              ? modelData.cities.join(", ") : ""
                             readonly property bool isSelected: TunnelCoreController.vpnCountryMode === "country"
@@ -511,10 +824,12 @@ PageType {
                                   + (cities.length > 0 ? " · " + cities : "")
                             buttonTextLabel.elide: Text.ElideRight
                             enabled: !TunnelCoreController.busy && root.pendingVpnCountry.length === 0
-                            defaultColor: isSelected ? AmneziaStyle.color.goldenApricot
-                                                     : AmneziaStyle.color.paleGray
-                            hoveredColor: isSelected ? AmneziaStyle.color.goldenApricot
-                                                     : AmneziaStyle.color.lightGray
+                            defaultColor: isSelected ? AmneziaStyle.color.tcSurfaceBlue
+                                                 : AmneziaStyle.color.tcCard
+                            hoveredColor: AmneziaStyle.color.tcSurfaceBlue
+                            borderColor: isSelected ? AmneziaStyle.color.tcBlue : AmneziaStyle.color.tcStroke
+                            borderWidth: 1
+                            textColor: isSelected ? AmneziaStyle.color.tcBlue : AmneziaStyle.color.tcInk
                             clickedFunc: function() {
                                 root.selectVpnCountry(countryCode)
                             }
@@ -522,6 +837,7 @@ PageType {
                     }
                 }
                 SmallTextType {
+                    color: AmneziaStyle.color.tcMuted
                     Layout.fillWidth: true
                     visible: !TunnelCoreController.busy && !TunnelCoreController.error
                              && TunnelCoreController.configs.length === 0
@@ -534,14 +850,50 @@ PageType {
                              && !ConnectionController.isConnected && !ConnectionController.isConnectionInProgress
                     clickedFunc: function() { TunnelCoreController.refresh() }
                 }
-                DividerType {
-                    Layout.fillWidth: true
-                    Layout.topMargin: 28
-                }
+            }
+
+            // Account details and destructive actions are intentionally kept away
+            // from the main connect control.
+            ColumnLayout {
+                Layout.fillWidth: true
+                visible: TunnelCoreController.authenticated && root.viewMode === "profile"
+                spacing: 16
+
                 Header2TextType {
+                    color: AmneziaStyle.color.tcInk
                     Layout.fillWidth: true
                     Layout.topMargin: 12
                     text: qsTr("Account")
+                }
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: usernameValue.implicitHeight + 32
+                    radius: 20
+                    color: AmneziaStyle.color.tcSurfaceBlue
+                    border.color: AmneziaStyle.color.tcStroke
+                    border.width: 1
+                    Text {
+                        id: usernameValue
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: 16
+                        font.pixelSize: 18
+                        font.weight: Font.DemiBold
+                        color: AmneziaStyle.color.tcInk
+                        text: TunnelCoreController.username
+                        elide: Text.ElideMiddle
+                    }
+                }
+                BasicButtonType {
+                    Layout.fillWidth: true
+                    text: qsTranslate("PageSettings", "Settings")
+                    defaultColor: AmneziaStyle.color.tcCard
+                    hoveredColor: AmneziaStyle.color.tcSurfaceBlue
+                    textColor: AmneziaStyle.color.tcInk
+                    borderColor: AmneziaStyle.color.tcStroke
+                    borderWidth: 1
+                    clickedFunc: function() { PageController.goToPage(PageEnum.PageSettings) }
                 }
                 BasicButtonType {
                     Layout.fillWidth: true
@@ -580,7 +932,7 @@ PageType {
                     Layout.topMargin: 8
                     text: qsTr("Sign out on all devices")
                     enabled: !TunnelCoreController.busy && !root.importingProfile
-                             && root.pendingVpnCountry.length === 0
+                             && root.pendingVpnCountry.length === 0 && !root.pendingLogoutAll
                     defaultColor: AmneziaStyle.color.vibrantRed
                     hoveredColor: AmneziaStyle.color.vibrantRed
                     pressedColor: AmneziaStyle.color.vibrantRed
@@ -592,9 +944,7 @@ PageType {
                             qsTr("Sign out everywhere"),
                             qsTr("Cancel"),
                             function() {
-                                if (ConnectionController.isConnected || ConnectionController.isConnectionInProgress)
-                                    ConnectionController.closeConnection()
-                                TunnelCoreController.logoutAll()
+                                root.signOutEverywhere()
                             },
                             function() {}
                         )
@@ -612,16 +962,24 @@ PageType {
                     spacing: 12
 
                     Header2TextType {
+                    color: AmneziaStyle.color.tcInk
                         Layout.fillWidth: true
                         text: qsTr("Link Telegram")
                     }
                     SmallTextType {
+                    color: AmneziaStyle.color.tcMuted
                         Layout.fillWidth: true
                         visible: !TunnelCoreController.telegramLinked
                         text: qsTr("Request a six-digit code in the TunnelCore bot and enter it here. Your Telegram subscriptions and payments will be transferred to this account.")
                     }
                     TextFieldWithHeaderType {
                         id: telegramCodeField
+                    backgroundColor: AmneziaStyle.color.tcCard
+                    backgroundDisabledColor: AmneziaStyle.color.tcCard
+                    headerTextColor: AmneziaStyle.color.tcMuted
+                    textFieldTextColor: AmneziaStyle.color.tcInk
+                    borderColor: AmneziaStyle.color.tcStroke
+                    borderFocusedColor: AmneziaStyle.color.tcBlue
                         Layout.fillWidth: true
                         visible: !TunnelCoreController.telegramLinked
                         enabled: !TunnelCoreController.busy
@@ -645,7 +1003,7 @@ PageType {
                         Layout.fillWidth: true
                         visible: TunnelCoreController.telegramLinked
                         text: qsTr("Telegram is linked to this account.")
-                        color: AmneziaStyle.color.goldenApricot
+                        color: AmneziaStyle.color.tcBlue
                     }
                 }
                 DividerType {
@@ -653,6 +1011,7 @@ PageType {
                     Layout.topMargin: 20
                 }
                 Header2TextType {
+                    color: AmneziaStyle.color.tcInk
                     Layout.fillWidth: true
                     text: qsTr("Delete account")
                 }
@@ -667,7 +1026,7 @@ PageType {
                     visible: TunnelCoreController.accountDeletionRequested
                     textFormat: Text.PlainText
                     text: qsTr("Your account deletion request has been received. Support will process it and confirm the result.")
-                    color: AmneziaStyle.color.goldenApricot
+                    color: AmneziaStyle.color.tcBlue
                 }
                 BasicButtonType {
                     objectName: "accountDeletionRequestButton"
@@ -698,9 +1057,112 @@ PageType {
                     Layout.fillWidth: true
                     text: qsTr("Account deletion information")
                     defaultColor: AmneziaStyle.color.transparent
-                    textColor: AmneziaStyle.color.goldenApricot
+                    textColor: AmneziaStyle.color.tcBlue
                     clickedFunc: function() {
                         Qt.openUrlExternally("https://vnextdev.com/tunnelcore/delete-account")
+                    }
+                }
+            }
+
+            // Subscriptions are read-only data from the real TunnelCore API.
+            // Purchasing remains platform-specific (Apple IAP / external link).
+            ColumnLayout {
+                Layout.fillWidth: true
+                visible: TunnelCoreController.authenticated && root.viewMode === "subscription"
+                spacing: 16
+
+                Header2TextType {
+                    Layout.fillWidth: true
+                    text: qsTr("Subscriptions")
+                    color: AmneziaStyle.color.tcInk
+                }
+                Rectangle {
+                    Layout.fillWidth: true
+                    radius: 24
+                    color: AmneziaStyle.color.tcCard
+                    border.color: AmneziaStyle.color.tcStroke
+                    border.width: 1
+                    implicitHeight: subscriptionPanel.implicitHeight + 40
+
+                    ColumnLayout {
+                        id: subscriptionPanel
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: 20
+                        spacing: 12
+
+                        Text {
+                            Layout.fillWidth: true
+                            color: AmneziaStyle.color.tcInk
+                            font.pixelSize: 19
+                            font.weight: Font.DemiBold
+                            text: TunnelCoreController.subscriptions.length > 0
+                                  ? root.localizedTariffName(TunnelCoreController.primarySubscription)
+                                  : qsTr("VPN subscription inactive")
+                            wrapMode: Text.WordWrap
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            color: AmneziaStyle.color.tcMuted
+                            font.pixelSize: 14
+                            text: TunnelCoreController.subscriptionStatusText
+                            textFormat: Text.PlainText
+                            wrapMode: Text.WordWrap
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            visible: TunnelCoreController.subscriptions.length > 0
+                            color: AmneziaStyle.color.tcMuted
+                            font.pixelSize: 14
+                            text: qsTr("Until %1").arg(Qt.formatDateTime(
+                                      new Date(TunnelCoreController.primarySubscription.expires_at), "dd.MM.yyyy"))
+                        }
+                        BasicButtonType {
+                            Layout.fillWidth: true
+                            text: qsTr("Subscriptions")
+                            defaultColor: AmneziaStyle.color.tcSurfaceBlue
+                            hoveredColor: "#DCEEFF"
+                            textColor: AmneziaStyle.color.tcBlue
+                            clickedFunc: function() { subscriptionsDrawer.openTriggered() }
+                        }
+                        BasicButtonType {
+                            Layout.fillWidth: true
+                            visible: TunnelCoreController.usesAppleBilling
+                                     || TunnelCoreController.externalRenewalLinkAllowed
+                            enabled: !TunnelCoreController.busy
+                            text: TunnelCoreController.usesAppleBilling
+                                  ? qsTr("Renew in App Store")
+                                  : (TunnelCoreController.emailAccount && !TunnelCoreController.telegramLinked
+                                     ? qsTr("Link Telegram to renew")
+                                     : qsTr("Renew in Telegram"))
+                            defaultColor: AmneziaStyle.color.tcBlue
+                            hoveredColor: "#328BF9"
+                            textColor: "#FFFFFF"
+                            clickedFunc: function() { TunnelCoreController.renewSubscription() }
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            visible: !TunnelCoreController.usesAppleBilling
+                                     && !TunnelCoreController.externalRenewalLinkAllowed
+                            color: AmneziaStyle.color.tcMuted
+                            font.pixelSize: 14
+                            text: qsTr("Renew your TunnelCore subscription outside the app. Telegram users can use @tunnelcoree_bot. After renewal, return here and tap Refresh.")
+                            textFormat: Text.PlainText
+                            wrapMode: Text.WordWrap
+                        }
+                        BasicButtonType {
+                            Layout.fillWidth: true
+                            text: qsTr("Refresh")
+                            enabled: !TunnelCoreController.busy
+                                     && !ConnectionController.isConnected
+                                     && !ConnectionController.isConnectionInProgress
+                            defaultColor: AmneziaStyle.color.tcCard
+                            textColor: AmneziaStyle.color.tcInk
+                            borderColor: AmneziaStyle.color.tcStroke
+                            borderWidth: 1
+                            clickedFunc: function() { TunnelCoreController.refresh() }
+                        }
                     }
                 }
             }
@@ -723,9 +1185,9 @@ PageType {
                 textFormat: Text.RichText
                 color: AmneziaStyle.color.mutedGray
                 text: "<a href=\"https://vnextdev.com/tunnelcore/privacy\" style=\"color: "
-                      + AmneziaStyle.color.goldenApricotString + ";\">"
+                      + AmneziaStyle.color.tcBlueString + ";\">"
                       + qsTr("Privacy Policy") + "</a> · <a href=\"https://vnextdev.com/tunnelcore/privacy#account-deletion\" style=\"color: "
-                      + AmneziaStyle.color.goldenApricotString + ";\">"
+                      + AmneziaStyle.color.tcBlueString + ";\">"
                       + qsTr("Request account deletion") + "</a>"
 
                 onLinkActivated: function(link) {
@@ -748,6 +1210,8 @@ PageType {
     DrawerType2 {
         id: subscriptionsDrawer
         objectName: "subscriptionsDrawer"
+        defaultColor: AmneziaStyle.color.tcBackground
+        borderColor: AmneziaStyle.color.tcStroke
         parent: root
         anchors.fill: parent
         expandedHeight: root.height * 0.8
@@ -773,6 +1237,7 @@ PageType {
                     Layout.leftMargin: 16
                     Layout.rightMargin: 16
                     headerText: qsTr("Subscriptions")
+                    headerColor: AmneziaStyle.color.tcInk
                 }
             }
 
@@ -793,20 +1258,25 @@ PageType {
                     spacing: 0
 
                     LabelWithButtonType {
+                    textColor: AmneziaStyle.color.tcInk
+                    descriptionColor: AmneziaStyle.color.tcMuted
+                    rightImageColor: AmneziaStyle.color.tcBlue
                         Layout.fillWidth: true
                         enabled: false
-                        textDisabledColor: AmneziaStyle.color.paleGray
-                        descriptionDisabledColor: AmneziaStyle.color.mutedGray
+                        textDisabledColor: AmneziaStyle.color.tcInk
+                        descriptionDisabledColor: AmneziaStyle.color.tcMuted
                         text: root.localizedTariffName(subscriptionDelegate.modelData)
                         descriptionText: qsTr("Until %1").arg(Qt.formatDateTime(
                                              new Date(subscriptionDelegate.modelData.expires_at),
                                              "dd.MM.yyyy"))
                     }
 
-                    DividerType {
+                    Rectangle {
                         Layout.fillWidth: true
                         Layout.leftMargin: 16
                         Layout.rightMargin: 16
+                        height: 1
+                        color: AmneziaStyle.color.tcStroke
                     }
                 }
             }

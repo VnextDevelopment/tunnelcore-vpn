@@ -19,6 +19,11 @@ PageType {
 
     property bool isRestoringBackup: false
 
+    Rectangle {
+        anchors.fill: parent
+        color: AmneziaStyle.color.tcBackground
+    }
+
     Connections {
         target: SettingsController
 
@@ -39,6 +44,7 @@ PageType {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.topMargin: 20 + PageController.safeAreaTopMargin
+        imageColor: AmneziaStyle.color.tcInk
 
         onActiveFocusChanged: {
             if(backButton.enabled && backButton.activeFocus) {
@@ -68,6 +74,8 @@ PageType {
 
                 headerText: qsTr("Back up your configuration")
                 descriptionText: qsTr("You can save your settings to a backup file to restore them the next time you install the application.")
+                headerColor: AmneziaStyle.color.tcInk
+                descriptionColor: AmneziaStyle.color.tcMuted
             }
         }
 
@@ -89,6 +97,9 @@ PageType {
                                  "to AmneziaVPN. Keep this information in a secure place.")
 
                 iconPath: "qrc:/images/controls/alert-circle.svg"
+                backGroundColor: AmneziaStyle.color.tcSurfaceBlue
+                textColor: AmneziaStyle.color.tcInk
+                imageColor: AmneziaStyle.color.tcBlue
             }
 
             BasicButtonType {
@@ -100,6 +111,11 @@ PageType {
                 Layout.rightMargin: 16
 
                 text: qsTr("Make a backup")
+                defaultColor: AmneziaStyle.color.tcBlue
+                hoveredColor: "#328BF9"
+                pressedColor: "#0F64D6"
+                disabledColor: AmneziaStyle.color.tcStroke
+                textColor: "#FFFFFF"
 
                 clickedFunc: function() {
                     var fileName = ""
@@ -129,12 +145,13 @@ PageType {
                 Layout.leftMargin: 16
                 Layout.rightMargin: 16
 
-                defaultColor: AmneziaStyle.color.transparent
-                hoveredColor: AmneziaStyle.color.translucentWhite
-                pressedColor: AmneziaStyle.color.sheerWhite
-                disabledColor: AmneziaStyle.color.mutedGray
-                textColor: AmneziaStyle.color.paleGray
+                defaultColor: AmneziaStyle.color.tcCard
+                hoveredColor: AmneziaStyle.color.tcSurfaceBlue
+                pressedColor: AmneziaStyle.color.tcStroke
+                disabledColor: AmneziaStyle.color.tcBackground
+                textColor: AmneziaStyle.color.tcBlue
                 borderWidth: 1
+                borderColor: AmneziaStyle.color.tcBlue
 
                 enabled: !root.isRestoringBackup
 
