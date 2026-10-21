@@ -262,24 +262,6 @@ PageType {
                     anchors.margins: 24
                     spacing: 18
 
-                    Text {
-                        Layout.fillWidth: true
-                        text: qsTr("TunnelCore VPN")
-                        color: AmneziaStyle.color.tcInk
-                        font.pixelSize: 26
-                        font.weight: Font.Bold
-                        horizontalAlignment: Text.AlignHCenter
-                        wrapMode: Text.WordWrap
-                    }
-                    Text {
-                        Layout.fillWidth: true
-                        text: qsTr("Sign in to your account")
-                        color: AmneziaStyle.color.tcMuted
-                        font.pixelSize: 16
-                        horizontalAlignment: Text.AlignHCenter
-                        wrapMode: Text.WordWrap
-                    }
-
                     Rectangle {
                         Layout.fillWidth: true
                         radius: 20

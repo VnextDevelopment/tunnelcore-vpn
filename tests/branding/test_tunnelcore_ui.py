@@ -95,6 +95,13 @@ class TunnelCoreUiTest(unittest.TestCase):
             self.assertIn('id: ' + name, PAGE_START)
         self.assertIn('properties.viewMode = section || "home"', PAGE_START)
 
+    def test_welcome_card_does_not_duplicate_page_heading(self):
+        welcome_card_header = ACCOUNT.split("id: welcomeContent", 1)[1].split(
+            "id: welcomeFeatures", 1
+        )[0]
+        self.assertNotIn('qsTr("TunnelCore VPN")', welcome_card_header)
+        self.assertNotIn('qsTr("Sign in to your account")', welcome_card_header)
+
     def test_live_connection_and_country_not_a_screenshot(self):
         self.assertIn("tunnelCoreMode: true", ACCOUNT)
         self.assertIn("clickedFunc: root.connectSelectedLocation", ACCOUNT)
