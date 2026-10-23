@@ -3847,6 +3847,14 @@ Create one from the current settings.</source>
 <context>
     <name>PageSettingsApplication</name>
     <message>
+        <source>Add VPN to Quick Settings</source>
+        <translation>إضافة VPN إلى الإعدادات السريعة</translation>
+    </message>
+    <message>
+        <source>Connect or disconnect TunnelCore VPN from the Android Quick Settings panel</source>
+        <translation>اتصل بـ TunnelCore VPN أو اقطع الاتصال من لوحة الإعدادات السريعة في Android</translation>
+    </message>
+    <message>
         <location filename="../ui/qml/Pages2/PageSettingsApplication.qml" line="48"/>
         <source>Application</source>
         <translation>تطبيق</translation>

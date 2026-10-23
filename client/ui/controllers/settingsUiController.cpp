@@ -304,6 +304,13 @@ void SettingsUiController::requestNotificationPermission()
 #endif
 }
 
+void SettingsUiController::requestQuickSettingsTile()
+{
+#ifdef Q_OS_ANDROID
+    AndroidController::instance()->requestQuickSettingsTile();
+#endif
+}
+
 QString SettingsUiController::getInstallationUuid()
 {
     return m_settingsController->getInstallationUuid();

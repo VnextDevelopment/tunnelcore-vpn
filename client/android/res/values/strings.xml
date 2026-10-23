@@ -1,5 +1,9 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
+    <string name="quickTileLabel">TunnelCore VPN</string>
+    <string name="quickTileNotConfigured">Open the app to set up VPN</string>
+    <string name="quickTileManualAdd">Swipe down twice, tap Edit and add TunnelCore VPN to Quick Settings.</string>
+    <string name="quickTileAlreadyAdded">TunnelCore VPN is already in Quick Settings</string>
     <string name="disconnected">Not connected</string>
     <string name="connected">Connected</string>
     <string name="connecting">Connecting…</string>
