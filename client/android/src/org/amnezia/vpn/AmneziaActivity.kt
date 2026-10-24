@@ -1200,9 +1200,20 @@ class AmneziaActivity : QtActivity() {
                     return@post
                 }
 
+                // The user explicitly tapped an editable field. SHOW_IMPLICIT
+                // tells Android it can ignore the request (notably on emulators
+                // and when a hardware keyboard has been detected). Use the
+                // explicit flag value 0 and ensure the QtWindow has view focus.
+                // Leave the QML TextField as the actual text editor; do not
+                // replace Qt's input connection or insets listener.
+                if (!qtView.hasFocus() && !qtView.requestFocus()) {
+                    Log.w(TAG, "Cannot show keyboard: QtWindow did not acquire focus")
+                    return@post
+                }
+
                 val inputMethod = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-                val requested = inputMethod.showSoftInput(qtView, InputMethodManager.SHOW_IMPLICIT)
-                Log.d(TAG, "Requested Android IME for QtWindow, accepted=$requested")
+                val requested = inputMethod.showSoftInput(qtView, 0)
+                Log.d(TAG, "Explicit Android IME request for QtWindow, accepted=$requested")
             }
         }
     }
