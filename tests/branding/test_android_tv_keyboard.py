@@ -57,8 +57,47 @@ class AndroidTvKeyboardTest(unittest.TestCase):
         self.assertIn("Qt.ImhDigitsOnly", login_field)
         widget = (ROOT / "client" / "ui" / "qml" / "Controls2"
                   / "TextFieldWithHeaderType.qml").read_text(encoding="utf-8")
-        self.assertIn("if (root.requestAndroidIme", widget)
+        self.assertIn("function showRequestedAndroidKeyboard()", widget)
+        self.assertIn("id: androidImeRetry", widget)
+        self.assertIn("interval: 220", widget)
+        self.assertIn("androidImeRetry.restart()", widget)
         self.assertIn("SystemController.requestSoftKeyboard()", widget)
+
+        kotlin = (ANDROID / "src" / "org" / "amnezia" / "vpn"
+                  / "AmneziaActivity.kt").read_text(encoding="utf-8")
+        self.assertIn("showSoftInput(qtView, 0)", kotlin)
+        self.assertIn("!qtView.hasFocus() && !qtView.requestFocus()", kotlin)
+        self.assertNotIn("showSoftInput(qtView, InputMethodManager.SHOW_IMPLICIT)", kotlin)
+
+    def test_cancel_returns_to_auth_method_selection(self):
+        source = ACCOUNT.read_text(encoding="utf-8")
+        self.assertIn('objectName: "authCancelButton"', source)
+        self.assertIn('text: qsTr("Cancel")', source)
+        self.assertIn("clickedFunc: root.cancelAuthentication", source)
+        cancel = source.split("function cancelAuthentication()", 1)[1].split(
+            "function submit()", 1
+        )[0]
+        for requirement in (
+            "root.forceActiveFocus()",
+            "Qt.inputMethod.hide()",
+            "root.showWelcome = true",
+            "root.registrationMode = false",
+            "root.emailMode = true",
+            'loginField.textField.text = ""',
+            'passwordField.textField.text = ""',
+            'confirmPasswordField.textField.text = ""',
+            "scroll.contentY = 0",
+            "TunnelCoreController.clearError()",
+        ):
+            with self.subTest(requirement=requirement):
+                self.assertIn(requirement, cancel)
+
+        form = source.split('id: authCard', 1)[1].split(
+            'id: accountDeletionWebsiteGuest', 1
+        )[0]
+        self.assertLess(form.index('id: authSubmitButton'),
+                        form.index('id: authCancelButton'))
+        self.assertIn('root.registrationMode ? qsTr("Create account") : qsTr("Sign in")', form)
 
     def test_compact_login_keeps_next_input_reachable(self):
         source = ACCOUNT.read_text(encoding="utf-8")
