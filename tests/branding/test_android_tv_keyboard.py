@@ -13,17 +13,31 @@ NS = "{http://schemas.android.com/apk/res/android}"
 
 
 class AndroidTvKeyboardTest(unittest.TestCase):
-    def test_leanback_banner_is_tunnelcore_vector(self):
+    def test_leanback_banner_reuses_the_real_application_icon(self):
         manifest = ET.parse(ANDROID / "AndroidManifest.xml").getroot()
         application = manifest.find("application")
         self.assertEqual(application.get(NS + "banner"), "@drawable/tunnelcore_tv_banner")
+        self.assertEqual(application.get(NS + "icon"), "@mipmap/icon")
         banner_file = ANDROID / "res" / "drawable" / "tunnelcore_tv_banner.xml"
-        self.assertTrue(banner_file.exists())
         banner = ET.parse(banner_file).getroot()
-        self.assertEqual(banner.tag, "vector")
-        self.assertEqual(banner.get(NS + "width"), "320dp")
-        self.assertEqual(banner.get(NS + "height"), "180dp")
-        self.assertGreaterEqual(len(banner.findall(".//path")), 10)
+        self.assertEqual(banner.tag, "layer-list")
+        items = banner.findall("item")
+        self.assertEqual(len(items), 2)
+        self.assertEqual(items[0].get(NS + "drawable"),
+                         "@drawable/tunnelcore_tv_banner_background")
+        self.assertEqual(items[1].get(NS + "drawable"), "@mipmap/icon")
+        self.assertEqual(items[1].get(NS + "width"), "108dp")
+        self.assertEqual(items[1].get(NS + "height"), "108dp")
+        self.assertNotIn("android:pathData", banner_file.read_text(encoding="utf-8"))
+
+        # The banner uses exactly the same resource as the launcher icon:
+        # no re-created shield / T vectors and no copied Amnezia artwork.
+        self.assertTrue((ANDROID / "res" / "mipmap-anydpi-v26" / "icon.xml").exists())
+        background = ET.parse(ANDROID / "res" / "drawable"
+                              / "tunnelcore_tv_banner_background.xml").getroot()
+        self.assertEqual(background.tag, "vector")
+        self.assertEqual(background.get(NS + "width"), "320dp")
+        self.assertEqual(background.get(NS + "height"), "180dp")
         self.assertNotIn("amneziavpn", banner_file.read_text(encoding="utf-8").lower())
 
     def test_android_tv_keyboard_visible_even_without_ime_insets(self):
