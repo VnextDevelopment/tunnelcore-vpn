@@ -205,6 +205,28 @@ PageType {
         TunnelCoreController.clearError()
     }
 
+    // Return to the entry screen so Bot code, Email and Create account can
+    // always be selected again. This is local navigation, not a logout.
+    function cancelAuthentication() {
+        if (TunnelCoreController.busy || TunnelCoreController.authenticated)
+            return
+
+        // Remove text-editor focus before closing Gboard: otherwise a late
+        // IME focus callback can re-open the keyboard on the welcome page.
+        root.forceActiveFocus()
+        Qt.inputMethod.hide()
+        root.registrationMode = false
+        root.emailMode = true
+        root.showWelcome = true
+        loginField.textField.text = ""
+        passwordField.textField.text = ""
+        confirmPasswordField.textField.text = ""
+        passwordField.passwordVisible = false
+        confirmPasswordField.passwordVisible = false
+        scroll.contentY = 0
+        TunnelCoreController.clearError()
+    }
+
     function submit() {
         if (!TunnelCoreController.busy) {
             if (emailMode) {
@@ -639,6 +661,19 @@ PageType {
                     disabledColor: "#A8C5E7"
                     textColor: "#FFFFFF"
                     clickedFunc: root.submit
+                }
+                BasicButtonType {
+                    objectName: "authCancelButton"
+                    Layout.fillWidth: true
+                    text: qsTr("Cancel")
+                    enabled: !TunnelCoreController.busy
+                    defaultColor: AmneziaStyle.color.tcCard
+                    hoveredColor: AmneziaStyle.color.tcSurfaceBlue
+                    pressedColor: AmneziaStyle.color.tcSurfaceBlue
+                    textColor: AmneziaStyle.color.tcInk
+                    borderColor: AmneziaStyle.color.tcStroke
+                    borderWidth: 1
+                    clickedFunc: root.cancelAuthentication
                 }
                 BasicButtonType {
                     objectName: "accountDeletionWebsiteGuest"
