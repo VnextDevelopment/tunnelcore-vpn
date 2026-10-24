@@ -361,7 +361,7 @@ PageType {
             text: TunnelCoreController.geoRoutingCountry.length > 0
                   ? qsTr("Traffic to the selected country's IPv4 networks goes directly. All other traffic stays inside the VPN. IPv6 remains inside the VPN.")
                   : qsTr("Choose a country to send its IPv4 networks directly while keeping all other traffic inside the VPN.")
-            color: AmneziaStyle.color.paleGray
+            color: AmneziaStyle.color.tcMuted
             maximumLineCount: 4
         }
 
@@ -488,7 +488,7 @@ PageType {
                 }
             }
 
-            DividerType {}
+            DividerType { color: AmneziaStyle.color.tcStroke }
         }
     }
 
@@ -499,7 +499,7 @@ PageType {
         
         height: addSiteButton.implicitHeight + 48
         
-        color: AmneziaStyle.color.midnightBlack
+        color: AmneziaStyle.color.tcBackground
         
         RowLayout {
             id: addSiteButton
@@ -543,7 +543,7 @@ PageType {
                 implicitHeight: 56
 
                 image: "qrc:/images/controls/more-vertical.svg"
-                imageColor: AmneziaStyle.color.paleGray
+                imageColor: AmneziaStyle.color.tcBlue
 
                 onClicked: function () {
                     moreActionsDrawer.openTriggered()
@@ -559,6 +559,9 @@ PageType {
         id: moreActionsDrawer
 
         anchors.fill: parent
+        // The action labels use tcInk: their surface must be light as well.
+        defaultColor: AmneziaStyle.color.tcCard
+        borderColor: AmneziaStyle.color.tcStroke
         expandedHeight: parent.height * 0.4375
 
         expandedStateContent: ColumnLayout {
@@ -573,6 +576,7 @@ PageType {
                 Layout.margins: 16
 
                 headerText: qsTr("Additional options")
+                headerColor: AmneziaStyle.color.tcInk
             }
 
             LabelWithButtonType {
@@ -590,7 +594,7 @@ PageType {
                 }
             }
 
-            DividerType {}
+            DividerType { color: AmneziaStyle.color.tcStroke }
 
             LabelWithButtonType {
             textColor: AmneziaStyle.color.tcInk
@@ -620,7 +624,7 @@ PageType {
                 }
             }
 
-            DividerType {}
+            DividerType { color: AmneziaStyle.color.tcStroke }
             
             LabelWithButtonType {
             textColor: AmneziaStyle.color.tcInk
@@ -650,7 +654,7 @@ PageType {
                 }
             }
 
-            DividerType {}
+            DividerType { color: AmneziaStyle.color.tcStroke }
         }
     }
 
@@ -658,6 +662,8 @@ PageType {
         id: importSitesDrawer
 
         anchors.fill: parent
+        defaultColor: AmneziaStyle.color.tcCard
+        borderColor: AmneziaStyle.color.tcStroke
         expandedHeight: parent.height * 0.4375
 
         expandedStateContent: Item {
@@ -665,6 +671,7 @@ PageType {
 
             BackButtonType {
                 id: importSitesDrawerBackButton
+                imageColor: AmneziaStyle.color.tcInk
 
                 anchors.top: parent.top
                 anchors.left: parent.left
@@ -698,6 +705,7 @@ PageType {
                         Layout.margins: 16
 
                         headerText: qsTr("Import a list of sites")
+                        headerColor: AmneziaStyle.color.tcInk
                     }
                 }
 
@@ -721,7 +729,7 @@ PageType {
                         }
                     }
 
-                    DividerType {}
+                    DividerType { color: AmneziaStyle.color.tcStroke }
                 }
             }
         }
