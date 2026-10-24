@@ -523,6 +523,10 @@ PageType {
                 }
                 TextFieldWithHeaderType {
                     id: loginField
+                    // Digits-only input may receive a caret without opening
+                    // Gboard. Request Android IME explicitly for bot/PIN code,
+                    // including repeated taps on an already-focused field.
+                    requestAndroidIme: !root.emailMode
                     backgroundColor: AmneziaStyle.color.tcCard
                     backgroundDisabledColor: AmneziaStyle.color.tcCard
                     headerTextColor: AmneziaStyle.color.tcMuted
