@@ -145,6 +145,7 @@ PageType {
 
         BackButtonType {
             id: backButton
+            imageColor: AmneziaStyle.color.tcInk
         }
 
         HeaderTypeWithSwitcher {
@@ -174,6 +175,10 @@ PageType {
             rootButtonBackgroundHoveredColor: AmneziaStyle.color.tcSurfaceBlue
             rootButtonBackgroundPressedColor: AmneziaStyle.color.tcSurfaceBlue
             rootButtonDefaultBorderColor: AmneziaStyle.color.tcStroke
+            drawerBackgroundColor: AmneziaStyle.color.tcCard
+            drawerBorderColor: AmneziaStyle.color.tcStroke
+            drawerHeaderColor: AmneziaStyle.color.tcInk
+            drawerBackButtonColor: AmneziaStyle.color.tcInk
             id: countryBypassSelector
 
             Layout.fillWidth: true
@@ -183,7 +188,7 @@ PageType {
 
             // Keep the search box and matching country rows visible when
             // the Android IME reduces the available page height.
-            drawerHeight: PageController.imeHeight > 0 ? 0.95 : 0.55
+            drawerHeight: (Qt.inputMethod.visible || PageController.imeHeight > 0) ? 0.95 : 0.7
             drawerParent: root
 
             visible: TunnelCoreController.authenticated
@@ -209,11 +214,17 @@ PageType {
                         Layout.rightMargin: 16
                         implicitHeight: 80
                         radius: 16
-                        color: AmneziaStyle.color.slateGray
+                        color: AmneziaStyle.color.tcBackground
                         border.width: 1
                         border.color: countrySearchInput.activeFocus
-                                      ? AmneziaStyle.color.paleGray
-                                      : AmneziaStyle.color.charcoalGray
+                                      ? AmneziaStyle.color.tcBlue
+                                      : AmneziaStyle.color.tcStroke
+
+                        // Support tapping anywhere in the search card, including
+                        // the label / padding, without requiring a tiny text target.
+                        TapHandler {
+                            onTapped: countrySearchInput.showKeyboard()
+                        }
 
                         RowLayout {
                             anchors.fill: parent
@@ -228,11 +239,11 @@ PageType {
                                 LabelTextType {
                                     Layout.fillWidth: true
                                     text: qsTr("Search")
+                                    color: AmneziaStyle.color.tcMuted
 
-                                    // Tapping the caption should focus the same
-                                    // native text editor, not the drawer drag area.
+                                    // Caption taps must open the Android IME too.
                                     TapHandler {
-                                        onTapped: countrySearchInput.forceActiveFocus()
+                                        onTapped: countrySearchInput.showKeyboard()
                                     }
                                 }
 
@@ -243,35 +254,57 @@ PageType {
                                     implicitHeight: 28
                                     focusPolicy: Qt.StrongFocus
                                     activeFocusOnPress: true
-                                    color: AmneziaStyle.color.paleGray
+                                    color: AmneziaStyle.color.tcInk
                                     placeholderText: qsTr("Search")
-                                    placeholderTextColor: AmneziaStyle.color.charcoalGray
-                                    selectionColor: AmneziaStyle.color.richBrown
-                                    selectedTextColor: AmneziaStyle.color.paleGray
+                                    placeholderTextColor: AmneziaStyle.color.tcMuted
+                                    selectionColor: AmneziaStyle.color.tcBlue
+                                    selectedTextColor: AmneziaStyle.color.tcCard
                                     font.pixelSize: 16
                                     font.family: "PT Root UI VF"
                                     inputMethodHints: Qt.ImhNoAutoUppercase
                                     background: Item {}
 
-                                    onActiveFocusChanged: {
-                                        if (activeFocus && Qt.platform.os === "android") {
-                                            Qt.callLater(function() {
-                                                if (countrySearchInput.activeFocus) {
-                                                    Qt.inputMethod.show()
-                                                    SystemController.requestSoftKeyboard()
-                                                }
-                                            })
-                                        }
+                                    // Qt 6.10 can focus the field without opening
+                                    // Gboard inside a draggable drawer. Keep a
+                                    // single guarded request for taps and focus,
+                                    // then retry after the UI/IME animation.
+                                    function requestAndroidKeyboard() {
+                                        if (Qt.platform.os !== "android")
+                                            return
+                                        Qt.callLater(function() {
+                                            if (countrySearchInput.activeFocus) {
+                                                Qt.inputMethod.show()
+                                                SystemController.requestSoftKeyboard()
+                                            }
+                                        })
+                                        countryImeRetry.restart()
                                     }
 
-                                    TapHandler {
-                                        onTapped: {
-                                            countrySearchInput.forceActiveFocus()
-                                            if (Qt.platform.os === "android") {
+                                    function showKeyboard() {
+                                        forceActiveFocus()
+                                        requestAndroidKeyboard()
+                                    }
+
+                                    Timer {
+                                        id: countryImeRetry
+                                        interval: 180
+                                        repeat: false
+                                        onTriggered: {
+                                            if (countrySearchInput.activeFocus
+                                                    && Qt.platform.os === "android") {
                                                 Qt.inputMethod.show()
                                                 SystemController.requestSoftKeyboard()
                                             }
                                         }
+                                    }
+
+                                    onActiveFocusChanged: {
+                                        if (activeFocus)
+                                            requestAndroidKeyboard()
+                                    }
+
+                                    TapHandler {
+                                        onTapped: countrySearchInput.showKeyboard()
                                     }
                                 }
                             }
@@ -281,9 +314,10 @@ PageType {
                                 Layout.fillHeight: true
                                 implicitHeight: countrySearchBox.implicitHeight
                                 focusPolicy: Qt.NoFocus
-                                defaultColor: AmneziaStyle.color.paleGray
-                                hoveredColor: AmneziaStyle.color.lightGray
-                                pressedColor: AmneziaStyle.color.mutedGray
+                                defaultColor: AmneziaStyle.color.tcSurfaceBlue
+                                hoveredColor: AmneziaStyle.color.tcCard
+                                pressedColor: AmneziaStyle.color.tcStroke
+                                textColor: AmneziaStyle.color.tcBlue
                                 squareLeftSide: true
                                 leftImageSource: countrySearchInput.text.length > 0
                                                  ? "qrc:/images/controls/close.svg"
@@ -291,11 +325,7 @@ PageType {
                                 clickedFunc: function() {
                                     if (countrySearchInput.text.length > 0)
                                         countrySearchInput.clear()
-                                    countrySearchInput.forceActiveFocus()
-                                    if (Qt.platform.os === "android") {
-                                        Qt.inputMethod.show()
-                                        SystemController.requestSoftKeyboard()
-                                    }
+                                    countrySearchInput.showKeyboard()
                                 }
                             }
                         }
@@ -307,6 +337,7 @@ PageType {
                         function onCloseTriggered() {
                             // Do not leave the soft keyboard covering the
                             // split tunneling page after dismissing the picker.
+                            countryImeRetry.stop()
                             Qt.inputMethod.hide()
                             countrySearchInput.focus = false
                         }
@@ -328,10 +359,10 @@ PageType {
                                 caseSensitivity: Qt.CaseInsensitive
                             }
                         }
-                        textColor: AmneziaStyle.color.textPrimary
-                        itemColor: AmneziaStyle.color.slateGray
-                        itemHoveredColor: AmneziaStyle.color.charcoalGray
-                        itemSelectedColor: AmneziaStyle.color.translucentRichBrown
+                        textColor: AmneziaStyle.color.tcInk
+                        itemColor: AmneziaStyle.color.tcCard
+                        itemHoveredColor: AmneziaStyle.color.tcSurfaceBlue
+                        itemSelectedColor: AmneziaStyle.color.tcSurfaceBlue
                         currentValue: root.geoCountryText()
 
                         clickedFunction: function() {
@@ -372,6 +403,10 @@ PageType {
             rootButtonBackgroundHoveredColor: AmneziaStyle.color.tcSurfaceBlue
             rootButtonBackgroundPressedColor: AmneziaStyle.color.tcSurfaceBlue
             rootButtonDefaultBorderColor: AmneziaStyle.color.tcStroke
+            drawerBackgroundColor: AmneziaStyle.color.tcCard
+            drawerBorderColor: AmneziaStyle.color.tcStroke
+            drawerHeaderColor: AmneziaStyle.color.tcInk
+            drawerBackButtonColor: AmneziaStyle.color.tcInk
             id: selector
 
             Layout.fillWidth: true
@@ -388,6 +423,10 @@ PageType {
 
             listView: ListViewWithRadioButtonType {
                 rootWidth: root.width
+                textColor: AmneziaStyle.color.tcInk
+                itemColor: AmneziaStyle.color.tcCard
+                itemHoveredColor: AmneziaStyle.color.tcSurfaceBlue
+                itemSelectedColor: AmneziaStyle.color.tcSurfaceBlue
 
                 model: root.routeModesModel
 
@@ -465,7 +504,7 @@ PageType {
                 text: url
                 descriptionText: ip
                 rightImageSource: "qrc:/images/controls/trash.svg"
-                rightImageColor: AmneziaStyle.color.paleGray
+                rightImageColor: AmneziaStyle.color.tcBlue
 
                 clickedFunction: function() {
                     var headerText = qsTr("Remove ") + url + "?"

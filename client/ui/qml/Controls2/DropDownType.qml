@@ -46,6 +46,12 @@ Item {
     property Item drawerParent
     property Component listView
 
+    // Optional theme for dropdown sheets. Defaults preserve the existing dark UI.
+    property color drawerBackgroundColor: AmneziaStyle.color.onyxBlack
+    property color drawerBorderColor: AmneziaStyle.color.slateGray
+    property color drawerHeaderColor: AmneziaStyle.color.paleGray
+    property color drawerBackButtonColor: AmneziaStyle.color.paleGray
+
     signal openTriggered
     signal closeTriggered
 
@@ -216,6 +222,8 @@ Item {
 
     DrawerType2 {
         id: menu
+        defaultColor: root.drawerBackgroundColor
+        borderColor: root.drawerBorderColor
 
         parent: drawerParent
 
@@ -243,6 +251,7 @@ Item {
                 BackButtonType {
                     id: backButton
                     backButtonImage: root.headerBackButtonImage
+                    imageColor: root.drawerBackButtonColor
                     backButtonFunction: function() { menu.closeTriggered() }
                 }
 
@@ -254,6 +263,7 @@ Item {
                     Layout.fillWidth: true
 
                     headerText: root.headerText
+                    headerColor: root.drawerHeaderColor
                 }
 
                 Loader {

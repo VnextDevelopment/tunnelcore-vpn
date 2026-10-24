@@ -14,6 +14,7 @@ import android.content.Intent.EXTRA_MIME_TYPES
 import android.content.Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.drawable.Icon
 import android.net.Uri
@@ -1181,7 +1182,7 @@ class AmneziaActivity : QtActivity() {
     // Native fallback for Qt Quick fields that gain focus inside nested
     // drawers. Qt.inputMethod.show() alone may not trigger Samsung IME.
     // Called from SystemController only in response to an edit-field tap.
-    @Suppress("unused")
+    @Suppress("unused", "DEPRECATION")
     fun requestSoftKeyboard() {
         runOnUiThread {
             if (!isActivityResumed || !hasWindowFocus || isFinishing || isDestroyed) {
@@ -1189,20 +1190,84 @@ class AmneziaActivity : QtActivity() {
                 return@runOnUiThread
             }
 
-            val qtView = findQtWindow(window.decorView)
-            if (qtView == null) {
-                Log.w(TAG, "Cannot show keyboard: QtWindow not attached")
+            // QtWindow draws the scene, but QtEditText owns the Android input
+            // connection. InputMethodManager rejects requests for QtWindow as
+            // "view is not served", even though its QML TextField has focus.
+            // Prefer the currently served editor when a screen contains more
+            // than one Qt text field (for example country and website search).
+            val focusedView = window.decorView.findFocus()
+            val qtInputView = focusedView?.takeIf {
+                it::class.simpleName == "QtEditText"
+            } ?: findQtInputView(window.decorView)
+            if (qtInputView == null) {
+                Log.w(TAG, "Cannot show keyboard: QtEditText not attached")
                 return@runOnUiThread
             }
 
-            qtView.post {
-                if (!isActivityResumed || !hasWindowFocus || !qtView.isAttachedToWindow) {
+            qtInputView.post {
+                if (!isActivityResumed || !hasWindowFocus || !qtInputView.isAttachedToWindow) {
+                    return@post
+                }
+
+                // This method is called only after an explicit edit-field tap.
+                // SHOW_FORCED is required when an emulator or Android TV
+                // reports a hardware keyboard; otherwise Android may expose
+                // only the IME accessory strip instead of the full soft
+                // keyboard (numeric PIN pad or country-search letters).
+                if (!qtInputView.hasFocus() && !qtInputView.requestFocus()) {
+                    Log.w(TAG, "Cannot show keyboard: QtEditText did not acquire focus")
                     return@post
                 }
 
                 val inputMethod = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-                val requested = inputMethod.showSoftInput(qtView, InputMethodManager.SHOW_IMPLICIT)
-                Log.d(TAG, "Requested Android IME for QtWindow, accepted=$requested")
+                val showFlags = if (resources.configuration.keyboard != Configuration.KEYBOARD_NOKEYS) {
+                    InputMethodManager.SHOW_FORCED
+                } else {
+                    0
+                }
+
+                // Gboard can keep only its accessory strip visible after the
+                // full keyboard was dismissed while a QtEditText retained
+                // focus. A second showSoftInput() is then accepted but is a
+                // no-op because Android still considers the IME visible.
+                // Restart that stale input session before reopening it.
+                val rootInsets = ViewCompat.getRootWindowInsets(qtInputView)
+                val imeHeight = rootInsets
+                    ?.getInsets(WindowInsetsCompat.Type.ime())
+                    ?.bottom ?: 0
+                val accessoryStripMaxHeight =
+                    (160 * resources.displayMetrics.density).toInt()
+                val accessoryStripOnly = rootInsets
+                    ?.isVisible(WindowInsetsCompat.Type.ime()) == true
+                    && imeHeight in 1 until accessoryStripMaxHeight
+
+                if (accessoryStripOnly) {
+                    Log.d(TAG, "Restarting accessory-only IME session, height=$imeHeight")
+                    inputMethod.hideSoftInputFromWindow(qtInputView.windowToken, 0)
+                    qtInputView.postDelayed({
+                        if (!isActivityResumed || !hasWindowFocus
+                            || !qtInputView.isAttachedToWindow || !qtInputView.hasFocus()) {
+                            return@postDelayed
+                        }
+                        inputMethod.restartInput(qtInputView)
+                        WindowInsetsControllerCompat(window, qtInputView)
+                            .show(WindowInsetsCompat.Type.ime())
+                        val reopened = inputMethod.showSoftInput(
+                            qtInputView,
+                            InputMethodManager.SHOW_FORCED
+                        )
+                        Log.d(TAG, "Reopened full Android IME, accepted=$reopened")
+                    }, 140L)
+                    return@post
+                }
+
+                WindowInsetsControllerCompat(window, qtInputView)
+                    .show(WindowInsetsCompat.Type.ime())
+                val requested = inputMethod.showSoftInput(
+                    qtInputView,
+                    showFlags
+                )
+                Log.d(TAG, "Android IME request for QtEditText, flags=$showFlags, accepted=$requested")
             }
         }
     }
@@ -1228,6 +1293,17 @@ class AmneziaActivity : QtActivity() {
             }
             return null
         } else return null
+    }
+
+    private fun findQtInputView(view: View): View? {
+        if (view::class.simpleName == "QtEditText") return view
+        if (view is ViewGroup) {
+            for (i in 0 until view.childCount) {
+                val result = findQtInputView(view.getChildAt(i))
+                if (result != null) return result
+            }
+        }
+        return null
     }
 
     private fun createEvent(x: Float, y: Float, eventTime: Long, action: Int): MotionEvent =

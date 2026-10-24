@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android TV banner: reuse the ACTUAL application icon.
+     The mark comes directly from @mipmap/icon; do not redraw it. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/tunnelcore_tv_banner_background" />
+    <item
+        android:drawable="@mipmap/icon"
+        android:gravity="left|center_vertical"
+        android:width="108dp"
+        android:height="108dp"
+        android:left="8dp" />
+</layer-list>

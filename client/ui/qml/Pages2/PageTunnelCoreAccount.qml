@@ -24,8 +24,45 @@ PageType {
     property bool pendingLogoutAll: false
     property string countryFilter: ""
 
+    // TV software keyboards may float over the page without reporting a
+    // bottom window inset. Qt.inputMethod.visible also covers that case.
+    readonly property bool keyboardVisible: Qt.inputMethod.visible || PageController.imeHeight > 0
+    readonly property bool compactAuthLayout: !TunnelCoreController.authenticated
+                                               && !showWelcome && keyboardVisible
+
+    onCompactAuthLayoutChanged: {
+        if (!root.compactAuthLayout && !TunnelCoreController.authenticated)
+            scroll.contentY = 0
+        root.scheduleInputVisibility()
+    }
+    onEmailModeChanged: root.scheduleInputVisibility()
+    onRegistrationModeChanged: root.scheduleInputVisibility()
+
+    Timer {
+        id: imeLayoutTimer
+        interval: 150
+        repeat: false
+        onTriggered: root.keepFocusedInputVisible()
+    }
+
+    function scheduleInputVisibility() {
+        Qt.callLater(root.keepFocusedInputVisible)
+        // Check again after Qt/Android has completed the IME resize/animation.
+        imeLayoutTimer.restart()
+    }
+
+    Connections {
+        target: PageController
+        function onImeHeightChanged() { root.scheduleInputVisibility() }
+    }
+
+    Connections {
+        target: Qt.inputMethod
+        function onKeyboardRectangleChanged() { root.scheduleInputVisibility() }
+    }
+
     // The account page is inside PageStart's IME-adjusted StackView.
-    // Bring the focused input into view when the keyboard reduces its height.
+    // Bring the focused input AND the next required input into view.
     function keepFocusedInputVisible() {
         if (!root.visible || scroll.height <= 0)
             return
@@ -47,11 +84,44 @@ PageType {
 
         var fieldTop = focusedField.mapToItem(content, 0, 0).y
         var fieldBottom = fieldTop + focusedField.height
-        var margin = 16
+        var margin = 12
+        var targetBottom = fieldBottom
+
+        // When editing Email, keep Password on screen as well whenever both
+        // controls physically fit. The same applies to the registration form.
+        if (root.compactAuthLayout) {
+            var candidates = []
+            if (focusedField === loginField) {
+                if (root.emailMode)
+                    candidates = root.registrationMode
+                            ? [confirmPasswordField, passwordField]
+                            : [passwordField, authSubmitButton]
+                else
+                    candidates = [authSubmitButton]
+            } else if (focusedField === passwordField) {
+                candidates = root.registrationMode
+                        ? [confirmPasswordField, authSubmitButton]
+                        : [authSubmitButton]
+            } else if (focusedField === confirmPasswordField) {
+                candidates = [authSubmitButton]
+            }
+
+            for (var i = 0; i < candidates.length; ++i) {
+                var candidate = candidates[i]
+                if (!candidate.visible || candidate.height <= 0)
+                    continue
+                var nextBottom = candidate.mapToItem(content, 0, 0).y + candidate.height
+                if (nextBottom - fieldTop + margin * 2 <= scroll.height) {
+                    targetBottom = nextBottom
+                    break
+                }
+            }
+        }
+
         var targetY = scroll.contentY
-        if (fieldBottom + margin > scroll.contentY + scroll.height)
-            targetY = fieldBottom + margin - scroll.height
-        else if (fieldTop - margin < scroll.contentY)
+        if (targetBottom + margin > targetY + scroll.height)
+            targetY = targetBottom + margin - scroll.height
+        if (fieldTop - margin < targetY)
             targetY = fieldTop - margin
 
         scroll.contentY = Math.max(0, Math.min(targetY,
@@ -128,9 +198,32 @@ PageType {
             return
         emailMode = email
         registrationMode = false
+        scroll.contentY = 0
         loginField.textField.text = ""
         passwordField.textField.text = ""
         confirmPasswordField.textField.text = ""
+        TunnelCoreController.clearError()
+    }
+
+    // Return to the entry screen so Bot code, Email and Create account can
+    // always be selected again. This is local navigation, not a logout.
+    function cancelAuthentication() {
+        if (TunnelCoreController.busy || TunnelCoreController.authenticated)
+            return
+
+        // Remove text-editor focus before closing Gboard: otherwise a late
+        // IME focus callback can re-open the keyboard on the welcome page.
+        root.forceActiveFocus()
+        Qt.inputMethod.hide()
+        root.registrationMode = false
+        root.emailMode = true
+        root.showWelcome = true
+        loginField.textField.text = ""
+        passwordField.textField.text = ""
+        confirmPasswordField.textField.text = ""
+        passwordField.passwordVisible = false
+        confirmPasswordField.passwordVisible = false
+        scroll.contentY = 0
         TunnelCoreController.clearError()
     }
 
@@ -227,12 +320,13 @@ PageType {
     Flickable {
         id: scroll
         anchors.fill: parent
-        anchors.topMargin: PageController.safeAreaTopMargin + 24
+        anchors.topMargin: PageController.safeAreaTopMargin + (root.compactAuthLayout ? 4 : 24)
         // PageStart already reserves the IME inset in the StackView height.
         // Adding imeHeight again clips these fields behind the keyboard.
-        anchors.bottomMargin: PageController.safeAreaBottomMargin + 16
+        anchors.bottomMargin: PageController.safeAreaBottomMargin + (root.compactAuthLayout ? 0 : 16)
         contentHeight: content.implicitHeight + 24
-        onHeightChanged: Qt.callLater(root.keepFocusedInputVisible)
+        onHeightChanged: root.scheduleInputVisibility()
+        onContentHeightChanged: root.scheduleInputVisibility()
         clip: true
         boundsBehavior: Flickable.StopAtBounds
 
@@ -240,12 +334,12 @@ PageType {
             id: content
             width: Math.min(scroll.width - 32, 440)
             anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 16
+            spacing: root.compactAuthLayout ? 8 : 16
 
             IconImageType {
                 source: "qrc:/images/icon.png"
                 tint: ""
-                visible: !TunnelCoreController.authenticated
+                visible: !TunnelCoreController.authenticated && !root.compactAuthLayout
                 Layout.alignment: Qt.AlignHCenter
                 Layout.preferredWidth: 72
                 Layout.preferredHeight: 72
@@ -253,6 +347,7 @@ PageType {
             Header2TextType {
                 Layout.fillWidth: true
                 text: "TunnelCore VPN"
+                visible: !root.compactAuthLayout
                 color: AmneziaStyle.color.tcInk
                 font.pixelSize: 29
                 horizontalAlignment: Text.AlignHCenter
@@ -261,6 +356,7 @@ PageType {
                 Layout.fillWidth: true
                 textFormat: Text.PlainText
                 text: TunnelCoreController.authenticated ? TunnelCoreController.username : qsTr("Sign in to your account")
+                visible: !root.compactAuthLayout
                 color: AmneziaStyle.color.tcMuted
                 horizontalAlignment: Text.AlignHCenter
             }
@@ -371,9 +467,9 @@ PageType {
             Rectangle {
                 id: authCard
                 Layout.fillWidth: true
-                implicitHeight: authContent.implicitHeight + 48
+                implicitHeight: authContent.implicitHeight + (root.compactAuthLayout ? 24 : 48)
                 visible: !TunnelCoreController.authenticated && !root.showWelcome
-                radius: 28
+                radius: root.compactAuthLayout ? 16 : 28
                 color: AmneziaStyle.color.tcCard
                 border.width: 1
                 border.color: AmneziaStyle.color.tcStroke
@@ -383,18 +479,20 @@ PageType {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.top: parent.top
-                    anchors.margins: 24
-                    spacing: 16
+                    anchors.margins: root.compactAuthLayout ? 12 : 24
+                    spacing: root.compactAuthLayout ? 8 : 16
 
                     Header2TextType {
                         Layout.fillWidth: true
                         text: root.registrationMode ? qsTr("Create account") : qsTr("Sign in")
+                        visible: !root.compactAuthLayout
                         color: AmneziaStyle.color.tcInk
                         horizontalAlignment: Text.AlignHCenter
                     }
 
                 RowLayout {
                     Layout.fillWidth: true
+                    visible: !root.compactAuthLayout
                     BasicButtonType {
                         Layout.fillWidth: true
                         text: qsTr("Bot code")
@@ -421,6 +519,7 @@ PageType {
                 SmallTextType {
                     color: AmneziaStyle.color.tcMuted
                     Layout.fillWidth: true
+                    visible: !root.compactAuthLayout
                     text: root.emailMode
                           ? (root.registrationMode
                              ? qsTr("Create a TunnelCore account with your email and password.")
@@ -429,7 +528,7 @@ PageType {
                 }
                 BasicButtonType {
                     Layout.fillWidth: true
-                    visible: root.emailMode
+                    visible: root.emailMode && !root.compactAuthLayout
                     text: root.registrationMode
                           ? qsTr("Already have an account? Sign in")
                           : qsTr("Create account")
@@ -438,6 +537,7 @@ PageType {
                     textColor: AmneziaStyle.color.tcBlue
                     clickedFunc: function() {
                         root.registrationMode = !root.registrationMode
+                        scroll.contentY = 0
                         passwordField.textField.text = ""
                         confirmPasswordField.textField.text = ""
                         TunnelCoreController.clearError()
@@ -445,6 +545,10 @@ PageType {
                 }
                 TextFieldWithHeaderType {
                     id: loginField
+                    // Digits-only input may receive a caret without opening
+                    // Gboard. Request Android IME explicitly for bot/PIN code,
+                    // including repeated taps on an already-focused field.
+                    requestAndroidIme: !root.emailMode
                     backgroundColor: AmneziaStyle.color.tcCard
                     backgroundDisabledColor: AmneziaStyle.color.tcCard
                     headerTextColor: AmneziaStyle.color.tcMuted
@@ -496,7 +600,12 @@ PageType {
                         passwordField.passwordVisible = !passwordField.passwordVisible
                     }
                     textField.maximumLength: 1024
-                    textField.onAccepted: root.submit()
+                    textField.onAccepted: {
+                        if (root.registrationMode)
+                            confirmPasswordField.textField.forceActiveFocus()
+                        else
+                            root.submit()
+                    }
                 }
                 TextFieldWithHeaderType {
                     id: confirmPasswordField
@@ -534,6 +643,7 @@ PageType {
                     color: AmneziaStyle.color.vibrantRed
                 }
                 BasicButtonType {
+                    id: authSubmitButton
                     Layout.fillWidth: true
                     text: TunnelCoreController.busy
                           ? (root.registrationMode ? qsTr("Creating account…") : qsTr("Signing in…"))
@@ -551,6 +661,19 @@ PageType {
                     disabledColor: "#A8C5E7"
                     textColor: "#FFFFFF"
                     clickedFunc: root.submit
+                }
+                BasicButtonType {
+                    objectName: "authCancelButton"
+                    Layout.fillWidth: true
+                    text: qsTr("Cancel")
+                    enabled: !TunnelCoreController.busy
+                    defaultColor: AmneziaStyle.color.tcCard
+                    hoveredColor: AmneziaStyle.color.tcSurfaceBlue
+                    pressedColor: AmneziaStyle.color.tcSurfaceBlue
+                    textColor: AmneziaStyle.color.tcInk
+                    borderColor: AmneziaStyle.color.tcStroke
+                    borderWidth: 1
+                    clickedFunc: root.cancelAuthentication
                 }
                 BasicButtonType {
                     objectName: "accountDeletionWebsiteGuest"
@@ -778,6 +901,7 @@ PageType {
                     TextFieldWithHeaderType {
                         id: vpnCountrySearch
                         Layout.fillWidth: true
+                        requestAndroidIme: true
                         visible: TunnelCoreController.vpnCountries.length > 4
                         enabled: !TunnelCoreController.busy
                         headerText: qsTranslate("PageShare", "Search")
@@ -974,6 +1098,7 @@ PageType {
                     }
                     TextFieldWithHeaderType {
                         id: telegramCodeField
+                        requestAndroidIme: true
                     backgroundColor: AmneziaStyle.color.tcCard
                     backgroundDisabledColor: AmneziaStyle.color.tcCard
                     headerTextColor: AmneziaStyle.color.tcMuted
