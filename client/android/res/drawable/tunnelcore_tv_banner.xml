@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 320 x 180 Android TV launcher banner using TunnelCore branding. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+    <path android:fillColor="#FF0F1938" android:pathData="M0,0 L320,0 L320,180 L0,180 Z"/>
+    <path android:fillColor="#FF1478F9" android:pathData="M0,174 L320,174 L320,180 L0,180 Z"/>
+    <path android:fillColor="#3320CBE3" android:pathData="M0,0 L7,0 L7,174 L0,174 Z"/>
+    <!-- Shield + T copied from the branded ic_tunnelcore_round.xml vector. -->
+    <group android:translateX="8" android:translateY="30">
+        <path android:fillColor="#FF20CBE3" android:fillType="evenOdd"
+            android:pathData="M54,10 L88,27 L84,62 C82,78 70,91 54,99 C38,91 26,78 24,62 L20,27 Z M54,20 L29,32 L32,60 C34,72 42,82 54,89 C66,82 74,72 76,60 L79,32 Z"/>
+        <path android:fillColor="#FFFFFFFF"
+            android:pathData="M35,36 L73,36 L73,47 L60,47 L60,76 L48,76 L48,47 L35,47 Z"/>
+    </group>
+    <!-- TunnelCore VPN label in outlined glyphs for density-independent TV rendering. -->
+    <group android:translateX="115" android:translateY="68" android:scaleX="2.7" android:scaleY="2.7">
+        <group android:translateX="0.00"><path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" android:strokeWidth="0.75" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M0,0 L5,0 M2.5,0 L2.5,7"/></group>
+        <group android:translateX="6.75"><path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" android:strokeWidth="0.75" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M0,0 L0,5.5 L1.5,7 L3.5,7 L5,5.5 L5,0"/></group>
+        <group android:translateX="13.50"><path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" android:strokeWidth="0.75" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M0,7 L0,0 L5,7 L5,0"/></group>
+        <group android:translateX="20.25"><path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" android:strokeWidth="0.75" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M0,7 L0,0 L5,7 L5,0"/></group>
+        <group android:translateX="27.00"><path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" android:strokeWidth="0.75" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M5,0 L0,0 L0,7 L5,7 M0,3.5 L4.5,3.5"/></group>
+        <group android:translateX="33.75"><path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" android:strokeWidth="0.75" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M0,0 L0,7 L5,7"/></group>
+        <group android:translateX="40.50"><path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" android:strokeWidth="0.75" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M5,1 L3.5,0 L1.5,0 L0,1.5 L0,5.5 L1.5,7 L3.5,7 L5,6"/></group>
+        <group android:translateX="47.25"><path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" android:strokeWidth="0.75" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M1,0 L4,0 L5,1 L5,6 L4,7 L1,7 L0,6 L0,1 Z"/></group>
+        <group android:translateX="54.00"><path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" android:strokeWidth="0.75" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M0,7 L0,0 L4,0 L5,1.25 L5,2.75 L4,3.5 L0,3.5 M2.5,3.5 L5,7"/></group>
+        <group android:translateX="60.75"><path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" android:strokeWidth="0.75" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M5,0 L0,0 L0,7 L5,7 M0,3.5 L4.5,3.5"/></group>
+    </group>
+    <group android:translateX="115" android:translateY="108" android:scaleX="2.7" android:scaleY="2.7">
+        <group android:translateX="0.00"><path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" android:strokeWidth="0.75" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M0,0 L2.5,7 L5,0"/></group>
+        <group android:translateX="6.75"><path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" android:strokeWidth="0.75" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M0,7 L0,0 L4,0 L5,1 L5,3 L4,4 L0,4"/></group>
+        <group android:translateX="13.50"><path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" android:strokeWidth="0.75" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M0,7 L0,0 L5,7 L5,0"/></group>
+    </group>
+</vector>
