@@ -93,10 +93,10 @@ class AndroidTvKeyboardTest(unittest.TestCase):
                 self.assertIn(requirement, cancel)
 
         form = source.split('id: authCard', 1)[1].split(
-            'id: accountDeletionWebsiteGuest', 1
+            'objectName: "accountDeletionWebsiteGuest"', 1
         )[0]
         self.assertLess(form.index('id: authSubmitButton'),
-                        form.index('id: authCancelButton'))
+                        form.index('objectName: "authCancelButton"'))
         self.assertIn('root.registrationMode ? qsTr("Create account") : qsTr("Sign in")', form)
 
     def test_compact_login_keeps_next_input_reachable(self):
