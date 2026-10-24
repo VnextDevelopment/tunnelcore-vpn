@@ -14,6 +14,7 @@ import android.content.Intent.EXTRA_MIME_TYPES
 import android.content.Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.drawable.Icon
 import android.net.Uri
@@ -1181,7 +1182,7 @@ class AmneziaActivity : QtActivity() {
     // Native fallback for Qt Quick fields that gain focus inside nested
     // drawers. Qt.inputMethod.show() alone may not trigger Samsung IME.
     // Called from SystemController only in response to an edit-field tap.
-    @Suppress("unused")
+    @Suppress("unused", "DEPRECATION")
     fun requestSoftKeyboard() {
         runOnUiThread {
             if (!isActivityResumed || !hasWindowFocus || isFinishing || isDestroyed) {
@@ -1189,31 +1190,46 @@ class AmneziaActivity : QtActivity() {
                 return@runOnUiThread
             }
 
-            val qtView = findQtWindow(window.decorView)
-            if (qtView == null) {
-                Log.w(TAG, "Cannot show keyboard: QtWindow not attached")
+            // QtWindow draws the scene, but QtEditText owns the Android input
+            // connection. InputMethodManager rejects requests for QtWindow as
+            // "view is not served", even though its QML TextField has focus.
+            // Prefer the currently served editor when a screen contains more
+            // than one Qt text field (for example country and website search).
+            val focusedView = window.decorView.findFocus()
+            val qtInputView = focusedView?.takeIf {
+                it::class.simpleName == "QtEditText"
+            } ?: findQtInputView(window.decorView)
+            if (qtInputView == null) {
+                Log.w(TAG, "Cannot show keyboard: QtEditText not attached")
                 return@runOnUiThread
             }
 
-            qtView.post {
-                if (!isActivityResumed || !hasWindowFocus || !qtView.isAttachedToWindow) {
+            qtInputView.post {
+                if (!isActivityResumed || !hasWindowFocus || !qtInputView.isAttachedToWindow) {
                     return@post
                 }
 
-                // The user explicitly tapped an editable field. SHOW_IMPLICIT
-                // tells Android it can ignore the request (notably on emulators
-                // and when a hardware keyboard has been detected). Use the
-                // explicit flag value 0 and ensure the QtWindow has view focus.
-                // Leave the QML TextField as the actual text editor; do not
-                // replace Qt's input connection or insets listener.
-                if (!qtView.hasFocus() && !qtView.requestFocus()) {
-                    Log.w(TAG, "Cannot show keyboard: QtWindow did not acquire focus")
+                // This method is called only after an explicit edit-field tap.
+                // SHOW_FORCED is required when an emulator or Android TV
+                // reports a hardware keyboard; otherwise Android may expose
+                // only the IME accessory strip instead of the full soft
+                // keyboard (numeric PIN pad or country-search letters).
+                if (!qtInputView.hasFocus() && !qtInputView.requestFocus()) {
+                    Log.w(TAG, "Cannot show keyboard: QtEditText did not acquire focus")
                     return@post
                 }
 
                 val inputMethod = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-                val requested = inputMethod.showSoftInput(qtView, 0)
-                Log.d(TAG, "Explicit Android IME request for QtWindow, accepted=$requested")
+                val showFlags = if (resources.configuration.keyboard != Configuration.KEYBOARD_NOKEYS) {
+                    InputMethodManager.SHOW_FORCED
+                } else {
+                    0
+                }
+                val requested = inputMethod.showSoftInput(
+                    qtInputView,
+                    showFlags
+                )
+                Log.d(TAG, "Android IME request for QtEditText, flags=$showFlags, accepted=$requested")
             }
         }
     }
@@ -1239,6 +1255,17 @@ class AmneziaActivity : QtActivity() {
             }
             return null
         } else return null
+    }
+
+    private fun findQtInputView(view: View): View? {
+        if (view::class.simpleName == "QtEditText") return view
+        if (view is ViewGroup) {
+            for (i in 0 until view.childCount) {
+                val result = findQtInputView(view.getChildAt(i))
+                if (result != null) return result
+            }
+        }
+        return null
     }
 
     private fun createEvent(x: Float, y: Float, eventTime: Long, action: Int): MotionEvent =

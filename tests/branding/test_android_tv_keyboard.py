@@ -65,9 +65,15 @@ class AndroidTvKeyboardTest(unittest.TestCase):
 
         kotlin = (ANDROID / "src" / "org" / "amnezia" / "vpn"
                   / "AmneziaActivity.kt").read_text(encoding="utf-8")
-        self.assertIn("showSoftInput(qtView, 0)", kotlin)
-        self.assertIn("!qtView.hasFocus() && !qtView.requestFocus()", kotlin)
-        self.assertNotIn("showSoftInput(qtView, InputMethodManager.SHOW_IMPLICIT)", kotlin)
+        self.assertIn("val focusedView = window.decorView.findFocus()", kotlin)
+        self.assertIn("?: findQtInputView(window.decorView)", kotlin)
+        self.assertIn("Configuration.KEYBOARD_NOKEYS", kotlin)
+        self.assertIn("InputMethodManager.SHOW_FORCED", kotlin)
+        self.assertIn(
+            "!qtInputView.hasFocus() && !qtInputView.requestFocus()", kotlin
+        )
+        self.assertIn('view::class.simpleName == "QtEditText"', kotlin)
+        self.assertNotIn("showSoftInput(qtView", kotlin)
 
     def test_cancel_returns_to_auth_method_selection(self):
         source = ACCOUNT.read_text(encoding="utf-8")
