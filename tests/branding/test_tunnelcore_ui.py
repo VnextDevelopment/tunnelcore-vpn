@@ -147,6 +147,24 @@ class TunnelCoreUiTest(unittest.TestCase):
                 self.assertIn("color: AmneziaStyle.color.tcBackground", source)
                 self.assertIn("imageColor: AmneziaStyle.color.tcInk", source)
 
+    def test_split_tunneling_drawer_contrast(self):
+        """Poco M6 Pro: avoid dark text on the old dark drawer background."""
+        source = (QML / "Pages2" / "PageSettingsSplitTunneling.qml").read_text(
+            encoding="utf-8"
+        )
+        actions = source.split("id: moreActionsDrawer", 1)[1].split(
+            "id: importSitesDrawer", 1
+        )[0]
+        import_drawer = source.split("id: importSitesDrawer", 1)[1]
+        for drawer in (actions, import_drawer):
+            self.assertIn("defaultColor: AmneziaStyle.color.tcCard", drawer)
+            self.assertIn("borderColor: AmneziaStyle.color.tcStroke", drawer)
+            self.assertIn("headerColor: AmneziaStyle.color.tcInk", drawer)
+            self.assertIn("textColor: AmneziaStyle.color.tcInk", drawer)
+            self.assertIn("DividerType { color: AmneziaStyle.color.tcStroke }", drawer)
+        self.assertIn("imageColor: AmneziaStyle.color.tcInk", import_drawer)
+        self.assertIn("color: AmneziaStyle.color.tcMuted\\n            maximumLineCount: 4", source)
+
     def test_android_safe_brand_and_connection_icons(self):
         self.assertIn(
             '<file alias="icon.png">../android/res/mipmap-xxxhdpi/icon.png</file>',
