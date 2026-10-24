@@ -34,6 +34,18 @@ class AndroidTvKeyboardTest(unittest.TestCase):
         self.assertIn("onHeightChanged: root.scheduleInputVisibility()", source)
         self.assertIn("onContentHeightChanged: root.scheduleInputVisibility()", source)
 
+    def test_numeric_code_explicitly_requests_android_keyboard(self):
+        source = ACCOUNT.read_text(encoding="utf-8")
+        login_field = source.split("id: loginField", 1)[1].split(
+            "id: passwordField", 1
+        )[0]
+        self.assertIn("requestAndroidIme: !root.emailMode", login_field)
+        self.assertIn("Qt.ImhDigitsOnly", login_field)
+        widget = (ROOT / "client" / "ui" / "qml" / "Controls2"
+                  / "TextFieldWithHeaderType.qml").read_text(encoding="utf-8")
+        self.assertIn("if (root.requestAndroidIme", widget)
+        self.assertIn("SystemController.requestSoftKeyboard()", widget)
+
     def test_compact_login_keeps_next_input_reachable(self):
         source = ACCOUNT.read_text(encoding="utf-8")
         self.assertIn("readonly property bool compactAuthLayout:", source)
