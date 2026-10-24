@@ -5,6 +5,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 ANDROID_ACTIVITY = ROOT / "client/android/src/org/amnezia/vpn/AmneziaActivity.kt"
 SPLIT_TUNNELING = ROOT / "client/ui/qml/Pages2/PageSettingsSplitTunneling.qml"
+ACCOUNT = ROOT / "client/ui/qml/Pages2/PageTunnelCoreAccount.qml"
 
 
 class AndroidImeIntegrationTests(unittest.TestCase):
@@ -30,7 +31,21 @@ class AndroidImeIntegrationTests(unittest.TestCase):
         self.assertIn('it::class.simpleName == "QtEditText"', kotlin)
         self.assertIn("Configuration.KEYBOARD_NOKEYS", kotlin)
         self.assertIn("InputMethodManager.SHOW_FORCED", kotlin)
+        self.assertIn("accessoryStripOnly", kotlin)
+        self.assertIn("inputMethod.restartInput(qtInputView)", kotlin)
         self.assertNotIn("showSoftInput(qtView", kotlin)
+
+    def test_account_link_fields_explicitly_request_android_keyboard(self):
+        account = ACCOUNT.read_text()
+        telegram = account.split("id: telegramCodeField", 1)[1].split(
+            "BasicButtonType {", 1
+        )[0]
+        self.assertIn("requestAndroidIme: true", telegram)
+
+        country = account.split("id: vpnCountrySearch", 1)[1].split(
+            "BasicButtonType {", 1
+        )[0]
+        self.assertIn("requestAndroidIme: true", country)
 
 
 if __name__ == "__main__":

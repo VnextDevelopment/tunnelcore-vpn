@@ -901,6 +901,7 @@ PageType {
                     TextFieldWithHeaderType {
                         id: vpnCountrySearch
                         Layout.fillWidth: true
+                        requestAndroidIme: true
                         visible: TunnelCoreController.vpnCountries.length > 4
                         enabled: !TunnelCoreController.busy
                         headerText: qsTranslate("PageShare", "Search")
@@ -1097,6 +1098,7 @@ PageType {
                     }
                     TextFieldWithHeaderType {
                         id: telegramCodeField
+                        requestAndroidIme: true
                     backgroundColor: AmneziaStyle.color.tcCard
                     backgroundDisabledColor: AmneziaStyle.color.tcCard
                     headerTextColor: AmneziaStyle.color.tcMuted

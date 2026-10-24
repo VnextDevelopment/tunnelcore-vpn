@@ -75,6 +75,20 @@ class AndroidTvKeyboardTest(unittest.TestCase):
         self.assertIn('view::class.simpleName == "QtEditText"', kotlin)
         self.assertNotIn("showSoftInput(qtView", kotlin)
 
+        telegram_field = source.split("id: telegramCodeField", 1)[1].split(
+            "BasicButtonType {", 1
+        )[0]
+        self.assertIn("requestAndroidIme: true", telegram_field)
+
+    def test_accessory_strip_is_reopened_as_full_keyboard(self):
+        kotlin = (ANDROID / "src" / "org" / "amnezia" / "vpn"
+                  / "AmneziaActivity.kt").read_text(encoding="utf-8")
+        self.assertIn("accessoryStripOnly", kotlin)
+        self.assertIn("hideSoftInputFromWindow", kotlin)
+        self.assertIn("inputMethod.restartInput(qtInputView)", kotlin)
+        self.assertIn("WindowInsetsCompat.Type.ime()", kotlin)
+        self.assertIn("InputMethodManager.SHOW_FORCED", kotlin)
+
     def test_cancel_returns_to_auth_method_selection(self):
         source = ACCOUNT.read_text(encoding="utf-8")
         self.assertIn('objectName: "authCancelButton"', source)
