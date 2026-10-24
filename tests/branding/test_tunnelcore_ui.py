@@ -163,7 +163,10 @@ class TunnelCoreUiTest(unittest.TestCase):
             self.assertIn("textColor: AmneziaStyle.color.tcInk", drawer)
             self.assertIn("DividerType { color: AmneziaStyle.color.tcStroke }", drawer)
         self.assertIn("imageColor: AmneziaStyle.color.tcInk", import_drawer)
-        self.assertIn("color: AmneziaStyle.color.tcMuted\\n            maximumLineCount: 4", source)
+        self.assertRegex(
+            source,
+            r"color:\s*AmneziaStyle[.]color[.]tcMuted\s+maximumLineCount:\s*4",
+        )
 
     def test_android_safe_brand_and_connection_icons(self):
         self.assertIn(
