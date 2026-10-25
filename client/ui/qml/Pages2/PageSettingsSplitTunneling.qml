@@ -258,6 +258,18 @@ PageType {
                                     inputMethodHints: Qt.ImhNoAutoUppercase
                                     background: Item {}
 
+                                    property bool androidImeRequestPending: false
+
+                                    function scheduleAndroidKeyboard() {
+                                        if (androidImeRequestPending || Qt.platform.os !== "android")
+                                            return
+                                        androidImeRequestPending = true
+                                        Qt.callLater(function() {
+                                            androidImeRequestPending = false
+                                            requestAndroidKeyboard()
+                                        })
+                                    }
+
                                     function requestAndroidKeyboard() {
                                         if (Qt.platform.os !== "android" || !activeFocus || !visible)
                                             return
@@ -267,12 +279,12 @@ PageType {
 
                                     function showKeyboard() {
                                         forceActiveFocus(Qt.MouseFocusReason)
-                                        Qt.callLater(requestAndroidKeyboard)
+                                        scheduleAndroidKeyboard()
                                     }
 
                                     onActiveFocusChanged: {
                                         if (activeFocus)
-                                            Qt.callLater(requestAndroidKeyboard)
+                                            scheduleAndroidKeyboard()
                                     }
 
                                 }
