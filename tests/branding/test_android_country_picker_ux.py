@@ -47,7 +47,10 @@ class CountryPickerUxTest(unittest.TestCase):
         self.assertIn("forceActiveFocus(Qt.MouseFocusReason)", source)
         self.assertIn("function requestAndroidKeyboard()", source)
         self.assertNotIn("countryImeRetry", source)
-        self.assertIn("Qt.callLater(requestAndroidKeyboard)", source)
+        self.assertIn("property bool androidImeRequestPending: false", source)
+        self.assertIn("function scheduleAndroidKeyboard()", source)
+        self.assertIn("Qt.callLater(function() {", source)
+        self.assertIn("scheduleAndroidKeyboard()", source)
         self.assertIn("SystemController.requestSoftKeyboard()", source)
         self.assertIn("Qt.inputMethod.visible || PageController.imeHeight > 0", source)
 
