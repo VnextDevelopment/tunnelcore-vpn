@@ -226,6 +226,9 @@ Item {
         borderColor: root.drawerBorderColor
 
         parent: drawerParent
+        // Reparented sheets must stay above later page siblings (lists and
+        // bottom input bars), otherwise those items intercept search taps.
+        z: isClosed ? 0 : 100 + depthIndex
 
         anchors.fill: parent
         property real measuredContentHeight: 0

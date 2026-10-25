@@ -44,12 +44,18 @@ class CountryPickerUxTest(unittest.TestCase):
         self.assertIn("TapHandler {", search_box)
         self.assertIn("onTapped: countrySearchInput.showKeyboard()", search_box)
         self.assertIn("function showKeyboard()", source)
-        self.assertIn("forceActiveFocus()", source)
+        self.assertIn("forceActiveFocus(Qt.MouseFocusReason)", source)
         self.assertIn("function requestAndroidKeyboard()", source)
-        self.assertIn("countryImeRetry.restart()", source)
-        self.assertIn("countryImeRetry.stop()", source)
+        self.assertNotIn("countryImeRetry", source)
+        self.assertIn("Qt.callLater(requestAndroidKeyboard)", source)
         self.assertIn("SystemController.requestSoftKeyboard()", source)
         self.assertIn("Qt.inputMethod.visible || PageController.imeHeight > 0", source)
+
+    def test_reparented_drawer_is_above_page_inputs(self):
+        source = (CONTROLS / "DropDownType.qml").read_text(encoding="utf-8")
+        drawer = source.split("id: menu", 1)[1]
+        self.assertIn("parent: drawerParent", drawer)
+        self.assertIn("z: isClosed ? 0 : 100 + depthIndex", drawer)
 
 
 if __name__ == "__main__":

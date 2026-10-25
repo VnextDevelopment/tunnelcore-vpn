@@ -58,9 +58,10 @@ class AndroidTvKeyboardTest(unittest.TestCase):
         widget = (ROOT / "client" / "ui" / "qml" / "Controls2"
                   / "TextFieldWithHeaderType.qml").read_text(encoding="utf-8")
         self.assertIn("function showRequestedAndroidKeyboard()", widget)
-        self.assertIn("id: androidImeRetry", widget)
-        self.assertIn("interval: 220", widget)
-        self.assertIn("androidImeRetry.restart()", widget)
+        self.assertNotIn("androidImeRetry", widget)
+        self.assertIn("Qt.callLater(root.showRequestedAndroidKeyboard)", widget)
+        self.assertIn("acceptedButtons: Qt.NoButton", widget)
+        self.assertNotIn("mouse.accepted = false", widget)
         self.assertIn("SystemController.requestSoftKeyboard()", widget)
 
         kotlin = (ANDROID / "src" / "org" / "amnezia" / "vpn"
@@ -80,14 +81,16 @@ class AndroidTvKeyboardTest(unittest.TestCase):
         )[0]
         self.assertIn("requestAndroidIme: true", telegram_field)
 
-    def test_accessory_strip_is_reopened_as_full_keyboard(self):
+    def test_opening_animation_is_not_mistaken_for_accessory_strip(self):
         kotlin = (ANDROID / "src" / "org" / "amnezia" / "vpn"
                   / "AmneziaActivity.kt").read_text(encoding="utf-8")
-        self.assertIn("accessoryStripOnly", kotlin)
-        self.assertIn("hideSoftInputFromWindow", kotlin)
-        self.assertIn("inputMethod.restartInput(qtInputView)", kotlin)
-        self.assertIn("WindowInsetsCompat.Type.ime()", kotlin)
-        self.assertIn("InputMethodManager.SHOW_FORCED", kotlin)
+        fallback = kotlin.split("fun requestSoftKeyboard()", 1)[1].split("fun sendTouch", 1)[0]
+        self.assertNotIn("getRootWindowInsets", fallback)
+        self.assertNotIn("hideSoftInputFromWindow", fallback)
+        self.assertNotIn("restartInput", fallback)
+        self.assertEqual(fallback.count("inputMethod.showSoftInput("), 1)
+        self.assertIn("Configuration.KEYBOARD_NOKEYS", fallback)
+        self.assertIn("InputMethodManager.SHOW_FORCED", fallback)
 
     def test_cancel_returns_to_auth_method_selection(self):
         source = ACCOUNT.read_text(encoding="utf-8")

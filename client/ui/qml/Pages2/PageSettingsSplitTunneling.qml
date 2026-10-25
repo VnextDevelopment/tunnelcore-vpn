@@ -203,10 +203,8 @@ PageType {
                     anchors.fill: parent
                     spacing: 12
 
-                    // Use a native editable TextField instead of TextFieldWithHeaderType.
-                    // That component places a MouseArea over the input and forwards
-                    // touch presses, which can prevent Android's IME from opening
-                    // when the field is embedded in a draggable DrawerType2.
+                    // Let the TextField receive touch presses directly; the card's
+                    // passive handler also supports taps on its label and padding.
                     Rectangle {
                         id: countrySearchBox
                         Layout.fillWidth: true
@@ -241,10 +239,6 @@ PageType {
                                     text: qsTr("Search")
                                     color: AmneziaStyle.color.tcMuted
 
-                                    // Caption taps must open the Android IME too.
-                                    TapHandler {
-                                        onTapped: countrySearchInput.showKeyboard()
-                                    }
                                 }
 
                                 TextField {
@@ -264,48 +258,23 @@ PageType {
                                     inputMethodHints: Qt.ImhNoAutoUppercase
                                     background: Item {}
 
-                                    // Qt 6.10 can focus the field without opening
-                                    // Gboard inside a draggable drawer. Keep a
-                                    // single guarded request for taps and focus,
-                                    // then retry after the UI/IME animation.
                                     function requestAndroidKeyboard() {
-                                        if (Qt.platform.os !== "android")
+                                        if (Qt.platform.os !== "android" || !activeFocus || !visible)
                                             return
-                                        Qt.callLater(function() {
-                                            if (countrySearchInput.activeFocus) {
-                                                Qt.inputMethod.show()
-                                                SystemController.requestSoftKeyboard()
-                                            }
-                                        })
-                                        countryImeRetry.restart()
+                                        Qt.inputMethod.show()
+                                        SystemController.requestSoftKeyboard()
                                     }
 
                                     function showKeyboard() {
-                                        forceActiveFocus()
-                                        requestAndroidKeyboard()
-                                    }
-
-                                    Timer {
-                                        id: countryImeRetry
-                                        interval: 180
-                                        repeat: false
-                                        onTriggered: {
-                                            if (countrySearchInput.activeFocus
-                                                    && Qt.platform.os === "android") {
-                                                Qt.inputMethod.show()
-                                                SystemController.requestSoftKeyboard()
-                                            }
-                                        }
+                                        forceActiveFocus(Qt.MouseFocusReason)
+                                        Qt.callLater(requestAndroidKeyboard)
                                     }
 
                                     onActiveFocusChanged: {
                                         if (activeFocus)
-                                            requestAndroidKeyboard()
+                                            Qt.callLater(requestAndroidKeyboard)
                                     }
 
-                                    TapHandler {
-                                        onTapped: countrySearchInput.showKeyboard()
-                                    }
                                 }
                             }
 
@@ -337,9 +306,8 @@ PageType {
                         function onCloseTriggered() {
                             // Do not leave the soft keyboard covering the
                             // split tunneling page after dismissing the picker.
-                            countryImeRetry.stop()
-                            Qt.inputMethod.hide()
                             countrySearchInput.focus = false
+                            Qt.inputMethod.hide()
                         }
                     }
 

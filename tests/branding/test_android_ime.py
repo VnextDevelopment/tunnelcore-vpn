@@ -31,8 +31,10 @@ class AndroidImeIntegrationTests(unittest.TestCase):
         self.assertIn('it::class.simpleName == "QtEditText"', kotlin)
         self.assertIn("Configuration.KEYBOARD_NOKEYS", kotlin)
         self.assertIn("InputMethodManager.SHOW_FORCED", kotlin)
-        self.assertIn("accessoryStripOnly", kotlin)
-        self.assertIn("inputMethod.restartInput(qtInputView)", kotlin)
+        fallback = kotlin.split("fun requestSoftKeyboard()", 1)[1].split("fun sendTouch", 1)[0]
+        self.assertNotIn("hideSoftInputFromWindow", fallback)
+        self.assertNotIn("restartInput", fallback)
+        self.assertNotIn("postDelayed", fallback)
         self.assertNotIn("showSoftInput(qtView", kotlin)
 
     def test_account_link_fields_explicitly_request_android_keyboard(self):
