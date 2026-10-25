@@ -29,8 +29,9 @@ class CountryPickerUxTest(unittest.TestCase):
             "drawerHeaderColor: AmneziaStyle.color.tcInk",
             "drawerBorderColor: AmneziaStyle.color.tcStroke",
             "textColor: AmneziaStyle.color.tcInk",
-            "itemColor: AmneziaStyle.color.tcCard",
-            "itemSelectedColor: AmneziaStyle.color.tcSurfaceBlue",
+            "color: countryRow.countrySelected || countryRow.down",
+            "AmneziaStyle.color.tcCard",
+            "AmneziaStyle.color.tcSurfaceBlue",
             "placeholderTextColor: AmneziaStyle.color.tcMuted",
         ):
             with self.subTest(expected=expected):
@@ -53,6 +54,32 @@ class CountryPickerUxTest(unittest.TestCase):
         self.assertIn("scheduleAndroidKeyboard()", source)
         self.assertIn("SystemController.requestSoftKeyboard()", source)
         self.assertIn("Qt.inputMethod.visible || PageController.imeHeight > 0", source)
+
+    def test_country_results_scroll_beneath_fixed_search(self):
+        source = (PAGES / "PageSettingsSplitTunneling.qml").read_text(encoding="utf-8")
+        picker = source.split("id: countryBypassSelector", 1)[1].split(
+            "id: selector", 1
+        )[0]
+        self.assertIn("onOpenTriggered: {", picker)
+        self.assertIn("countrySearchInput.clear()", picker)
+        self.assertIn("onTextChanged: geoCountriesList.positionViewAtBeginning()", picker)
+
+        results = picker.split("id: countryResultsViewport", 1)[1].split(
+            "LabelTextType {", 1
+        )[0]
+        self.assertIn("Layout.fillHeight: true", results)
+        self.assertIn("Layout.minimumHeight: 0", results)
+        self.assertIn("clip: true", results)
+        self.assertIn("ListViewType {", results)
+        self.assertIn('objectName: "splitTunnelingCountryList"', results)
+        self.assertIn("anchors.fill: parent", results)
+        self.assertIn("flickableDirection: Flickable.VerticalFlick", results)
+        self.assertIn("ScrollBar.vertical: ScrollBarType {", results)
+        self.assertNotIn("ListViewWithRadioButtonType", results)
+        self.assertIn("sourceModel: geoCountriesListModel", results)
+        self.assertIn("countrySearchInput.text.trim()", results)
+        self.assertIn("countryCode === TunnelCoreController.geoRoutingCountry", results)
+        self.assertIn("selectGeoRoutingCountry(countryRow.countryCode)", results)
 
     def test_reparented_drawer_is_above_page_inputs(self):
         source = (CONTROLS / "DropDownType.qml").read_text(encoding="utf-8")
