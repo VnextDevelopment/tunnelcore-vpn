@@ -371,6 +371,10 @@ PageType {
                                 id: countryRow
                                 width: geoCountriesList.width
                                 implicitHeight: 60
+                                leftPadding: 16
+                                rightPadding: 16
+                                topPadding: 8
+                                bottomPadding: 8
 
                                 readonly property string countryName: model.name
                                 readonly property string countryCode: model.code
