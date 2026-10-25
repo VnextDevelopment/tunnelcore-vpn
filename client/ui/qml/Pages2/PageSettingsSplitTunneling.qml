@@ -191,6 +191,11 @@ PageType {
             drawerHeight: (Qt.inputMethod.visible || PageController.imeHeight > 0) ? 0.95 : 0.7
             drawerParent: root
 
+            onOpenTriggered: {
+                countrySearchInput.clear()
+                Qt.callLater(function() { geoCountriesList.positionViewAtBeginning() })
+            }
+
             visible: TunnelCoreController.authenticated
                      && TunnelCoreController.geoRoutingCountries.length > 0
             enabled: root.pageEnabled && !TunnelCoreController.busy
@@ -201,6 +206,7 @@ PageType {
             listView: Item {
                 ColumnLayout {
                     anchors.fill: parent
+                    anchors.bottomMargin: 12
                     spacing: 12
 
                     // Let the TextField receive touch presses directly; the card's
@@ -287,6 +293,10 @@ PageType {
                                             scheduleAndroidKeyboard()
                                     }
 
+                                    // Filtering must start at the first match,
+                                    // even if the old list was scrolled down.
+                                    onTextChanged: geoCountriesList.positionViewAtBeginning()
+
                                 }
                             }
 
@@ -323,41 +333,98 @@ PageType {
                         }
                     }
 
-                    ListViewWithRadioButtonType {
-                        id: geoCountriesList
+                    // The search stays fixed; only this bounded results
+                    // viewport scrolls. The shared radio list binds height
+                    // to contentHeight, so it cannot reliably scroll here.
+                    Item {
+                        id: countryResultsViewport
                         Layout.fillWidth: true
                         Layout.fillHeight: true
+                        Layout.minimumHeight: 0
+                        Layout.leftMargin: 8
+                        Layout.rightMargin: 8
                         clip: true
 
-                        rootWidth: root.width
-                        model: SortFilterProxyModel {
-                            id: filteredGeoCountriesModel
-                            sourceModel: geoCountriesListModel
-                            filters: RegExpFilter {
-                                roleName: "name"
-                                pattern: ".*" + root.escapeRegExp(countrySearchInput.text) + ".*"
-                                caseSensitivity: Qt.CaseInsensitive
+                        ListViewType {
+                            id: geoCountriesList
+                            objectName: "splitTunnelingCountryList"
+                            anchors.fill: parent
+                            clip: true
+                            boundsBehavior: Flickable.StopAtBounds
+                            flickableDirection: Flickable.VerticalFlick
+                            keyNavigationEnabled: true
+                            ScrollBar.vertical: ScrollBarType {
+                                policy: ScrollBar.AsNeeded
+                            }
+
+                            model: SortFilterProxyModel {
+                                id: filteredGeoCountriesModel
+                                sourceModel: geoCountriesListModel
+                                filters: RegExpFilter {
+                                    roleName: "name"
+                                    pattern: ".*" + root.escapeRegExp(countrySearchInput.text.trim()) + ".*"
+                                    caseSensitivity: Qt.CaseInsensitive
+                                }
+                            }
+
+                            delegate: ItemDelegate {
+                                id: countryRow
+                                width: geoCountriesList.width
+                                implicitHeight: 60
+
+                                readonly property string countryName: model.name
+                                readonly property string countryCode: model.code
+                                readonly property bool countrySelected:
+                                    countryCode === TunnelCoreController.geoRoutingCountry
+
+                                background: Rectangle {
+                                    radius: 12
+                                    color: countryRow.countrySelected || countryRow.down
+                                           ? AmneziaStyle.color.tcSurfaceBlue
+                                           : AmneziaStyle.color.tcCard
+                                }
+
+                                contentItem: RowLayout {
+                                    spacing: 8
+
+                                    ParagraphTextType {
+                                        Layout.fillWidth: true
+                                        text: countryRow.countryName
+                                        color: AmneziaStyle.color.tcInk
+                                        elide: Text.ElideRight
+                                        maximumLineCount: 2
+                                    }
+
+                                    IconImageType {
+                                        Layout.preferredWidth: 24
+                                        Layout.preferredHeight: 24
+                                        source: "qrc:/images/controls/check.svg"
+                                        tint: AmneziaStyle.color.tcBlue
+                                        visible: countryRow.countrySelected
+                                    }
+                                }
+
+                                onClicked: {
+                                    // Select by code, never by a stale index
+                                    // in the live-filtered view.
+                                    countryBypassSelector.closeTriggered()
+                                    TunnelCoreController.selectGeoRoutingCountry(countryRow.countryCode)
+                                }
                             }
                         }
-                        textColor: AmneziaStyle.color.tcInk
-                        itemColor: AmneziaStyle.color.tcCard
-                        itemHoveredColor: AmneziaStyle.color.tcSurfaceBlue
-                        itemSelectedColor: AmneziaStyle.color.tcSurfaceBlue
-                        currentValue: root.geoCountryText()
 
-                        clickedFunction: function() {
-                            var item = filteredGeoCountriesModel.get(selectedIndex)
-                            countryBypassSelector.text = item.name
-                            countryBypassSelector.closeTriggered()
-                            TunnelCoreController.selectGeoRoutingCountry(item.code)
+                        LabelTextType {
+                            anchors.centerIn: parent
+                            visible: geoCountriesList.count === 0
+                            text: qsTr("No countries found")
+                            color: AmneziaStyle.color.tcMuted
                         }
+                    }
 
-                        Connections {
-                            target: TunnelCoreController
-                            function onChanged() {
-                                geoCountriesList.currentValue = root.geoCountryText()
-                                countryBypassSelector.text = root.geoCountryText()
-                            }
+                    Connections {
+                        target: TunnelCoreController
+                        function onChanged() {
+                            countryBypassSelector.text = root.geoCountryText()
                         }
                     }
                 }
