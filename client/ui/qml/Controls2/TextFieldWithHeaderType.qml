@@ -22,8 +22,20 @@ Item {
     // summon the keyboard using Qt focus alone.
     property bool requestAndroidIme: false
 
-    // Coalesce focus and tap requests in one event-loop turn. Reopening the
-    // IME on a timer interrupts its animation on Samsung and Xiaomi phones.
+    // Focus and tap can both request the IME in the same event-loop turn.
+    // Send only one native request, rather than restarting the animation.
+    property bool androidImeRequestPending: false
+
+    function scheduleRequestedAndroidKeyboard() {
+        if (androidImeRequestPending || !root.requestAndroidIme || Qt.platform.os !== "android")
+            return
+        androidImeRequestPending = true
+        Qt.callLater(function() {
+            androidImeRequestPending = false
+            root.showRequestedAndroidKeyboard()
+        })
+    }
+
     function showRequestedAndroidKeyboard() {
         if (!root.requestAndroidIme || Qt.platform.os !== "android"
                 || !root.enabled || !root.visible || !textField.activeFocus)
@@ -156,7 +168,7 @@ Item {
                         onActiveFocusChanged: {
                             if (activeFocus && root.requestAndroidIme
                                     && Qt.platform.os === "android") {
-                                Qt.callLater(root.showRequestedAndroidKeyboard)
+                                root.scheduleRequestedAndroidKeyboard()
                             }
                             if (root.checkEmptyText && text === "") {
                                 root.errorText = qsTr("The field can't be empty")
@@ -231,7 +243,7 @@ Item {
         gesturePolicy: TapHandler.DragThreshold
         onTapped: {
             textField.forceActiveFocus(Qt.MouseFocusReason)
-            Qt.callLater(root.showRequestedAndroidKeyboard)
+            root.scheduleRequestedAndroidKeyboard()
         }
     }
 
