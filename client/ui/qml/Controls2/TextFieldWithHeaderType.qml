@@ -22,29 +22,26 @@ Item {
     // summon the keyboard using Qt focus alone.
     property bool requestAndroidIme: false
 
-    // Qt's first IME request may happen before the QtWindow has finished
-    // processing the touch / numeric input-connection update on Android.
-    // A single delayed retry is needed for PIN and in-drawer search fields.
+    // Focus and tap can both request the IME in the same event-loop turn.
+    // Send only one native request, rather than restarting the animation.
+    property bool androidImeRequestPending: false
+
+    function scheduleRequestedAndroidKeyboard() {
+        if (androidImeRequestPending || !root.requestAndroidIme || Qt.platform.os !== "android")
+            return
+        androidImeRequestPending = true
+        Qt.callLater(function() {
+            androidImeRequestPending = false
+            root.showRequestedAndroidKeyboard()
+        })
+    }
+
     function showRequestedAndroidKeyboard() {
         if (!root.requestAndroidIme || Qt.platform.os !== "android"
-                || !root.enabled || !textField.activeFocus)
+                || !root.enabled || !root.visible || !textField.activeFocus)
             return
         Qt.inputMethod.show()
         SystemController.requestSoftKeyboard()
-        androidImeRetry.restart()
-    }
-
-    Timer {
-        id: androidImeRetry
-        interval: 220
-        repeat: false
-        onTriggered: {
-            if (root.requestAndroidIme && root.enabled && textField.activeFocus
-                    && Qt.platform.os === "android") {
-                Qt.inputMethod.show()
-                SystemController.requestSoftKeyboard()
-            }
-        }
     }
 
     property string buttonText
@@ -171,9 +168,7 @@ Item {
                         onActiveFocusChanged: {
                             if (activeFocus && root.requestAndroidIme
                                     && Qt.platform.os === "android") {
-                                Qt.callLater(root.showRequestedAndroidKeyboard)
-                            } else if (!activeFocus) {
-                                androidImeRetry.stop()
+                                root.scheduleRequestedAndroidKeyboard()
                             }
                             if (root.checkEmptyText && text === "") {
                                 root.errorText = qsTr("The field can't be empty")
@@ -228,14 +223,8 @@ Item {
 
         hoverEnabled: true
 
-        onPressed: function(mouse) {
-            textField.forceActiveFocus()
-            if (root.requestAndroidIme && Qt.platform.os === "android")
-                Qt.callLater(root.showRequestedAndroidKeyboard)
-            mouse.accepted = false
-
-            backgroud.border.color = getBackgroundBorderColor(root.borderColor)
-        }
+        // Hover styling must not intercept the TextField's touch press.
+        acceptedButtons: Qt.NoButton
 
         onEntered: {
             backgroud.border.color = getBackgroundBorderColor(bgBorderHoveredColor)
@@ -244,6 +233,17 @@ Item {
 
         onExited: {
             backgroud.border.color = getBackgroundBorderColor(root.borderColor)
+        }
+    }
+
+    TapHandler {
+        parent: backgroud
+        enabled: root.enabled && root.textFieldEditable
+        // Passive grab preserves TextField cursor placement and selection.
+        gesturePolicy: TapHandler.DragThreshold
+        onTapped: {
+            textField.forceActiveFocus(Qt.MouseFocusReason)
+            root.scheduleRequestedAndroidKeyboard()
         }
     }
 

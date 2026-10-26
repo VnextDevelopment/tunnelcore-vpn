@@ -1226,43 +1226,9 @@ class AmneziaActivity : QtActivity() {
                     0
                 }
 
-                // Gboard can keep only its accessory strip visible after the
-                // full keyboard was dismissed while a QtEditText retained
-                // focus. A second showSoftInput() is then accepted but is a
-                // no-op because Android still considers the IME visible.
-                // Restart that stale input session before reopening it.
-                val rootInsets = ViewCompat.getRootWindowInsets(qtInputView)
-                val imeHeight = rootInsets
-                    ?.getInsets(WindowInsetsCompat.Type.ime())
-                    ?.bottom ?: 0
-                val accessoryStripMaxHeight =
-                    (160 * resources.displayMetrics.density).toInt()
-                val accessoryStripOnly = rootInsets
-                    ?.isVisible(WindowInsetsCompat.Type.ime()) == true
-                    && imeHeight in 1 until accessoryStripMaxHeight
-
-                if (accessoryStripOnly) {
-                    Log.d(TAG, "Restarting accessory-only IME session, height=$imeHeight")
-                    inputMethod.hideSoftInputFromWindow(qtInputView.windowToken, 0)
-                    qtInputView.postDelayed({
-                        if (!isActivityResumed || !hasWindowFocus
-                            || !qtInputView.isAttachedToWindow || !qtInputView.hasFocus()) {
-                            return@postDelayed
-                        }
-                        inputMethod.restartInput(qtInputView)
-                        WindowInsetsControllerCompat(window, qtInputView)
-                            .show(WindowInsetsCompat.Type.ime())
-                        val reopened = inputMethod.showSoftInput(
-                            qtInputView,
-                            InputMethodManager.SHOW_FORCED
-                        )
-                        Log.d(TAG, "Reopened full Android IME, accepted=$reopened")
-                    }, 140L)
-                    return@post
-                }
-
-                WindowInsetsControllerCompat(window, qtInputView)
-                    .show(WindowInsetsCompat.Type.ime())
+                // Never infer a stale IME from its height: during the opening
+                // animation every full keyboard passes through small heights.
+                // Hiding/restarting here interrupts that animation on real phones.
                 val requested = inputMethod.showSoftInput(
                     qtInputView,
                     showFlags

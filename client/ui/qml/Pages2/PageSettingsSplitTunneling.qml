@@ -191,6 +191,11 @@ PageType {
             drawerHeight: (Qt.inputMethod.visible || PageController.imeHeight > 0) ? 0.95 : 0.7
             drawerParent: root
 
+            onOpenTriggered: {
+                countrySearchInput.clear()
+                Qt.callLater(function() { geoCountriesList.positionViewAtBeginning() })
+            }
+
             visible: TunnelCoreController.authenticated
                      && TunnelCoreController.geoRoutingCountries.length > 0
             enabled: root.pageEnabled && !TunnelCoreController.busy
@@ -201,12 +206,11 @@ PageType {
             listView: Item {
                 ColumnLayout {
                     anchors.fill: parent
+                    anchors.bottomMargin: 12
                     spacing: 12
 
-                    // Use a native editable TextField instead of TextFieldWithHeaderType.
-                    // That component places a MouseArea over the input and forwards
-                    // touch presses, which can prevent Android's IME from opening
-                    // when the field is embedded in a draggable DrawerType2.
+                    // Let the TextField receive touch presses directly; the card's
+                    // passive handler also supports taps on its label and padding.
                     Rectangle {
                         id: countrySearchBox
                         Layout.fillWidth: true
@@ -241,10 +245,6 @@ PageType {
                                     text: qsTr("Search")
                                     color: AmneziaStyle.color.tcMuted
 
-                                    // Caption taps must open the Android IME too.
-                                    TapHandler {
-                                        onTapped: countrySearchInput.showKeyboard()
-                                    }
                                 }
 
                                 TextField {
@@ -264,48 +264,39 @@ PageType {
                                     inputMethodHints: Qt.ImhNoAutoUppercase
                                     background: Item {}
 
-                                    // Qt 6.10 can focus the field without opening
-                                    // Gboard inside a draggable drawer. Keep a
-                                    // single guarded request for taps and focus,
-                                    // then retry after the UI/IME animation.
-                                    function requestAndroidKeyboard() {
-                                        if (Qt.platform.os !== "android")
+                                    property bool androidImeRequestPending: false
+
+                                    function scheduleAndroidKeyboard() {
+                                        if (androidImeRequestPending || Qt.platform.os !== "android")
                                             return
+                                        androidImeRequestPending = true
                                         Qt.callLater(function() {
-                                            if (countrySearchInput.activeFocus) {
-                                                Qt.inputMethod.show()
-                                                SystemController.requestSoftKeyboard()
-                                            }
+                                            androidImeRequestPending = false
+                                            requestAndroidKeyboard()
                                         })
-                                        countryImeRetry.restart()
+                                    }
+
+                                    function requestAndroidKeyboard() {
+                                        if (Qt.platform.os !== "android" || !activeFocus || !visible)
+                                            return
+                                        Qt.inputMethod.show()
+                                        SystemController.requestSoftKeyboard()
                                     }
 
                                     function showKeyboard() {
-                                        forceActiveFocus()
-                                        requestAndroidKeyboard()
-                                    }
-
-                                    Timer {
-                                        id: countryImeRetry
-                                        interval: 180
-                                        repeat: false
-                                        onTriggered: {
-                                            if (countrySearchInput.activeFocus
-                                                    && Qt.platform.os === "android") {
-                                                Qt.inputMethod.show()
-                                                SystemController.requestSoftKeyboard()
-                                            }
-                                        }
+                                        forceActiveFocus(Qt.MouseFocusReason)
+                                        scheduleAndroidKeyboard()
                                     }
 
                                     onActiveFocusChanged: {
                                         if (activeFocus)
-                                            requestAndroidKeyboard()
+                                            scheduleAndroidKeyboard()
                                     }
 
-                                    TapHandler {
-                                        onTapped: countrySearchInput.showKeyboard()
-                                    }
+                                    // Filtering must start at the first match,
+                                    // even if the old list was scrolled down.
+                                    onTextChanged: geoCountriesList.positionViewAtBeginning()
+
                                 }
                             }
 
@@ -337,47 +328,107 @@ PageType {
                         function onCloseTriggered() {
                             // Do not leave the soft keyboard covering the
                             // split tunneling page after dismissing the picker.
-                            countryImeRetry.stop()
-                            Qt.inputMethod.hide()
                             countrySearchInput.focus = false
+                            Qt.inputMethod.hide()
                         }
                     }
 
-                    ListViewWithRadioButtonType {
-                        id: geoCountriesList
+                    // The search stays fixed; only this bounded results
+                    // viewport scrolls. The shared radio list binds height
+                    // to contentHeight, so it cannot reliably scroll here.
+                    Item {
+                        id: countryResultsViewport
                         Layout.fillWidth: true
                         Layout.fillHeight: true
+                        Layout.minimumHeight: 0
+                        Layout.leftMargin: 8
+                        Layout.rightMargin: 8
                         clip: true
 
-                        rootWidth: root.width
-                        model: SortFilterProxyModel {
-                            id: filteredGeoCountriesModel
-                            sourceModel: geoCountriesListModel
-                            filters: RegExpFilter {
-                                roleName: "name"
-                                pattern: ".*" + root.escapeRegExp(countrySearchInput.text) + ".*"
-                                caseSensitivity: Qt.CaseInsensitive
+                        ListViewType {
+                            id: geoCountriesList
+                            objectName: "splitTunnelingCountryList"
+                            anchors.fill: parent
+                            clip: true
+                            boundsBehavior: Flickable.StopAtBounds
+                            flickableDirection: Flickable.VerticalFlick
+                            keyNavigationEnabled: true
+                            ScrollBar.vertical: ScrollBarType {
+                                policy: ScrollBar.AsNeeded
+                            }
+
+                            model: SortFilterProxyModel {
+                                id: filteredGeoCountriesModel
+                                sourceModel: geoCountriesListModel
+                                filters: RegExpFilter {
+                                    roleName: "name"
+                                    pattern: ".*" + root.escapeRegExp(countrySearchInput.text.trim()) + ".*"
+                                    caseSensitivity: Qt.CaseInsensitive
+                                }
+                            }
+
+                            delegate: ItemDelegate {
+                                id: countryRow
+                                width: geoCountriesList.width
+                                implicitHeight: 60
+                                leftPadding: 16
+                                rightPadding: 16
+                                topPadding: 8
+                                bottomPadding: 8
+
+                                readonly property string countryName: model.name
+                                readonly property string countryCode: model.code
+                                readonly property bool countrySelected:
+                                    countryCode === TunnelCoreController.geoRoutingCountry
+
+                                background: Rectangle {
+                                    radius: 12
+                                    color: countryRow.countrySelected || countryRow.down
+                                           ? AmneziaStyle.color.tcSurfaceBlue
+                                           : AmneziaStyle.color.tcCard
+                                }
+
+                                contentItem: RowLayout {
+                                    spacing: 8
+
+                                    ParagraphTextType {
+                                        Layout.fillWidth: true
+                                        text: countryRow.countryName
+                                        color: AmneziaStyle.color.tcInk
+                                        elide: Text.ElideRight
+                                        maximumLineCount: 2
+                                    }
+
+                                    IconImageType {
+                                        Layout.preferredWidth: 24
+                                        Layout.preferredHeight: 24
+                                        source: "qrc:/images/controls/check.svg"
+                                        tint: AmneziaStyle.color.tcBlue
+                                        visible: countryRow.countrySelected
+                                    }
+                                }
+
+                                onClicked: {
+                                    // Select by code, never by a stale index
+                                    // in the live-filtered view.
+                                    countryBypassSelector.closeTriggered()
+                                    TunnelCoreController.selectGeoRoutingCountry(countryRow.countryCode)
+                                }
                             }
                         }
-                        textColor: AmneziaStyle.color.tcInk
-                        itemColor: AmneziaStyle.color.tcCard
-                        itemHoveredColor: AmneziaStyle.color.tcSurfaceBlue
-                        itemSelectedColor: AmneziaStyle.color.tcSurfaceBlue
-                        currentValue: root.geoCountryText()
 
-                        clickedFunction: function() {
-                            var item = filteredGeoCountriesModel.get(selectedIndex)
-                            countryBypassSelector.text = item.name
-                            countryBypassSelector.closeTriggered()
-                            TunnelCoreController.selectGeoRoutingCountry(item.code)
+                        LabelTextType {
+                            anchors.centerIn: parent
+                            visible: geoCountriesList.count === 0
+                            text: qsTr("No countries found")
+                            color: AmneziaStyle.color.tcMuted
                         }
+                    }
 
-                        Connections {
-                            target: TunnelCoreController
-                            function onChanged() {
-                                geoCountriesList.currentValue = root.geoCountryText()
-                                countryBypassSelector.text = root.geoCountryText()
-                            }
+                    Connections {
+                        target: TunnelCoreController
+                        function onChanged() {
+                            countryBypassSelector.text = root.geoCountryText()
                         }
                     }
                 }
