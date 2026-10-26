@@ -138,6 +138,23 @@ void FocusController::reload(Direction direction)
 
 void FocusController::nextItem(Direction direction)
 {
+    // A scrolling page can opt into logical navigation, including controls
+    // outside the viewport. Use real active focus after mouse/IME changes.
+    for (const auto object : m_engine->rootObjects()) {
+        const auto window = qobject_cast<QQuickWindow *>(object);
+        if (!window || !window->activeFocusItem())
+            continue;
+        for (auto item = window->activeFocusItem(); item; item = item->parentItem()) {
+            if (!item->property("remoteNavigationScope").toBool())
+                continue;
+            QVariant handled;
+            QMetaObject::invokeMethod(item, "navigateRemote", Q_RETURN_ARG(QVariant, handled),
+                                      Q_ARG(QVariant, direction == Direction::Forward));
+            if (handled.toBool())
+                return;
+            break;
+        }
+    }
     reload(direction);
 
     if (m_lvfc && FocusControl::isListView(m_focusedItem)) {
