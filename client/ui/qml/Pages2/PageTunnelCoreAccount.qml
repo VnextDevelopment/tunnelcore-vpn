@@ -28,11 +28,51 @@ PageType {
     // bottom window inset. Qt.inputMethod.visible also covers that case.
     readonly property bool keyboardVisible: Qt.inputMethod.visible || PageController.imeHeight > 0
     readonly property bool compactAuthLayout: !TunnelCoreController.authenticated
-                                               && !showWelcome && keyboardVisible
+                                               && !showWelcome && (keyboardVisible || root.height < 600)
+
+    // The global spatial focus controller excludes off-screen controls.
+    // Auth must navigate the whole form, then scroll the target into view.
+    function moveAuthFocus(forward) {
+        var items = root.showWelcome
+                ? [welcomeSignIn, welcomeRegister, welcomeCode]
+                : [botModeButton, emailModeButton, registrationButton,
+                   loginField.textField, passwordField.textField,
+                   confirmPasswordField.textField, authSubmitButton,
+                   authCancelButton, deletionInfoButton]
+        var available = items.filter(function(item) { return item.visible && item.enabled })
+        if (!available.length)
+            return
+        var current = available.findIndex(function(item) { return item.activeFocus })
+        var next = current < 0 ? (forward ? 0 : available.length - 1)
+                              : (current + (forward ? 1 : -1) + available.length) % available.length
+        available[next].forceActiveFocus(Qt.TabFocusReason)
+        root.scheduleInputVisibility()
+    }
+
+    component AuthButton: BasicButtonType {
+        borderFocusedColor: AmneziaStyle.color.tcBlue
+        borderFocusedWidth: 2
+        navigationHandler: root.moveAuthFocus
+        Keys.onSelectPressed: if (enabled && clickedFunc) clickedFunc()
+        onActiveFocusChanged: if (activeFocus) root.scheduleInputVisibility()
+    }
 
     onCompactAuthLayoutChanged: {
         if (!root.compactAuthLayout && !TunnelCoreController.authenticated)
             scroll.contentY = 0
+        root.scheduleInputVisibility()
+    }
+    Keys.onDownPressed: function(event) {
+        if (TunnelCoreController.authenticated) { event.accepted = false; return }
+        root.moveAuthFocus(true)
+    }
+    Keys.onUpPressed: function(event) {
+        if (TunnelCoreController.authenticated) { event.accepted = false; return }
+        root.moveAuthFocus(false)
+    }
+    onShowWelcomeChanged: {
+        if (!TunnelCoreController.authenticated)
+            root.forceActiveFocus()
         root.scheduleInputVisibility()
     }
     onEmailModeChanged: root.scheduleInputVisibility()
@@ -79,6 +119,22 @@ PageType {
             focusedField = confirmPasswordField
         }
 
+        if (!TunnelCoreController.authenticated && !focusedField) {
+            var buttons = root.showWelcome
+                    ? [welcomeSignIn, welcomeRegister, welcomeCode]
+                    : [botModeButton, emailModeButton, registrationButton,
+                       authSubmitButton, authCancelButton, deletionInfoButton]
+            for (var b = 0; b < buttons.length; ++b) {
+                if (buttons[b].visible && buttons[b].activeFocus) {
+                    focusedField = buttons[b]
+                    break
+                }
+            }
+            // Show the inputs immediately after entering/changing the form,
+            // without opening the keyboard before a user selects a field.
+            if (!focusedField && !root.showWelcome)
+                focusedField = loginField
+        }
         if (!focusedField)
             return
 
@@ -218,6 +274,7 @@ PageType {
         root.registrationMode = false
         root.emailMode = true
         root.showWelcome = true
+        Qt.callLater(function() { welcomeSignIn.forceActiveFocus(Qt.TabFocusReason) })
         loginField.textField.text = ""
         passwordField.textField.text = ""
         confirmPasswordField.textField.text = ""
@@ -423,7 +480,8 @@ PageType {
                             }
                         }
                     }
-                    BasicButtonType {
+                    AuthButton {
+                        id: welcomeSignIn
                         Layout.fillWidth: true
                         text: qsTr("Sign in")
                         defaultColor: AmneziaStyle.color.tcBlue
@@ -435,7 +493,8 @@ PageType {
                             root.showWelcome = false
                         }
                     }
-                    BasicButtonType {
+                    AuthButton {
+                        id: welcomeRegister
                         Layout.fillWidth: true
                         text: qsTr("Create account")
                         defaultColor: AmneziaStyle.color.tcCard
@@ -449,7 +508,8 @@ PageType {
                             root.showWelcome = false
                         }
                     }
-                    BasicButtonType {
+                    AuthButton {
+                        id: welcomeCode
                         Layout.fillWidth: true
                         text: qsTr("Bot code")
                         defaultColor: AmneziaStyle.color.tcSurfaceBlue
@@ -493,7 +553,8 @@ PageType {
                 RowLayout {
                     Layout.fillWidth: true
                     visible: !root.compactAuthLayout
-                    BasicButtonType {
+                    AuthButton {
+                        id: botModeButton
                         Layout.fillWidth: true
                         text: qsTr("Bot code")
                         enabled: !TunnelCoreController.busy
@@ -504,7 +565,8 @@ PageType {
                         borderWidth: 1
                         clickedFunc: function() { root.selectMode(false) }
                     }
-                    BasicButtonType {
+                    AuthButton {
+                        id: emailModeButton
                         Layout.fillWidth: true
                         text: "Email"
                         enabled: !TunnelCoreController.busy
@@ -526,7 +588,8 @@ PageType {
                              : qsTr("Enter the email and password for your TunnelCore account."))
                           : qsTr("Enter the six-digit code from the TunnelCore bot.")
                 }
-                BasicButtonType {
+                AuthButton {
+                    id: registrationButton
                     Layout.fillWidth: true
                     visible: root.emailMode && !root.compactAuthLayout
                     text: root.registrationMode
@@ -545,6 +608,7 @@ PageType {
                 }
                 TextFieldWithHeaderType {
                     id: loginField
+                    navigationHandler: root.moveAuthFocus
                     // Digits-only input may receive a caret without opening
                     // Gboard. Request Android IME explicitly for bot/PIN code,
                     // including repeated taps on an already-focused field.
@@ -577,6 +641,7 @@ PageType {
                 }
                 TextFieldWithHeaderType {
                     id: passwordField
+                    navigationHandler: root.moveAuthFocus
                     property bool passwordVisible: false
                     backgroundColor: AmneziaStyle.color.tcCard
                     backgroundDisabledColor: AmneziaStyle.color.tcCard
@@ -609,6 +674,7 @@ PageType {
                 }
                 TextFieldWithHeaderType {
                     id: confirmPasswordField
+                    navigationHandler: root.moveAuthFocus
                     property bool passwordVisible: false
                     backgroundColor: AmneziaStyle.color.tcCard
                     backgroundDisabledColor: AmneziaStyle.color.tcCard
@@ -642,7 +708,7 @@ PageType {
                     text: qsTr("Passwords do not match.")
                     color: AmneziaStyle.color.vibrantRed
                 }
-                BasicButtonType {
+                AuthButton {
                     id: authSubmitButton
                     Layout.fillWidth: true
                     text: TunnelCoreController.busy
@@ -662,7 +728,8 @@ PageType {
                     textColor: "#FFFFFF"
                     clickedFunc: root.submit
                 }
-                BasicButtonType {
+                AuthButton {
+                    id: authCancelButton
                     objectName: "authCancelButton"
                     Layout.fillWidth: true
                     text: qsTr("Cancel")
@@ -675,7 +742,8 @@ PageType {
                     borderWidth: 1
                     clickedFunc: root.cancelAuthentication
                 }
-                BasicButtonType {
+                AuthButton {
+                    id: deletionInfoButton
                     objectName: "accountDeletionWebsiteGuest"
                     Layout.fillWidth: true
                     text: qsTr("Account deletion information")

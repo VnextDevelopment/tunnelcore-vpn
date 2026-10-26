@@ -26,6 +26,20 @@ jobs:
           bash -n deploy/data/linux/post_install.sh deploy/data/linux/post_uninstall.sh
           bash -n client/client_scripts/mac_installer.sh
 
+  QML-Auth-Navigation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pip install PySide6==6.10.1
+      - name: Exercise auth layout and remote navigation
+        env:
+          QT_QPA_PLATFORM: offscreen
+          QT_QUICK_BACKEND: software
+        run: python -m unittest discover -s tests/qml -v
+
   Test-Windows:
     runs-on: windows-latest
 

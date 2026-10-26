@@ -33,30 +33,50 @@ Button {
 
     property alias buttonTextLabel: buttonText
 
+    property var navigationHandler: null
+
     property bool isFocusable: true
 
     Keys.onTabPressed: {
-        FocusController.nextKeyTabItem()
+        if (root.navigationHandler)
+            root.navigationHandler(true)
+        else
+            FocusController.nextKeyTabItem()
     }
 
     Keys.onBacktabPressed: {
-        FocusController.previousKeyTabItem()
+        if (root.navigationHandler)
+            root.navigationHandler(false)
+        else
+            FocusController.previousKeyTabItem()
     }
 
     Keys.onUpPressed: {
-        FocusController.nextKeyUpItem()
+        if (root.navigationHandler)
+            root.navigationHandler(false)
+        else
+            FocusController.nextKeyUpItem()
     }
     
     Keys.onDownPressed: {
-        FocusController.nextKeyDownItem()
+        if (root.navigationHandler)
+            root.navigationHandler(true)
+        else
+            FocusController.nextKeyDownItem()
     }
     
     Keys.onLeftPressed: {
-        FocusController.nextKeyLeftItem()
+        if (root.navigationHandler)
+            root.navigationHandler(false)
+        else
+            FocusController.nextKeyLeftItem()
     }
 
     Keys.onRightPressed: {
-        FocusController.nextKeyRightItem()
+        if (root.navigationHandler)
+            root.navigationHandler(true)
+        else
+            FocusController.nextKeyRightItem()
     }
     
     implicitHeight: 56
