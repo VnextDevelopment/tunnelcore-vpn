@@ -152,7 +152,7 @@ android {
                     dstDir.mkdirs()
                     val apks = srcDir.listFiles()?.filter { it.isFile && it.extension == "apk" }.orEmpty()
                     require(apks.size == 1) {
-                        "Expected exactly one OSS APK for $variantName, got ${apks.map { it.name }}"
+                        "Expected exactly one OSS APK for $flavorName/$buildTypeName, got ${apks.map { it.name }}"
                     }
                     apks.single().copyTo(
                         File(dstDir, "$base-$buildTypeName$unsignedSuffix.apk"),
