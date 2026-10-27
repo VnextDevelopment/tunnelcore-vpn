@@ -20,8 +20,8 @@ Button {
     property alias backgroundColor: background.color
     property alias backgroundRadius: background.radius
 
-    property string borderFocusedColor: AmneziaStyle.color.paleGray
-    property int borderFocusedWidth: 1
+    property string borderFocusedColor: SettingsController.isOnTv() ? AmneziaStyle.color.tcBlue : AmneziaStyle.color.paleGray
+    property int borderFocusedWidth: SettingsController.isOnTv() ? 3 : 1
 
     hoverEnabled: true
 
