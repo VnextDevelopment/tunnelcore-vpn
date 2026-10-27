@@ -108,7 +108,7 @@ PageType {
 
     component AuthButton: BasicButtonType {
         borderFocusedColor: AmneziaStyle.color.tcBlue
-        borderFocusedWidth: 2
+        borderFocusedWidth: SettingsController.isOnTv() ? 3 : 2
         navigationHandler: root.moveAuthFocus
         Keys.onSelectPressed: if (enabled && clickedFunc) clickedFunc()
         onActiveFocusChanged: if (activeFocus) root.scheduleInputVisibility()
@@ -127,9 +127,33 @@ PageType {
         if (TunnelCoreController.authenticated) { event.accepted = false; return }
         root.moveAuthFocus(false)
     }
+    // Start TV remote navigation at a visible action, including after changing
+    // authentication modes. Touch devices retain their existing focus behavior.
+    function focusAuthenticationEntry() {
+        if (!SettingsController.isOnTv() || !root.visible || TunnelCoreController.authenticated)
+            return
+        var target = root.showWelcome ? welcomeSignIn
+                : (root.compactAuthLayout ? loginField.textField
+                   : (root.emailMode ? emailModeButton : botModeButton))
+        if (target && target.visible && target.enabled)
+            target.forceActiveFocus(Qt.TabFocusReason)
+        root.scheduleInputVisibility()
+    }
+
+    // PageType resets global focus at 200 ms on entry. Move initial TV focus
+    // onto a real control after that reset instead of leaving it invisible.
+    Timer {
+        interval: 260
+        repeat: false
+        running: SettingsController.isOnTv() && !TunnelCoreController.authenticated
+        onTriggered: root.focusAuthenticationEntry()
+    }
+
     onShowWelcomeChanged: {
-        if (!TunnelCoreController.authenticated)
+        if (!TunnelCoreController.authenticated) {
             root.forceActiveFocus()
+            Qt.callLater(root.focusAuthenticationEntry)
+        }
         root.scheduleInputVisibility()
     }
     onEmailModeChanged: root.scheduleInputVisibility()
@@ -925,6 +949,15 @@ PageType {
                         id: subscriptionLabel
                         anchors.fill: parent
                         anchors.margins: 6
+                        // Focus the full subscription card, not only its chevron.
+                        isFocusable: SettingsController.isOnTv()
+                        focusPolicy: SettingsController.isOnTv() ? Qt.TabFocus : Qt.NoFocus
+                        rightButton.focusPolicy: SettingsController.isOnTv() ? Qt.NoFocus : Qt.TabFocus
+                        borderFocusedColor: AmneziaStyle.color.tcBlue
+                        borderFocusedWidth: SettingsController.isOnTv() ? 3 : 1
+                        Keys.onEnterPressed: subscriptionsDrawer.openTriggered()
+                        Keys.onReturnPressed: subscriptionsDrawer.openTriggered()
+                        Keys.onSelectPressed: subscriptionsDrawer.openTriggered()
                     textColor: AmneziaStyle.color.tcInk
                     descriptionColor: AmneziaStyle.color.tcMuted
                     rightImageColor: AmneziaStyle.color.tcBlue
