@@ -48,8 +48,8 @@ TabButton {
         else FocusController.nextKeyRightItem()
     }
     
-    property string borderFocusedColor: AmneziaStyle.color.paleGray
-    property int borderFocusedWidth: 1
+    property string borderFocusedColor: SettingsController.isOnTv() ? AmneziaStyle.color.tcBlue : AmneziaStyle.color.paleGray
+    property int borderFocusedWidth: SettingsController.isOnTv() ? 3 : 1
 
     property var clickedFunc
 
