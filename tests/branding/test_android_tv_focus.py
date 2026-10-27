@@ -6,6 +6,8 @@ ROOT = Path(__file__).resolve().parents[2]
 CONTROLS = ROOT / "client/ui/qml/Controls2"
 ACCOUNT = (ROOT / "client/ui/qml/Pages2/PageTunnelCoreAccount.qml").read_text()
 CONNECT = (ROOT / "client/ui/qml/Components/ConnectButton.qml").read_text()
+QUESTION = (ROOT / "client/ui/qml/Components/QuestionDrawer.qml").read_text()
+MAIN = (ROOT / "client/ui/qml/main2.qml").read_text()
 
 
 class AndroidTvFocusTest(unittest.TestCase):
@@ -31,6 +33,17 @@ class AndroidTvFocusTest(unittest.TestCase):
         self.assertIn("isFocusable: SettingsController.isOnTv()", ACCOUNT)
         self.assertIn("Keys.onSelectPressed: subscriptionsDrawer.openTriggered()", ACCOUNT)
         self.assertIn("rightButton.focusPolicy: SettingsController.isOnTv() ? Qt.NoFocus", ACCOUNT)
+
+    def test_confirmations_trap_remote_navigation_in_modal(self):
+        self.assertIn("function moveConfirmationFocus(forward)", QUESTION)
+        self.assertIn("navigationHandler: SettingsController.isOnTv() ? root.moveConfirmationFocus", QUESTION)
+        self.assertIn('Component.onCompleted: root.noButtonItem = noButton', QUESTION)
+        self.assertIn('Component.onCompleted: root.yesButtonItem = yesButton', QUESTION)
+        self.assertIn("initial.forceActiveFocus(Qt.TabFocusReason)", QUESTION)
+        self.assertIn("Keys.onBackPressed:", QUESTION)
+        self.assertIn("Keys.onEscapePressed:", QUESTION)
+        self.assertIn("FocusController.setFocusItem(previous)", QUESTION)
+        self.assertIn("enabled: !(SettingsController.isOnTv() && questionDrawer.isOpened)", MAIN)
 
     def test_tv_center_button_activates_regular_buttons(self):
         self.assertIn("Keys.onSelectPressed:", (CONTROLS / "BasicButtonType.qml").read_text())
