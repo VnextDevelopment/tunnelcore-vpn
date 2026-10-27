@@ -45,8 +45,10 @@ class AndroidTvFocusTest(unittest.TestCase):
         self.assertIn("FocusController.setFocusItem(previous)", QUESTION)
         self.assertIn("enabled: !(SettingsController.isOnTv() && questionDrawer.isOpened)", MAIN)
 
-    def test_tv_center_button_activates_regular_buttons(self):
-        self.assertIn("Keys.onSelectPressed:", (CONTROLS / "BasicButtonType.qml").read_text())
+    def test_basic_button_does_not_dispatch_center_twice(self):
+        # The Qt Button already handles DPAD_CENTER. A second attached
+        # Keys.onSelectPressed handler causes duplicate submissions.
+        self.assertNotIn("Keys.onSelectPressed:", (CONTROLS / "BasicButtonType.qml").read_text())
 
 
 if __name__ == "__main__":
