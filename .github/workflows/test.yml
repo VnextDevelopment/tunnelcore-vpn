@@ -287,7 +287,7 @@ jobs:
         set -euo pipefail
         # Include ARMv7 for older SberBox devices and both x86 architectures.
         deploy/build.sh -t android \
-          --abi arm64-v8a --abi armeabi-v7a --abi x86_64 --abi x86 \
+          --abi arm64-v8a --abi armeabi-v7a --abi x86 --abi x86_64 \
           --build ./deploy/build/android-universal --sign
 
         VERSION=$(grep '^CMAKE_PROJECT_VERSION:STATIC=' deploy/build/android-universal/CMakeCache.txt | cut -d= -f2)
