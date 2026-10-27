@@ -32,6 +32,7 @@ class TvAuthTest(unittest.TestCase):
         field = cls.path / 'Controls2/TextFieldWithHeaderType.qml'
         field.write_text(field.read_text().replace('id: textField', 'id: textField\nobjectName: "editor"'))
         (cls.path / 'Components').mkdir()
+        shutil.copy(QML / 'Components/QuestionDrawer.qml', cls.path / 'Components/QuestionDrawer.qml')
         connect = (QML / 'Components/ConnectButton.qml').read_text()
         for module in ['ConnectionState', 'AppIcons', 'PageEnum']:
             connect = connect.replace('import ' + module + ' 1.0', '')
@@ -89,11 +90,11 @@ signal changed()
 function clearError() {} function loginCode(code) { submits++ }
 function loginEmail(email, password) { submits++ }
 function registerEmail(email, password) { submits++ }''',
-            'PageController': 'property int imeHeight: 0; property int safeAreaTopMargin: 0; property int safeAreaBottomMargin: 0',
+            'PageController': 'property int imeHeight: 0; property int safeAreaTopMargin: 0; property int safeAreaBottomMargin: 0; property int drawerDepth: 0; signal closeTopDrawer(); function incrementDrawerDepth() { return ++drawerDepth } function decrementDrawerDepth() { drawerDepth-- } function getDrawerDepth() { return drawerDepth } function getInitialPageNavigationBarColor() { return 0xff1c1d21 } function updateNavigationBarColor(color) {}',
             'ConnectionController': 'property bool isConnected: false; property bool isConnectionInProgress: false; signal connectionStateChanged(); signal preparingConfig(); property string connectionStateText: "Disconnected"; property int clicks: 0; function connectButtonClicked() { clicks++ }',
             'ImportController': 'function activateTunnelCoreProfile(key) { return true } signal importFinished(); signal importErrorOccurred(string error, bool goToPageHome)',
             'LanguageUiController': 'function getLineHeightAppend() { return 0 }',
-            'FocusController': 'function resetRootObject() {} function setFocusOnDefaultItem() {} function setFocusItem(item) { item.forceActiveFocus() } function nextKeyDownItem() { testedPage.navigateRemote(true) } function nextKeyUpItem() { testedPage.navigateRemote(false) }',
+            'FocusController': 'function resetRootObject() {} function setFocusOnDefaultItem() {} function setFocusItem(item) { item.forceActiveFocus() } function nextKeyDownItem() { testedPage.navigateRemote(true) } function nextKeyUpItem() { testedPage.navigateRemote(false) } function pushRootObject(item) {} function dropRootObject(item) {}',
             'IpSplitTunnelingController': 'property bool isSplitTunnelingEnabled: false',
             'AppSplitTunnelingController': 'property bool isSplitTunnelingEnabled: false',
             'ServersUiController': 'property bool isDefaultServerDefaultContainerHasSplitTunneling: false',
@@ -171,6 +172,46 @@ function registerEmail(email, password) { submits++ }''',
         button = self.item('accountSplitTunnelingButton')
         self.assertTrue(button.hasActiveFocus())
         self.assertEqual(button.property('borderFocusedWidth'), 3)
+
+    def test_tv_confirmation_keeps_dpad_on_modal_and_cancel_restores_focus(self):
+        self.objects[0].setProperty('authenticated', True)
+        QTest.qWait(60)
+        self.evaluate('focusPageControl()')
+        previous = self.item('accountConnectButton')
+        self.assertTrue(previous.hasActiveFocus())
+
+        comp = QQmlComponent(self.engine, QUrl.fromLocalFile(str(
+            self.path / 'Components/QuestionDrawer.qml')))
+        drawer = comp.create()
+        self.assertIsNotNone(drawer, str(comp.errors()))
+        drawer.setParentItem(self.window.contentItem())
+        drawer.setWidth(960)
+        drawer.setHeight(540)
+        drawer.setProperty('headerText', 'Sign out?')
+        drawer.setProperty('yesButtonText', 'Sign out')
+        drawer.setProperty('noButtonText', 'Cancel')
+        # Production main2 closes first, then runs the selected callback.
+        self.engine.rootContext().setContextProperty('testQuestionDrawer', drawer)
+        self.evaluate('true')  # Keep the same live QML engine for navigation.
+        def selected(name):
+            obj = drawer.property(name)
+            self.assertIsNotNone(obj)
+            return obj
+        drawer.openTriggered.emit()
+        QTest.qWait(100)
+        cancel = selected('noButtonItem')
+        confirm = selected('yesButtonItem')
+        self.assertTrue(cancel.hasActiveFocus())
+        QTest.keyClick(self.window, Qt.Key_Down)
+        self.assertTrue(confirm.hasActiveFocus())
+        QTest.keyClick(self.window, Qt.Key_Up)
+        self.assertTrue(cancel.hasActiveFocus())
+        QTest.keyClick(self.window, Qt.Key_Back)
+        QTest.qWait(100)
+        self.assertTrue(drawer.property('isClosed'))
+        self.assertTrue(previous.hasActiveFocus())
+        drawer.setParentItem(None)
+        drawer.deleteLater()
 
     def test_remote_reaches_inputs_submit_and_cancel(self):
         for email, register in [(False, False), (True, False), (True, True)]:
