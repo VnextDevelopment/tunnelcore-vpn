@@ -103,6 +103,22 @@ Button {
             }
         }
 
+        // The branded connect button needs a visible D-pad focus ring on TV.
+        // Keep it outside the gradient circle for contrast.
+        Rectangle {
+            id: tvConnectFocusRing
+            objectName: "tvConnectFocusRing"
+            anchors.centerIn: tunnelCoreCircle
+            width: tunnelCoreCircle.width + 12
+            height: width
+            radius: width / 2
+            color: "transparent"
+            border.color: AmneziaStyle.color.tcBlue
+            border.width: 3
+            visible: root.tunnelCoreMode && root.activeFocus && root.enabled
+                     && SettingsController.isOnTv()
+        }
+
         Shape {
             id: backgroundCircle
             visible: !root.tunnelCoreMode
