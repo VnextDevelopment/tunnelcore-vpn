@@ -132,6 +132,12 @@ PageType {
     function focusAuthenticationEntry() {
         if (!SettingsController.isOnTv() || !root.visible || TunnelCoreController.authenticated)
             return
+        // Do not override a field the user/test has just focused while the
+        // deferred welcome->form transition is still pending.
+        if (!root.showWelcome && (loginField.textField.activeFocus
+                || passwordField.textField.activeFocus
+                || confirmPasswordField.textField.activeFocus))
+            return
         var target = root.showWelcome ? welcomeSignIn
                 : (root.compactAuthLayout ? loginField.textField
                    : (root.emailMode ? emailModeButton : botModeButton))
