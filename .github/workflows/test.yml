@@ -134,19 +134,9 @@ jobs:
         archive: false
         retention-days: 7
 
-  Test-Android:
+  Test-Android-Universal:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - abi: arm64-v8a
-            qt_arch: android_arm64_v8a
-            artifact: arm64
-          # Intel/AMD emulators must not depend on ARM native translation.
-          - abi: x86_64
-            qt_arch: android_x86_64
-            artifact: x86_64
+    timeout-minutes: 120
 
     env:
       ANDROID_PLATFORM: android-28
@@ -192,14 +182,13 @@ jobs:
         extra: '--base ${{ env.QT_MIRROR }}'
 
     - name: 'Test TunnelCore account controller'
-      if: matrix.abi == 'arm64-v8a'
       shell: bash
       run: |
         cmake -S client/tests/tunnelcore -B /tmp/tunnelcore-controller-build -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR"
         cmake --build /tmp/tunnelcore-controller-build --parallel 2
         ctest --test-dir /tmp/tunnelcore-controller-build --output-on-failure
 
-    - name: 'Install Android Qt ${{ matrix.abi }}'
+    - name: 'Install Android Qt armeabi-v7a'
       uses: jurplel/install-qt-action@v4
       with:
         version: ${{ env.QT_VERSION }}
@@ -207,7 +196,49 @@ jobs:
         # Version discovery runs before install-qt can normalize the host.
         host: 'all_os'
         target: 'android'
-        arch: ${{ matrix.qt_arch }}
+        arch: 'android_armv7'
+        modules: ${{ env.QT_ANDROID_MODULES }}
+        dir: ${{ runner.temp }}
+        py7zrversion: '==0.22.*'
+        extra: '--base ${{ env.QT_MIRROR }}'
+
+    - name: 'Install Android Qt arm64-v8a'
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: ${{ env.QT_VERSION }}
+        # Qt 6.7+ Android packages live in the shared all_os repository.
+        # Version discovery runs before install-qt can normalize the host.
+        host: 'all_os'
+        target: 'android'
+        arch: 'android_arm64_v8a'
+        modules: ${{ env.QT_ANDROID_MODULES }}
+        dir: ${{ runner.temp }}
+        py7zrversion: '==0.22.*'
+        extra: '--base ${{ env.QT_MIRROR }}'
+
+    - name: 'Install Android Qt x86'
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: ${{ env.QT_VERSION }}
+        # Qt 6.7+ Android packages live in the shared all_os repository.
+        # Version discovery runs before install-qt can normalize the host.
+        host: 'all_os'
+        target: 'android'
+        arch: 'android_x86'
+        modules: ${{ env.QT_ANDROID_MODULES }}
+        dir: ${{ runner.temp }}
+        py7zrversion: '==0.22.*'
+        extra: '--base ${{ env.QT_MIRROR }}'
+
+    - name: 'Install Android Qt x86_64'
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: ${{ env.QT_VERSION }}
+        # Qt 6.7+ Android packages live in the shared all_os repository.
+        # Version discovery runs before install-qt can normalize the host.
+        host: 'all_os'
+        target: 'android'
+        arch: 'android_x86_64'
         modules: ${{ env.QT_ANDROID_MODULES }}
         dir: ${{ runner.temp }}
         py7zrversion: '==0.22.*'
@@ -235,7 +266,7 @@ jobs:
     - name: 'Setup Android SDK'
       uses: android-actions/setup-android@v4
       with:
-        packages: "platforms;${{ env.ANDROID_PLATFORM }} ndk;${{ env.NDK_VERSION }}"
+        packages: "platforms;${{ env.ANDROID_PLATFORM }} platforms;android-36 build-tools;36.0.0 ndk;${{ env.NDK_VERSION }}"
 
     - name: 'Setup Python'
       uses: actions/setup-python@v6
@@ -245,21 +276,44 @@ jobs:
     - name: 'Install Conan'
       run: pip install "conan==2.28.0"
 
-    - name: 'Build ${{ matrix.abi }} APK'
+    # Use a disposable CI certificate, never the Google Play/release signing key.
+    # This APK is installable for sideload testing, but an installed copy must
+    # be uninstalled before replacing it with one signed by a different key.
+    - name: 'Build and sign universal Android APK (CI test key)'
       shell: bash
       env:
         QT_INSTALL_DIR: ${{ runner.temp }}
       run: |
-        deploy/build.sh -t android --abi ${{ matrix.abi }} --build ./deploy/build/android-${{ matrix.abi }}
-        mkdir -p deploy/artifacts
-        VERSION=$(grep CMAKE_PROJECT_VERSION:STATIC deploy/build/android-${{ matrix.abi }}/CMakeCache.txt | cut -d= -f2)
-        cp deploy/build/android-${{ matrix.abi }}/client/android-build/build/outputs/apk/android-build-release-unsigned.apk \
-           deploy/artifacts/TunnelCoreVPN_${VERSION}_${{ matrix.abi }}.apk
+        set -euo pipefail
+        # Include ARMv7 for older SberBox devices and both x86 architectures.
+        deploy/build.sh -t android \
+          --abi arm64-v8a --abi armeabi-v7a --abi x86 --abi x86_64 \
+          --build ./deploy/build/android-universal --sign
 
-    - name: 'Upload Android APK'
+        VERSION=$(grep '^CMAKE_PROJECT_VERSION:STATIC=' deploy/build/android-universal/CMakeCache.txt | cut -d= -f2)
+        test -n "$VERSION"
+        mapfile -t apks < <(find deploy/build/android-universal/client/android-build/build/outputs/apk \
+          -maxdepth 1 -type f -name '*release-signed.apk')
+        if [[ "${#apks[@]}" -ne 1 ]]; then
+          echo "::error::Expected one signed universal OSS APK, found ${#apks[@]}"
+          exit 1
+        fi
+
+        unzip -Z1 "${apks[0]}" > /tmp/tunnelcore-apk-entries.txt
+        for abi in armeabi-v7a arm64-v8a x86 x86_64; do
+          if ! grep -q "^lib/${abi}/" /tmp/tunnelcore-apk-entries.txt; then
+            echo "::error::Missing ${abi} native libraries from universal APK"
+            exit 1
+          fi
+        done
+        "${ANDROID_HOME}/build-tools/36.0.0/apksigner" verify --verbose --print-certs "${apks[0]}"
+        mkdir -p deploy/artifacts
+        cp "${apks[0]}" "deploy/artifacts/TunnelCoreVPN_${VERSION}_android_universal-ci.apk"
+
+    - name: 'Upload universal Android APK'
       uses: actions/upload-artifact@v7
       with:
-        name: TunnelCoreVPN-Android-${{ matrix.artifact }}
-        path: deploy/artifacts/TunnelCoreVPN_*_${{ matrix.abi }}.apk
+        name: TunnelCoreVPN-Android-Universal-CI
+        path: deploy/artifacts/TunnelCoreVPN_*_android_universal-ci.apk
         archive: false
         retention-days: 7

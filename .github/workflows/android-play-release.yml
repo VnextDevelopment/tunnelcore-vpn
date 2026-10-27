@@ -52,6 +52,18 @@ jobs:
           py7zrversion: '==0.22.*'
           extra: '--base ${{ env.QT_MIRROR }}'
 
+      - name: Install Android Qt (armeabi-v7a)
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: all_os
+          target: android
+          arch: android_armv7
+          modules: ${{ env.QT_ANDROID_MODULES }}
+          dir: ${{ runner.temp }}
+          py7zrversion: '==0.22.*'
+          extra: '--base ${{ env.QT_MIRROR }}'
+
       - name: Install Android Qt (arm64-v8a)
         uses: jurplel/install-qt-action@v4
         with:
@@ -59,6 +71,18 @@ jobs:
           host: all_os
           target: android
           arch: android_arm64_v8a
+          modules: ${{ env.QT_ANDROID_MODULES }}
+          dir: ${{ runner.temp }}
+          py7zrversion: '==0.22.*'
+          extra: '--base ${{ env.QT_MIRROR }}'
+
+      - name: Install Android Qt (x86)
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: all_os
+          target: android
+          arch: android_x86
           modules: ${{ env.QT_ANDROID_MODULES }}
           dir: ${{ runner.temp }}
           py7zrversion: '==0.22.*'
@@ -118,16 +142,29 @@ jobs:
         env:
           QT_INSTALL_DIR: ${{ runner.temp }}
         run: |
-          deploy/build.sh -t android --abi arm64-v8a --abi x86_64 \
+          set -euo pipefail
+          # Qt builds the same four native ABIs as the signed sideload APK.
+          # Play then delivers device-specific APK splits from this AAB.
+          deploy/build.sh -t android \
+            --abi arm64-v8a --abi armeabi-v7a --abi x86_64 --abi x86 \
             --build ./deploy/build/android-play \
             --play --aab --sign
           mkdir -p deploy/artifacts
           VERSION=$(grep CMAKE_PROJECT_VERSION:STATIC deploy/build/android-play/CMakeCache.txt | cut -d= -f2)
-          AAB=$(find deploy/build/android-play/client/android-build/build/outputs/bundle -type f -name '*.aab' | head -1)
-          test -n "$AAB"
+          mapfile -t bundles < <(find deploy/build/android-play/client/android-build/build/outputs/bundle \
+            -type f -name '*.aab')
+          if [[ "${#bundles[@]}" -ne 1 ]]; then
+            echo "::error::Expected one signed Google Play AAB, found ${#bundles[@]}"
+            exit 1
+          fi
+          AAB="${bundles[0]}"
           unzip -Z1 "$AAB" > /tmp/tunnelcore-aab-entries.txt
-          grep -q '^base/lib/arm64-v8a/' /tmp/tunnelcore-aab-entries.txt
-          grep -q '^base/lib/x86_64/' /tmp/tunnelcore-aab-entries.txt
+          for abi in armeabi-v7a arm64-v8a x86 x86_64; do
+            if ! grep -q "^base/lib/${abi}/" /tmp/tunnelcore-aab-entries.txt; then
+              echo "::error::Missing native libraries for ${abi} in Google Play AAB"
+              exit 1
+            fi
+          done
           cp "$AAB" "deploy/artifacts/TunnelCoreVPN_${VERSION}_play.aab"
 
       - name: Upload Play AAB

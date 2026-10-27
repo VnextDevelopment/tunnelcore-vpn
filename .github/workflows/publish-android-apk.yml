@@ -99,6 +99,18 @@ jobs:
           py7zrversion: '==0.22.*'
           extra: '--base ${{ env.QT_MIRROR }}'
 
+      - name: Install Android Qt x86
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: all_os
+          target: android
+          arch: android_x86
+          modules: ${{ env.QT_ANDROID_MODULES }}
+          dir: ${{ runner.temp }}
+          py7zrversion: '==0.22.*'
+          extra: '--base ${{ env.QT_MIRROR }}'
+
       - name: Install Android Qt x86_64
         uses: jurplel/install-qt-action@v4
         with:
@@ -151,7 +163,10 @@ jobs:
           QT_INSTALL_DIR: ${{ runner.temp }}
         run: |
           set -euo pipefail
-          GITHUB_RUN_NUMBER="${ANDROID_RELEASE_VERSION##*.}" deploy/build.sh -t android --abi armeabi-v7a --abi arm64-v8a --abi x86_64 \
+          # Build all four native ABIs into ONE APK; the Play AAB uses a
+          # separate build workflow and is not changed by this release.
+          GITHUB_RUN_NUMBER="${ANDROID_RELEASE_VERSION##*.}" deploy/build.sh -t android \
+            --abi arm64-v8a --abi armeabi-v7a --abi x86 --abi x86_64 \
             --build ./deploy/build/android-oss-release --sign
           mkdir -p deploy/artifacts
           mapfile -t apks < <(find deploy/build/android-oss-release/client/android-build/build/outputs/apk \
@@ -163,7 +178,7 @@ jobs:
           # Do not publish another arm64-only package with a misleading
           # "universal" filename. All supported native ABIs must be embedded.
           unzip -Z1 "${apks[0]}" > /tmp/tunnelcore-apk-entries.txt
-          for abi in armeabi-v7a arm64-v8a x86_64; do
+          for abi in armeabi-v7a arm64-v8a x86 x86_64; do
             if ! grep -q "^lib/${abi}/" /tmp/tunnelcore-apk-entries.txt; then
               echo "::error::Missing native libraries for ${abi} in the universal APK"
               exit 1
