@@ -97,6 +97,7 @@ function registerEmail(email, password) { submits++ }''',
             'IpSplitTunnelingController': 'property bool isSplitTunnelingEnabled: false',
             'AppSplitTunnelingController': 'property bool isSplitTunnelingEnabled: false',
             'ServersUiController': 'property bool isDefaultServerDefaultContainerHasSplitTunneling: false',
+            'SettingsController': 'function isOnTv() { return true }',
         }
         for name, body in mocks.items():
             comp = QQmlComponent(self.engine)
@@ -139,6 +140,37 @@ function registerEmail(email, password) { submits++ }''',
         top = item.mapToItem(scroll, 0, 0).y()
         self.assertGreaterEqual(top, -1)
         self.assertLessEqual(top + item.height(), scroll.height() + 1)
+
+    def test_tv_focus_is_visible_on_welcome_and_auth_inputs(self):
+        welcome = self.item('welcomeSignIn')
+        welcome.forceActiveFocus()
+        QTest.qWait(30)
+        self.assertTrue(welcome.hasActiveFocus())
+        self.assertEqual(welcome.property('borderFocusedWidth'), 3)
+        QTest.keyClick(self.window, Qt.Key_Down)
+        register = self.item('welcomeRegister')
+        self.assertTrue(register.hasActiveFocus())
+        self.assertFalse(welcome.hasActiveFocus())
+        self.assertEqual(register.property('borderFocusedWidth'), 3)
+        QTest.keyClick(self.window, Qt.Key_Select)
+        QTest.qWait(50)
+        self.assertFalse(self.page.property('showWelcome'))
+        self.assertTrue(self.editor('loginField').hasActiveFocus())
+        self.assertEqual(self.item('loginField').property('borderFocusedColor'), '#336699')
+
+    def test_tv_connect_focus_ring_tracks_dpad_navigation(self):
+        self.objects[0].setProperty('authenticated', True)
+        QTest.qWait(50)
+        self.evaluate('focusPageControl()')
+        connect = self.item('accountConnectButton')
+        ring = connect.findChild(type(connect), 'tvConnectFocusRing')
+        self.assertIsNotNone(ring)
+        self.assertTrue(ring.isVisible())
+        QTest.keyClick(self.window, Qt.Key_Down)
+        self.assertFalse(ring.isVisible())
+        button = self.item('accountSplitTunnelingButton')
+        self.assertTrue(button.hasActiveFocus())
+        self.assertEqual(button.property('borderFocusedWidth'), 3)
 
     def test_remote_reaches_inputs_submit_and_cancel(self):
         for email, register in [(False, False), (True, False), (True, True)]:
