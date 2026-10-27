@@ -73,6 +73,20 @@ jobs:
           py7zrversion: '==0.22.*'
           extra: '--base ${{ env.QT_MIRROR }}'
 
+      # Original SberBox can run a 32-bit Android userspace, even on a 64-bit CPU.
+      # A so-called universal APK without armeabi-v7a is not compatible with it.
+      - name: Install Android Qt armeabi-v7a
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: all_os
+          target: android
+          arch: android_armv7
+          modules: ${{ env.QT_ANDROID_MODULES }}
+          dir: ${{ runner.temp }}
+          py7zrversion: '==0.22.*'
+          extra: '--base ${{ env.QT_MIRROR }}'
+
       - name: Install Android Qt arm64-v8a
         uses: jurplel/install-qt-action@v4
         with:
@@ -137,7 +151,7 @@ jobs:
           QT_INSTALL_DIR: ${{ runner.temp }}
         run: |
           set -euo pipefail
-          GITHUB_RUN_NUMBER="${ANDROID_RELEASE_VERSION##*.}" deploy/build.sh -t android --abi arm64-v8a --abi x86_64 \
+          GITHUB_RUN_NUMBER="${ANDROID_RELEASE_VERSION##*.}" deploy/build.sh -t android --abi armeabi-v7a --abi arm64-v8a --abi x86_64 \
             --build ./deploy/build/android-oss-release --sign
           mkdir -p deploy/artifacts
           mapfile -t apks < <(find deploy/build/android-oss-release/client/android-build/build/outputs/apk \
@@ -146,6 +160,15 @@ jobs:
             echo "::error::Expected a single signed OSS Android APK"
             exit 1
           }
+          # Do not publish another arm64-only package with a misleading
+          # "universal" filename. All supported native ABIs must be embedded.
+          unzip -Z1 "${apks[0]}" > /tmp/tunnelcore-apk-entries.txt
+          for abi in armeabi-v7a arm64-v8a x86_64; do
+            if ! grep -q "^lib/${abi}/" /tmp/tunnelcore-apk-entries.txt; then
+              echo "::error::Missing native libraries for ${abi} in the universal APK"
+              exit 1
+            fi
+          done
           "${ANDROID_HOME}/build-tools/36.0.0/apksigner" verify --verbose --print-certs "${apks[0]}"
           cp "${apks[0]}" "deploy/artifacts/TunnelCoreVPN_${ANDROID_RELEASE_VERSION}_android_universal.apk"
 
