@@ -36,8 +36,8 @@ Item {
     property string descriptionDisabledColor: AmneziaStyle.color.charcoalGray
     property real textOpacity: 1.0
 
-    property string borderFocusedColor: AmneziaStyle.color.paleGray
-    property int borderFocusedWidth: 1
+    property string borderFocusedColor: SettingsController.isOnTv() ? AmneziaStyle.color.tcBlue : AmneziaStyle.color.paleGray
+    property int borderFocusedWidth: SettingsController.isOnTv() ? 3 : 1
 
     property string rightImageColor: AmneziaStyle.color.paleGray
     property string leftImageColor: ""
@@ -314,6 +314,7 @@ Item {
     Rectangle {
         id: background
         anchors.fill: root
+        radius: SettingsController.isOnTv() ? 16 : 0
         color: AmneziaStyle.color.transparent
 
         border.color: root.activeFocus ? root.borderFocusedColor : AmneziaStyle.color.transparent
