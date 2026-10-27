@@ -200,12 +200,6 @@ Button {
         }
     }
 
-    // Android TV remotes send DPAD_CENTER as Key_Select.
-    Keys.onSelectPressed: {
-        if (root.enabled)
-            root.clicked()
-    }
-
     Keys.onEnterPressed: {
         if (root.clickedFunc && typeof root.clickedFunc === "function") {
             root.clickedFunc()
