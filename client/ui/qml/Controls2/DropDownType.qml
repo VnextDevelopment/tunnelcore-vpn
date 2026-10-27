@@ -30,8 +30,8 @@ Item {
     property string rootButtonBackgroundHoveredColor: AmneziaStyle.color.onyxBlack
     property string rootButtonBackgroundPressedColor: AmneziaStyle.color.onyxBlack
 
-    property string borderFocusedColor: AmneziaStyle.color.paleGray
-    property int borderFocusedWidth: 1
+    property string borderFocusedColor: SettingsController.isOnTv() ? AmneziaStyle.color.tcBlue : AmneziaStyle.color.paleGray
+    property int borderFocusedWidth: SettingsController.isOnTv() ? 3 : 1
 
     property string rootButtonHoveredBorderColor: AmneziaStyle.color.charcoalGray
     property string rootButtonDefaultBorderColor: AmneziaStyle.color.slateGray
