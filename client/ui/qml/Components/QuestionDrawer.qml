@@ -26,12 +26,15 @@ DrawerType2 {
     // Confirmation sheets are modal for the TV remote. The global focus
     // controller otherwise keeps moving across the page behind the sheet.
     property var focusBeforeOpen: null
+    property var yesButtonItem: null
+    property var noButtonItem: null
 
     function moveConfirmationFocus(forward) {
         if (!SettingsController.isOnTv() || !root.isExpandedStateActive())
             return
-        var buttons = noButton.visible && noButton.enabled
-                ? [noButton, yesButton] : [yesButton]
+        var buttons = root.noButtonItem && root.noButtonItem.visible && root.noButtonItem.enabled
+                ? [root.noButtonItem, root.yesButtonItem] : [root.yesButtonItem]
+        buttons = buttons.filter(function(button) { return button && button.visible && button.enabled })
         if (!buttons.length)
             return
         var index = buttons.findIndex(function(button) { return button.activeFocus })
@@ -61,8 +64,10 @@ DrawerType2 {
                     return
                 // Start on Cancel: signing out/deleting an account must not be
                 // accidentally confirmed by pressing OK a second time.
-                var initial = noButton.visible && noButton.enabled ? noButton : yesButton
-                initial.forceActiveFocus(Qt.TabFocusReason)
+                var initial = root.noButtonItem && root.noButtonItem.visible && root.noButtonItem.enabled
+                        ? root.noButtonItem : root.yesButtonItem
+                if (initial && initial.visible && initial.enabled)
+                    initial.forceActiveFocus(Qt.TabFocusReason)
             })
         }
     }
@@ -127,6 +132,8 @@ DrawerType2 {
 
         BasicButtonType {
             id: yesButton
+            Component.onCompleted: root.yesButtonItem = yesButton
+            Component.onDestruction: { if (root.yesButtonItem === yesButton) root.yesButtonItem = null }
             Layout.fillWidth: true
             Layout.topMargin: 16
             Layout.rightMargin: 16
@@ -148,6 +155,8 @@ DrawerType2 {
 
         BasicButtonType {
             id: noButton
+            Component.onCompleted: root.noButtonItem = noButton
+            Component.onDestruction: { if (root.noButtonItem === noButton) root.noButtonItem = null }
             Layout.fillWidth: true
             Layout.rightMargin: 16
             Layout.leftMargin: 16
