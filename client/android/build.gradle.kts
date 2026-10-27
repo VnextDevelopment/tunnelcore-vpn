@@ -109,11 +109,11 @@ android {
 
     splits {
         abi {
-            // splits only make sense for multi-ABI builds; single-ABI uses ndk.abiFilters
-            isEnable = abiList.size > 1
-            reset()
-            include(*abiList.toTypedArray())
-            isUniversalApk = false
+            // The OSS APK is a single sideloadable file containing every ABI
+            // deployed by Qt. Per-ABI splits produced several APKs and the
+            // Qt packaging compatibility copy could overwrite them.
+            // Google Play AAB delivery remains optimized by Play itself.
+            isEnable = false
         }
     }
 
@@ -150,9 +150,14 @@ android {
                     val srcDir = layout.buildDirectory.dir("outputs/apk/oss/$buildTypeName").get().asFile
                     val dstDir = layout.buildDirectory.dir("outputs/apk").get().asFile
                     dstDir.mkdirs()
-                    srcDir.listFiles()?.filter { it.name.endsWith(".apk") }?.forEach { apk ->
-                        apk.copyTo(File(dstDir, "$base-$buildTypeName$unsignedSuffix.apk"), overwrite = true)
+                    val apks = srcDir.listFiles()?.filter { it.isFile && it.extension == "apk" }.orEmpty()
+                    require(apks.size == 1) {
+                        "Expected exactly one OSS APK for $variantName, got ${apks.map { it.name }}"
                     }
+                    apks.single().copyTo(
+                        File(dstDir, "$base-$buildTypeName$unsignedSuffix.apk"),
+                        overwrite = true
+                    )
                 }
             }
 
