@@ -1,0 +1,273 @@
+"""Run with QT_QPA_PLATFORM=offscreen python -m unittest discover -s tests/qml.
+
+Requires PySide6. Loads production auth/dashboard/country layouts and controls;
+backend controllers and unrelated icon/context-menu services are stubbed.
+This does not emulate Android's native IME.
+"""
+import os
+from pathlib import Path
+import re
+import shutil
+import tempfile
+import unittest
+
+os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+from PySide6.QtCore import QUrl, Qt
+from PySide6.QtGui import QGuiApplication
+from PySide6.QtQml import QQmlComponent, QQmlEngine, QQmlExpression
+from PySide6.QtQuick import QQuickWindow
+from PySide6.QtTest import QTest
+
+ROOT = Path(__file__).resolve().parents[2]
+QML = ROOT / 'client/ui/qml'
+
+
+class TvAuthTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.app = QGuiApplication.instance() or QGuiApplication([])
+        cls.tmp = tempfile.TemporaryDirectory()
+        cls.path = Path(cls.tmp.name)
+        shutil.copytree(QML / 'Controls2', cls.path / 'Controls2')
+        field = cls.path / 'Controls2/TextFieldWithHeaderType.qml'
+        field.write_text(field.read_text().replace('id: textField', 'id: textField\nobjectName: "editor"'))
+        (cls.path / 'Components').mkdir()
+        connect = (QML / 'Components/ConnectButton.qml').read_text()
+        for module in ['ConnectionState', 'AppIcons', 'PageEnum']:
+            connect = connect.replace('import ' + module + ' 1.0', '')
+        (cls.path / 'Components/ConnectButton.qml').write_text(connect)
+        (cls.path / 'Components/PaintedIcon.qml').write_text(
+            'import QtQuick\nItem { property string source; property string tint }')
+        (cls.path / 'Config').mkdir()
+        (cls.path / 'Pages2').mkdir()
+        (cls.path / 'Controls2/IconImageType.qml').write_text(
+            'import QtQuick\nItem { property string source; property string tint }')
+        (cls.path / 'Controls2/ContextMenuType.qml').write_text('''import QtQuick
+Item { property var textObj; property bool useNativeEditMenu: false
+property bool opened: false
+function requestNative(position) {} }
+''')
+        (cls.path / 'Controls2/ImageButtonType.qml').write_text('''import QtQuick.Controls
+Button { property string image; property string imageColor }
+''')
+        colors = set()
+        for file in (cls.path / 'Controls2').rglob('*.qml'):
+            colors.update(re.findall(r'AmneziaStyle.color.(\w+)', file.read_text()))
+        source = (QML / 'Pages2/PageTunnelCoreAccount.qml').read_text()
+        colors.update(re.findall(r'AmneziaStyle.color.(\w+)', source))
+        style = cls.path / 'Style'
+        style.mkdir()
+        (style / 'qmldir').write_text('module Style\nsingleton AmneziaStyle 1.0 AmneziaStyle.qml\n')
+        (style / 'AmneziaStyle.qml').write_text('pragma Singleton\nimport QtQuick\nQtObject { property QtObject color: QtObject {' + '\n'.join(
+            f'property color {c}: "#336699"' for c in colors) + '} }')
+        # Keep auth, dashboard and countries; omit unrelated profile/drawer services.
+        source = source.split('            // Account details and destructive actions', 1)[0] + '\n        }\n    }\n}\n'
+        source = source.replace('import PageEnum 1.0', '')
+        for ident in ['scroll', 'loginField', 'passwordField', 'confirmPasswordField',
+                      'authSubmitButton', 'welcomeSignIn', 'welcomeRegister', 'welcomeCode']:
+            source = source.replace('id: ' + ident + '\n', f'id: {ident}\nobjectName: "{ident}"\n')
+        (cls.path / 'Pages2/PageTunnelCoreAccount.qml').write_text(source)
+
+    def setUp(self):
+        self.engine = QQmlEngine()
+        self.engine.addImportPath(str(self.path))
+        self.objects = []
+        mocks = {
+            'TunnelCoreController': '''property bool authenticated: false; property bool busy: false
+property string error: ""; property string username: ""; property string vpnCountryMode: "auto"
+property string selectedVpnCountry: ""; property int submits: 0
+property var vpnCountries: []; property var configs: []; function refresh() {}
+property string effectiveVpnCountry: ""; property string selectedProfileKey: "test"
+property var subscriptions: []; property var primarySubscription: ({})
+property bool subscriptionWarningVisible: false; property bool subscriptionExpired: false
+property bool usesAppleBilling: false; property bool externalRenewalLinkAllowed: false
+property bool emailAccount: false; property bool telegramLinked: false
+property string subscriptionStatusText: ""
+function vpnCountryDisplayName(code) { return code }
+signal signedIn(); signal configReady(var data, string fileName, int obfuscationMode, string obfuscationProfile)
+signal changed()
+function clearError() {} function loginCode(code) { submits++ }
+function loginEmail(email, password) { submits++ }
+function registerEmail(email, password) { submits++ }''',
+            'PageController': 'property int imeHeight: 0; property int safeAreaTopMargin: 0; property int safeAreaBottomMargin: 0',
+            'ConnectionController': 'property bool isConnected: false; property bool isConnectionInProgress: false; signal connectionStateChanged(); signal preparingConfig(); property string connectionStateText: "Disconnected"; property int clicks: 0; function connectButtonClicked() { clicks++ }',
+            'ImportController': 'function activateTunnelCoreProfile(key) { return true } signal importFinished(); signal importErrorOccurred(string error, bool goToPageHome)',
+            'LanguageUiController': 'function getLineHeightAppend() { return 0 }',
+            'FocusController': 'function resetRootObject() {} function setFocusOnDefaultItem() {} function setFocusItem(item) { item.forceActiveFocus() } function nextKeyDownItem() { testedPage.navigateRemote(true) } function nextKeyUpItem() { testedPage.navigateRemote(false) }',
+            'IpSplitTunnelingController': 'property bool isSplitTunnelingEnabled: false',
+            'AppSplitTunnelingController': 'property bool isSplitTunnelingEnabled: false',
+            'ServersUiController': 'property bool isDefaultServerDefaultContainerHasSplitTunneling: false',
+        }
+        for name, body in mocks.items():
+            comp = QQmlComponent(self.engine)
+            comp.setData(('import QtQuick\nQtObject {' + body + '}').encode(), QUrl())
+            obj = comp.create()
+            self.assertIsNotNone(obj, str(comp.errors()))
+            obj.setParent(self.engine)
+            self.objects.append(obj)
+            self.engine.rootContext().setContextProperty(name, obj)
+        self.comp = QQmlComponent(self.engine, QUrl.fromLocalFile(str(self.path / 'Pages2/PageTunnelCoreAccount.qml')))
+        self.page = self.comp.create()
+        self.assertIsNotNone(self.page, str(self.comp.errors()))
+        self.engine.rootContext().setContextProperty("testedPage", self.page)
+        self.window = QQuickWindow()
+        self.window.resize(960, 540)
+        self.page.setParentItem(self.window.contentItem())
+        self.page.setWidth(960)
+        self.page.setHeight(540)
+        self.window.show()
+        QTest.qWait(250)
+
+    def tearDown(self):
+        self.window.close()
+        self.page.setParentItem(None)
+        self.page.deleteLater()
+        self.app.processEvents()
+        del self.comp
+        del self.engine
+
+    def item(self, name):
+        from PySide6.QtQuick import QQuickItem
+        return self.page.findChild(QQuickItem, name)
+
+    def editor(self, name):
+        from PySide6.QtQuick import QQuickItem
+        return self.item(name).findChild(QQuickItem, "editor")
+
+    def assertInView(self, item):
+        scroll = self.item('scroll')
+        top = item.mapToItem(scroll, 0, 0).y()
+        self.assertGreaterEqual(top, -1)
+        self.assertLessEqual(top + item.height(), scroll.height() + 1)
+
+    def test_remote_reaches_inputs_submit_and_cancel(self):
+        for email, register in [(False, False), (True, False), (True, True)]:
+            with self.subTest(email=email, register=register):
+                self.page.setProperty('emailMode', email)
+                self.page.setProperty('registrationMode', register)
+                self.page.setProperty('showWelcome', False)
+                QTest.qWait(200)
+                login = self.editor('loginField')
+                login.setProperty('text', 'user@example.com' if email else '123456')
+                self.editor('passwordField').setProperty('text', 'password')
+                self.editor('confirmPasswordField').setProperty('text', 'password')
+                login.forceActiveFocus()
+                QTest.qWait(200)
+                self.assertInView(self.item('loginField'))
+                targets = (['passwordField'] if email else []) + (['confirmPasswordField'] if register else [])
+                for name in targets + ['authSubmitButton', 'authCancelButton']:
+                    QTest.keyClick(self.window, Qt.Key_Down)
+                    QTest.qWait(200)
+                    target = self.item(name)
+                    focus = self.editor(name) if 'Field' in name else target
+                    self.assertTrue(focus.hasActiveFocus(), name)
+                    self.assertInView(target)
+                    if name == 'authSubmitButton':
+                        before = self.objects[0].property('submits')
+                        QTest.keyClick(self.window, Qt.Key_Select)
+                        self.assertEqual(self.objects[0].property('submits'), before + 1)
+                QTest.keyClick(self.window, Qt.Key_Select)
+                QTest.qWait(200)
+                self.assertTrue(self.page.property('showWelcome'))
+
+    def test_disabled_submit_is_skipped_and_up_returns_to_field(self):
+        self.page.setProperty('emailMode', False)
+        self.page.setProperty('showWelcome', False)
+        login = self.editor('loginField')
+        login.forceActiveFocus()
+        QTest.qWait(200)
+        QTest.keyClick(self.window, Qt.Key_Down)
+        QTest.qWait(200)
+        self.assertTrue(self.item('authCancelButton').hasActiveFocus())
+        self.assertInView(self.item('authCancelButton'))
+        QTest.keyClick(self.window, Qt.Key_Up)
+        QTest.qWait(200)
+        self.assertTrue(login.hasActiveFocus())
+        self.assertInView(self.item('loginField'))
+
+    def test_large_window_and_keyboard_resize_preserve_button_focus(self):
+        self.page.setHeight(900)
+        self.window.resize(960, 900)
+        self.page.setProperty('showWelcome', False)
+        self.editor('loginField').setProperty('text', 'user@example.com')
+        self.editor('passwordField').setProperty('text', 'password')
+        self.editor('passwordField').forceActiveFocus()
+        QTest.qWait(200)
+        QTest.keyClick(self.window, Qt.Key_Down)
+        QTest.qWait(200)
+        self.assertTrue(self.item('authSubmitButton').hasActiveFocus())
+        self.assertInView(self.item('authSubmitButton'))
+        self.page.setHeight(320)
+        self.window.resize(960, 320)
+        QTest.qWait(200)
+        self.assertInView(self.item('authSubmitButton'))
+        QTest.keyClick(self.window, Qt.Key_Down)
+        QTest.qWait(200)
+        self.assertTrue(self.item('authCancelButton').hasActiveFocus())
+        self.assertInView(self.item('authCancelButton'))
+
+    def evaluate(self, expression):
+        expr = QQmlExpression(self.engine.rootContext(), self.page, expression)
+        value = expr.evaluate()
+        self.assertFalse(expr.hasError(), expr.error().toString())
+        return value
+
+    def test_dashboard_navigation_scrolls_and_returns_to_menu(self):
+        self.objects[0].setProperty('authenticated', True)
+        self.page.setHeight(300)
+        QTest.qWait(200)
+        self.evaluate('focusPageControl()')
+        connect = self.item('accountConnectButton')
+        self.assertTrue(connect.hasActiveFocus())
+        self.assertInView(connect)
+        QTest.keyClick(self.window, Qt.Key_Select)
+        self.assertEqual(self.objects[2].property('clicks'), 1)
+        QTest.keyClick(self.window, Qt.Key_Down)
+        split = self.item('accountSplitTunnelingButton')
+        self.assertTrue(split.hasActiveFocus())
+        self.assertInView(split)
+        QTest.keyClick(self.window, Qt.Key_Up)
+        self.assertTrue(connect.hasActiveFocus())
+        self.assertInView(connect)
+        from PySide6.QtTest import QSignalSpy
+        menu = QSignalSpy(self.page.remoteMenuRequested)
+        QTest.keyClick(self.window, Qt.Key_Up)
+        self.assertEqual(menu.count(), 1)
+        QTest.keyClick(self.window, Qt.Key_Down)
+        QTest.keyClick(self.window, Qt.Key_Down)
+        self.assertEqual(menu.count(), 2)
+
+    def test_country_list_includes_offscreen_rows_and_filters(self):
+        self.objects[0].setProperty('authenticated', True)
+        self.objects[0].setProperty('vpnCountries', [{'code': str(i), 'cities': []} for i in range(15)])
+        self.page.setProperty('viewMode', 'countries')
+        self.page.setHeight(300)
+        QTest.qWait(200)
+        self.evaluate('focusPageControl()')
+        # Search, Automatic, every country, Refresh: all reachable, even offscreen.
+        for _ in range(17):
+            QTest.keyClick(self.window, Qt.Key_Down)
+            self.assertInView(self.window.activeFocusItem())
+        self.assertEqual(self.window.activeFocusItem().property('text'), 'Refresh')
+        self.page.setProperty('countryFilter', '14')
+        QTest.qWait(100)
+        self.evaluate('focusPageControl()')
+        QTest.keyClick(self.window, Qt.Key_Down)
+        QTest.keyClick(self.window, Qt.Key_Down)
+        self.assertEqual(self.window.activeFocusItem().property('text'), '14')
+        self.assertInView(self.window.activeFocusItem())
+
+    def test_menu_vertical_key_enters_dashboard(self):
+        self.objects[0].setProperty('authenticated', True)
+        comp = QQmlComponent(self.engine)
+        comp.setData(b'import QtQuick; import "Controls2"; TabImageButtonType { verticalNavigationHandler: testedPage.focusPageControl }',
+                     QUrl.fromLocalFile(str(self.path / 'MenuTest.qml')))
+        tab = comp.create()
+        self.assertIsNotNone(tab, str(comp.errors()))
+        tab.setParentItem(self.window.contentItem())
+        tab.forceActiveFocus()
+        QTest.keyClick(self.window, Qt.Key_Up)
+        self.assertTrue(self.item('accountConnectButton').hasActiveFocus())
+        self.assertInView(self.item('accountConnectButton'))
+        tab.setParentItem(None)
+        tab.deleteLater()

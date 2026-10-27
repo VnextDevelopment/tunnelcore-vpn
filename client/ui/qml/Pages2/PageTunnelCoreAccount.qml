@@ -24,15 +24,112 @@ PageType {
     property bool pendingLogoutAll: false
     property string countryFilter: ""
 
+    readonly property bool remoteNavigationScope: TunnelCoreController.authenticated
+    readonly property bool compactDashboard: TunnelCoreController.authenticated && root.height < 600
+    signal remoteMenuRequested()
+
+    // Traverse visible controls in document order, independent of scroll position.
+    // Recompute for country filtering, dynamic subscriptions and busy states.
+    function pageControls() {
+        var result = []
+        function visit(item) {
+            if (!item.visible || !item.enabled)
+                return
+            if (item.isFocusable === true && item.focusPolicy !== Qt.NoFocus) {
+                result.push(item)
+                return
+            }
+            for (var i = 0; i < item.children.length; ++i)
+                visit(item.children[i])
+        }
+        visit(content)
+        return result
+    }
+
+    function revealControl(item) {
+        var top = item.mapToItem(content, 0, 0).y
+        var bottom = top + item.height
+        var y = scroll.contentY
+        if (bottom + 12 > y + scroll.height)
+            y = bottom + 12 - scroll.height
+        if (top - 12 < y)
+            y = top - 12
+        scroll.contentY = Math.max(0, Math.min(y, Math.max(0, scroll.contentHeight - scroll.height)))
+    }
+
+    function focusPageControl() {
+        var items = pageControls()
+        if (!items.length)
+            return
+        FocusController.setFocusItem(items[0])
+        revealControl(items[0])
+    }
+
+    function navigateRemote(forward) {
+        var items = pageControls()
+        var index = items.findIndex(function(item) { return item.activeFocus })
+        // Drawer controls have their own focus scope and scrolling.
+        if (index < 0)
+            return false
+        var next = index + (forward ? 1 : -1)
+        if (next < 0 || next >= items.length) {
+            root.remoteMenuRequested()
+        } else {
+            FocusController.setFocusItem(items[next])
+            revealControl(items[next])
+        }
+        return true
+    }
+
     // TV software keyboards may float over the page without reporting a
     // bottom window inset. Qt.inputMethod.visible also covers that case.
     readonly property bool keyboardVisible: Qt.inputMethod.visible || PageController.imeHeight > 0
     readonly property bool compactAuthLayout: !TunnelCoreController.authenticated
-                                               && !showWelcome && keyboardVisible
+                                               && !showWelcome && (keyboardVisible || root.height < 600)
+
+    // The global spatial focus controller excludes off-screen controls.
+    // Auth must navigate the whole form, then scroll the target into view.
+    function moveAuthFocus(forward) {
+        var items = root.showWelcome
+                ? [welcomeSignIn, welcomeRegister, welcomeCode]
+                : [botModeButton, emailModeButton, registrationButton,
+                   loginField.textField, passwordField.textField,
+                   confirmPasswordField.textField, authSubmitButton,
+                   authCancelButton, deletionInfoButton]
+        var available = items.filter(function(item) { return item.visible && item.enabled })
+        if (!available.length)
+            return
+        var current = available.findIndex(function(item) { return item.activeFocus })
+        var next = current < 0 ? (forward ? 0 : available.length - 1)
+                              : (current + (forward ? 1 : -1) + available.length) % available.length
+        available[next].forceActiveFocus(Qt.TabFocusReason)
+        root.scheduleInputVisibility()
+    }
+
+    component AuthButton: BasicButtonType {
+        borderFocusedColor: AmneziaStyle.color.tcBlue
+        borderFocusedWidth: 2
+        navigationHandler: root.moveAuthFocus
+        Keys.onSelectPressed: if (enabled && clickedFunc) clickedFunc()
+        onActiveFocusChanged: if (activeFocus) root.scheduleInputVisibility()
+    }
 
     onCompactAuthLayoutChanged: {
         if (!root.compactAuthLayout && !TunnelCoreController.authenticated)
             scroll.contentY = 0
+        root.scheduleInputVisibility()
+    }
+    Keys.onDownPressed: function(event) {
+        if (TunnelCoreController.authenticated) { event.accepted = false; return }
+        root.moveAuthFocus(true)
+    }
+    Keys.onUpPressed: function(event) {
+        if (TunnelCoreController.authenticated) { event.accepted = false; return }
+        root.moveAuthFocus(false)
+    }
+    onShowWelcomeChanged: {
+        if (!TunnelCoreController.authenticated)
+            root.forceActiveFocus()
         root.scheduleInputVisibility()
     }
     onEmailModeChanged: root.scheduleInputVisibility()
@@ -67,11 +164,18 @@ PageType {
         if (!root.visible || scroll.height <= 0)
             return
 
-        var focusedField = null
         if (TunnelCoreController.authenticated) {
-            if (vpnCountrySearch.visible && vpnCountrySearch.textField.activeFocus)
-                focusedField = vpnCountrySearch
-        } else if (loginField.textField.activeFocus) {
+            var controls = pageControls()
+            for (var c = 0; c < controls.length; ++c) {
+                if (controls[c].activeFocus) {
+                    revealControl(controls[c])
+                    return
+                }
+            }
+            return
+        }
+        var focusedField = null
+        if (loginField.textField.activeFocus) {
             focusedField = loginField
         } else if (passwordField.visible && passwordField.textField.activeFocus) {
             focusedField = passwordField
@@ -79,6 +183,22 @@ PageType {
             focusedField = confirmPasswordField
         }
 
+        if (!TunnelCoreController.authenticated && !focusedField) {
+            var buttons = root.showWelcome
+                    ? [welcomeSignIn, welcomeRegister, welcomeCode]
+                    : [botModeButton, emailModeButton, registrationButton,
+                       authSubmitButton, authCancelButton, deletionInfoButton]
+            for (var b = 0; b < buttons.length; ++b) {
+                if (buttons[b].visible && buttons[b].activeFocus) {
+                    focusedField = buttons[b]
+                    break
+                }
+            }
+            // Show the inputs immediately after entering/changing the form,
+            // without opening the keyboard before a user selects a field.
+            if (!focusedField && !root.showWelcome)
+                focusedField = loginField
+        }
         if (!focusedField)
             return
 
@@ -218,6 +338,7 @@ PageType {
         root.registrationMode = false
         root.emailMode = true
         root.showWelcome = true
+        Qt.callLater(function() { welcomeSignIn.forceActiveFocus(Qt.TabFocusReason) })
         loginField.textField.text = ""
         passwordField.textField.text = ""
         confirmPasswordField.textField.text = ""
@@ -320,7 +441,7 @@ PageType {
     Flickable {
         id: scroll
         anchors.fill: parent
-        anchors.topMargin: PageController.safeAreaTopMargin + (root.compactAuthLayout ? 4 : 24)
+        anchors.topMargin: PageController.safeAreaTopMargin + (root.compactAuthLayout || root.compactDashboard ? 4 : 24)
         // PageStart already reserves the IME inset in the StackView height.
         // Adding imeHeight again clips these fields behind the keyboard.
         anchors.bottomMargin: PageController.safeAreaBottomMargin + (root.compactAuthLayout ? 0 : 16)
@@ -347,7 +468,7 @@ PageType {
             Header2TextType {
                 Layout.fillWidth: true
                 text: "TunnelCore VPN"
-                visible: !root.compactAuthLayout
+                visible: !root.compactAuthLayout && !root.compactDashboard
                 color: AmneziaStyle.color.tcInk
                 font.pixelSize: 29
                 horizontalAlignment: Text.AlignHCenter
@@ -356,7 +477,7 @@ PageType {
                 Layout.fillWidth: true
                 textFormat: Text.PlainText
                 text: TunnelCoreController.authenticated ? TunnelCoreController.username : qsTr("Sign in to your account")
-                visible: !root.compactAuthLayout
+                visible: !root.compactAuthLayout && !root.compactDashboard
                 color: AmneziaStyle.color.tcMuted
                 horizontalAlignment: Text.AlignHCenter
             }
@@ -423,7 +544,8 @@ PageType {
                             }
                         }
                     }
-                    BasicButtonType {
+                    AuthButton {
+                        id: welcomeSignIn
                         Layout.fillWidth: true
                         text: qsTr("Sign in")
                         defaultColor: AmneziaStyle.color.tcBlue
@@ -435,7 +557,8 @@ PageType {
                             root.showWelcome = false
                         }
                     }
-                    BasicButtonType {
+                    AuthButton {
+                        id: welcomeRegister
                         Layout.fillWidth: true
                         text: qsTr("Create account")
                         defaultColor: AmneziaStyle.color.tcCard
@@ -449,7 +572,8 @@ PageType {
                             root.showWelcome = false
                         }
                     }
-                    BasicButtonType {
+                    AuthButton {
+                        id: welcomeCode
                         Layout.fillWidth: true
                         text: qsTr("Bot code")
                         defaultColor: AmneziaStyle.color.tcSurfaceBlue
@@ -493,7 +617,8 @@ PageType {
                 RowLayout {
                     Layout.fillWidth: true
                     visible: !root.compactAuthLayout
-                    BasicButtonType {
+                    AuthButton {
+                        id: botModeButton
                         Layout.fillWidth: true
                         text: qsTr("Bot code")
                         enabled: !TunnelCoreController.busy
@@ -504,7 +629,8 @@ PageType {
                         borderWidth: 1
                         clickedFunc: function() { root.selectMode(false) }
                     }
-                    BasicButtonType {
+                    AuthButton {
+                        id: emailModeButton
                         Layout.fillWidth: true
                         text: "Email"
                         enabled: !TunnelCoreController.busy
@@ -526,7 +652,8 @@ PageType {
                              : qsTr("Enter the email and password for your TunnelCore account."))
                           : qsTr("Enter the six-digit code from the TunnelCore bot.")
                 }
-                BasicButtonType {
+                AuthButton {
+                    id: registrationButton
                     Layout.fillWidth: true
                     visible: root.emailMode && !root.compactAuthLayout
                     text: root.registrationMode
@@ -545,6 +672,7 @@ PageType {
                 }
                 TextFieldWithHeaderType {
                     id: loginField
+                    navigationHandler: root.moveAuthFocus
                     // Digits-only input may receive a caret without opening
                     // Gboard. Request Android IME explicitly for bot/PIN code,
                     // including repeated taps on an already-focused field.
@@ -577,6 +705,7 @@ PageType {
                 }
                 TextFieldWithHeaderType {
                     id: passwordField
+                    navigationHandler: root.moveAuthFocus
                     property bool passwordVisible: false
                     backgroundColor: AmneziaStyle.color.tcCard
                     backgroundDisabledColor: AmneziaStyle.color.tcCard
@@ -609,6 +738,7 @@ PageType {
                 }
                 TextFieldWithHeaderType {
                     id: confirmPasswordField
+                    navigationHandler: root.moveAuthFocus
                     property bool passwordVisible: false
                     backgroundColor: AmneziaStyle.color.tcCard
                     backgroundDisabledColor: AmneziaStyle.color.tcCard
@@ -642,7 +772,7 @@ PageType {
                     text: qsTr("Passwords do not match.")
                     color: AmneziaStyle.color.vibrantRed
                 }
-                BasicButtonType {
+                AuthButton {
                     id: authSubmitButton
                     Layout.fillWidth: true
                     text: TunnelCoreController.busy
@@ -662,7 +792,8 @@ PageType {
                     textColor: "#FFFFFF"
                     clickedFunc: root.submit
                 }
-                BasicButtonType {
+                AuthButton {
+                    id: authCancelButton
                     objectName: "authCancelButton"
                     Layout.fillWidth: true
                     text: qsTr("Cancel")
@@ -675,7 +806,8 @@ PageType {
                     borderWidth: 1
                     clickedFunc: root.cancelAuthentication
                 }
-                BasicButtonType {
+                AuthButton {
+                    id: deletionInfoButton
                     objectName: "accountDeletionWebsiteGuest"
                     Layout.fillWidth: true
                     text: qsTr("Account deletion information")
@@ -720,6 +852,9 @@ PageType {
                         }
                         ConnectButton {
                             objectName: "accountConnectButton"
+                            Layout.preferredWidth: root.compactDashboard ? 128 : 190
+                            Layout.preferredHeight: root.compactDashboard ? 128 : 190
+                            Keys.onSelectPressed: if (enabled) clickedFunc()
                             tunnelCoreMode: true
                             Layout.alignment: Qt.AlignHCenter
                             Layout.topMargin: 8

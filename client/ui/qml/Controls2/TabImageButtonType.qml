@@ -14,6 +14,8 @@ TabButton {
     property string image
     property string caption: ""
 
+    property var horizontalNavigationHandler: null
+    property var verticalNavigationHandler: null
     property bool isSelected: false
 
 	property bool isFocusable: true
@@ -27,19 +29,23 @@ TabButton {
     }
 
     Keys.onUpPressed: {
-        FocusController.nextKeyUpItem()
+        if (root.verticalNavigationHandler) root.verticalNavigationHandler()
+        else FocusController.nextKeyUpItem()
     }
     
     Keys.onDownPressed: {
-        FocusController.nextKeyDownItem()
+        if (root.verticalNavigationHandler) root.verticalNavigationHandler()
+        else FocusController.nextKeyDownItem()
     }
     
     Keys.onLeftPressed: {
-        FocusController.nextKeyLeftItem()
+        if (root.horizontalNavigationHandler) root.horizontalNavigationHandler(false)
+        else FocusController.nextKeyLeftItem()
     }
 
     Keys.onRightPressed: {
-        FocusController.nextKeyRightItem()
+        if (root.horizontalNavigationHandler) root.horizontalNavigationHandler(true)
+        else FocusController.nextKeyRightItem()
     }
     
     property string borderFocusedColor: AmneziaStyle.color.paleGray

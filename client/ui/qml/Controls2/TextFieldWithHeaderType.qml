@@ -17,6 +17,7 @@ Item {
 
     property alias errorText: errorField.text
     property bool checkEmptyText: false
+    property var navigationHandler: null
     property bool rightButtonClickedOnEnter: false
     // For Android text inputs inside draggable drawers that do not reliably
     // summon the keyboard using Qt focus alone.
@@ -66,19 +67,23 @@ Item {
     implicitHeight: content.implicitHeight
 
     Keys.onTabPressed: {
-        FocusController.nextKeyTabItem()
+        if (root.navigationHandler) root.navigationHandler(true)
+        else FocusController.nextKeyTabItem()
     }
 
     Keys.onBacktabPressed: {
-        FocusController.previousKeyTabItem()
+        if (root.navigationHandler) root.navigationHandler(false)
+        else FocusController.previousKeyTabItem()
     }
 
     Keys.onUpPressed: {
-        FocusController.nextKeyUpItem()
+        if (root.navigationHandler) root.navigationHandler(false)
+        else FocusController.nextKeyUpItem()
     }
 
     Keys.onDownPressed: {
-        FocusController.nextKeyDownItem()
+        if (root.navigationHandler) root.navigationHandler(true)
+        else FocusController.nextKeyDownItem()
     }
 
     ColumnLayout {
@@ -127,11 +132,13 @@ Item {
                         property bool isFocusable: true
 
                         Keys.onTabPressed: {
-                            FocusController.nextKeyTabItem()
+                            if (root.navigationHandler) root.navigationHandler(true)
+                            else FocusController.nextKeyTabItem()
                         }
 
                         Keys.onBacktabPressed: {
-                            FocusController.previousKeyTabItem()
+                            if (root.navigationHandler) root.navigationHandler(false)
+                            else FocusController.previousKeyTabItem()
                         }
 
                         enabled: root.textFieldEditable

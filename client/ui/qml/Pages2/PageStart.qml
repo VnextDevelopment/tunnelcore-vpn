@@ -302,8 +302,36 @@ PageType {
         }
     }
 
+    Connections {
+        target: tabBarStackView.currentItem
+        ignoreUnknownSignals: true
+        function onRemoteMenuRequested() {
+            FocusController.setFocusItem(tabBar.itemAt(tabBar.currentIndex))
+        }
+    }
+
     TabBar {
         id: tabBar
+
+        function moveMenuFocus(forward) {
+            var index = tabBar.currentIndex
+            for (var i = 0; i < tabBar.count; ++i) {
+                if (tabBar.itemAt(i).activeFocus) {
+                    index = i
+                    break
+                }
+            }
+            FocusController.setFocusItem(tabBar.itemAt(
+                (index + (forward ? 1 : -1) + tabBar.count) % tabBar.count))
+        }
+
+        function enterPage() {
+            var page = tabBarStackView.currentItem
+            if (page && typeof page.focusPageControl === "function")
+                page.focusPageControl()
+            else
+                FocusController.previousKeyTabItem()
+        }
         objectName: "tabBar"
 
         anchors.right: parent.right
@@ -351,6 +379,9 @@ PageType {
             isSelected: tabBar.currentIndex === 0
             image: "qrc:/images/controls/home.svg"
             caption: "VPN"
+            horizontalNavigationHandler: tabBar.moveMenuFocus
+            verticalNavigationHandler: tabBar.enterPage
+            borderFocusedColor: AmneziaStyle.color.tcBlue
             selectedColor: AmneziaStyle.color.tcBlue
             defaultColor: AmneziaStyle.color.tcMuted
             clickedFunc: function () {
@@ -367,6 +398,9 @@ PageType {
             isSelected: tabBar.currentIndex === 1
             image: "qrc:/images/controls/globe-2.svg"
             caption: qsTranslate("PageTunnelCoreAccount", "VPN location")
+            horizontalNavigationHandler: tabBar.moveMenuFocus
+            verticalNavigationHandler: tabBar.enterPage
+            borderFocusedColor: AmneziaStyle.color.tcBlue
             selectedColor: AmneziaStyle.color.tcBlue
             defaultColor: AmneziaStyle.color.tcMuted
             clickedFunc: function () {
@@ -381,6 +415,9 @@ PageType {
             isSelected: tabBar.currentIndex === 2
             image: "qrc:/images/controls/server.svg"
             caption: qsTranslate("PageTunnelCoreAccount", "Subscriptions")
+            horizontalNavigationHandler: tabBar.moveMenuFocus
+            verticalNavigationHandler: tabBar.enterPage
+            borderFocusedColor: AmneziaStyle.color.tcBlue
             selectedColor: AmneziaStyle.color.tcBlue
             defaultColor: AmneziaStyle.color.tcMuted
             clickedFunc: function () {
@@ -395,6 +432,9 @@ PageType {
             isSelected: tabBar.currentIndex === 3
             image: "qrc:/images/controls/app.svg"
             caption: qsTranslate("PageTunnelCoreAccount", "Account")
+            horizontalNavigationHandler: tabBar.moveMenuFocus
+            verticalNavigationHandler: tabBar.enterPage
+            borderFocusedColor: AmneziaStyle.color.tcBlue
             selectedColor: AmneziaStyle.color.tcBlue
             defaultColor: AmneziaStyle.color.tcMuted
             clickedFunc: function () {
@@ -410,6 +450,9 @@ PageType {
             isSelected: tabBar.currentIndex === 4
             image: (ServersUiController.hasServersFromGatewayApi && NewsModel.hasUnread && SettingsController.isNewsNotificationsEnabled()) ? "qrc:/images/controls/settings-news.svg" : "qrc:/images/controls/settings.svg"
             caption: qsTranslate("PageSettings", "Settings")
+            horizontalNavigationHandler: tabBar.moveMenuFocus
+            verticalNavigationHandler: tabBar.enterPage
+            borderFocusedColor: AmneziaStyle.color.tcBlue
             selectedColor: AmneziaStyle.color.tcBlue
             defaultColor: AmneziaStyle.color.tcMuted
             Binding {
