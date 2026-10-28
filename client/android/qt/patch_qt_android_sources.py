@@ -9,7 +9,6 @@ SPDX-License-Identifier: LGPL-3.0-only
 """
 from pathlib import Path
 import os
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -98,31 +97,38 @@ def patch_jar(qt_jar: Path, android_jar: Path, source_file: Path, output: Path) 
              "-d", str(classes), str(java_file)],
             check=True,
         )
-        patched_class = (classes / QT_CLASS).read_bytes()
+        # The compiler emits QtDisplayManager$1.class for the display
+        # listener as well. Replace the whole class family atomically to keep
+        # synthetic accessors and nest/inner-class metadata ABI-compatible.
+        patched_classes = {
+            file.relative_to(classes).as_posix(): file.read_bytes()
+            for file in (classes / QT_CLASS).parent.glob("QtDisplayManager*.class")
+        }
+        if QT_CLASS not in patched_classes:
+            raise RuntimeError(f"javac did not produce {QT_CLASS}")
         # DEX verification: the patched class must not reference the removed
         # android.view.Window methods even via a constant-pool methodref.
-        for forbidden in (b"setStatusBarColor", b"setNavigationBarColor"):
-            # Qt's named helper methods retain these names, but Android's
-            # deprecated Window methodrefs must be absent in javap output.
-            result = subprocess.run(
-                ["javap", "-verbose", "-classpath", str(classes),
-                 "org.qtproject.qt.android.QtDisplayManager"],
-                text=True, capture_output=True, check=True,
-            )
-            if any("android/view/Window." + forbidden.decode() in line
-                   for line in result.stdout.splitlines()):
-                raise RuntimeError(f"Deprecated Window call in generated Java class: {forbidden!r}")
-        seen = 0
+        result = subprocess.run(
+            ["javap", "-verbose", "-classpath", str(classes),
+             "org.qtproject.qt.android.QtDisplayManager"],
+            text=True, capture_output=True, check=True,
+        )
+        for forbidden in ("setStatusBarColor", "setNavigationBarColor"):
+            if "android/view/Window." + forbidden in result.stdout:
+                raise RuntimeError(f"Deprecated Window call in generated Java class: {forbidden}")
+        seen = set()
         with zipfile.ZipFile(qt_jar, "r") as original, zipfile.ZipFile(output, "w") as patched_jar:
             for info in original.infolist():
-                if info.filename == QT_CLASS:
-                    seen += 1
-                    patched_jar.writestr(info, patched_class)
+                if info.filename in patched_classes:
+                    if info.filename in seen:
+                        raise RuntimeError(f"Duplicate Qt class in jar: {info.filename}")
+                    seen.add(info.filename)
+                    patched_jar.writestr(info, patched_classes[info.filename])
                 else:
                     patched_jar.writestr(info, original.read(info.filename))
-        if seen != 1:
+        if seen != set(patched_classes):
             output.unlink(missing_ok=True)
-            raise RuntimeError(f"Qt6Android.jar must contain exactly one {QT_CLASS}, found {seen}")
+            raise RuntimeError(f"Qt class family mismatch: input {seen}, compiler {set(patched_classes)}")
     print(f"Built patched Qt Android jar at {output} (other Qt classes untouched)")
 
 
