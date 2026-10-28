@@ -61,7 +61,7 @@ class AndroidTvFocusTest(unittest.TestCase):
         self.assertIn('objectName: "homeSplitServerRow"', HOME_SPLIT)
         self.assertIn('Keys.onBackPressed:', HOME_SPLIT)
         self.assertIn('FocusController.setFocusItem(previous)', HOME_SPLIT)
-        self.assertIn('root.goToSplitSettings()', HOME_SPLIT)
+        self.assertIn('clickedFunction: root.goToSplitSettings', HOME_SPLIT)
 
     def test_tv_split_tunneling_has_scrollable_header_and_focus_order(self):
         self.assertIn('objectName: "splitTunnelingHeaderViewport"', SPLIT)
