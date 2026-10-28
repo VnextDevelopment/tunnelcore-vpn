@@ -16,7 +16,7 @@ DrawerType2 {
     defaultColor: AmneziaStyle.color.tcBackground
     borderColor: AmneziaStyle.color.tcStroke
     anchors.fill: parent
-    expandedHeight: parent.height * 0.9
+    expandedHeight: parent ? parent.height * 0.9 : 0
 
     // This is the HOME screen's split-tunneling sheet, not the separate
     // PageSettingsSplitTunneling page. Its controls must receive remote focus
@@ -121,6 +121,7 @@ DrawerType2 {
         LabelWithButtonType {
             id: splitTunnelingSwitch
             objectName: "homeSplitServerRow"
+            rightButton.objectName: "homeSplitServerChevron"
             Component.onCompleted: root.splitServerItem = splitTunnelingSwitch
             Component.onDestruction: {
                 if (root.splitServerItem === splitTunnelingSwitch) root.splitServerItem = null
@@ -154,6 +155,7 @@ DrawerType2 {
         LabelWithButtonType {
             id: siteBasedSplitTunnelingSwitch
             objectName: "homeSplitSitesRow"
+            rightButton.objectName: "homeSplitSitesChevron"
             Component.onCompleted: root.splitSitesItem = siteBasedSplitTunnelingSwitch
             Component.onDestruction: {
                 if (root.splitSitesItem === siteBasedSplitTunnelingSwitch) root.splitSitesItem = null
