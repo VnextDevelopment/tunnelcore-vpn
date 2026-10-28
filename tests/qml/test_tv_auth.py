@@ -276,7 +276,10 @@ Item {
         self.assertTrue(dropdown.property('popupIsOpen'))
         loaded = host.findChild(QQuickItem, 'tvDropdownLoadedList')
         self.assertIsNotNone(loaded)
-        self.assertTrue(loaded.hasActiveFocus())
+        self.assertTrue(loaded.hasActiveFocus(),
+                        f"popup_ready={dropdown.property('popupReadyNotified')}, "
+                        f"content_ready={dropdown.property('popupContentReady')}, "
+                        f"active_item={self.window.activeFocusItem()}")
         dropdown.closeTriggered.emit()
         QTest.qWait(75)
         self.assertFalse(dropdown.property('popupIsOpen'))
