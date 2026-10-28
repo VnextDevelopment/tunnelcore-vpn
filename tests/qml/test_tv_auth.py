@@ -186,11 +186,15 @@ function dropRootObject(item) {}''',
         ring = connect.findChild(type(connect), 'tvConnectFocusRing')
         self.assertIsNotNone(ring)
         self.assertTrue(ring.isVisible())
+        # TV intentionally has no split-tunneling action: leaving the only
+        # dashboard control requests focus in the bottom navigation.
+        self.assertFalse(self.item('accountSplitTunnelingButton').isVisible())
+        from PySide6.QtTest import QSignalSpy
+        menu = QSignalSpy(self.page.remoteMenuRequested)
         QTest.keyClick(self.window, Qt.Key_Down)
-        self.assertFalse(ring.isVisible())
-        button = self.item('accountSplitTunnelingButton')
-        self.assertTrue(button.hasActiveFocus())
-        self.assertEqual(button.property('borderFocusedWidth'), 3)
+        self.assertEqual(menu.count(), 1)
+        self.assertTrue(connect.hasActiveFocus())
+        self.assertTrue(ring.isVisible())
 
     def test_tv_confirmation_keeps_dpad_on_modal_and_cancel_restores_focus(self):
         self.objects[0].setProperty('authenticated', True)
@@ -454,20 +458,16 @@ Item {
         self.assertInView(connect)
         QTest.keyClick(self.window, Qt.Key_Select)
         self.assertEqual(self.objects[2].property('clicks'), 1)
-        QTest.keyClick(self.window, Qt.Key_Down)
-        split = self.item('accountSplitTunnelingButton')
-        self.assertTrue(split.hasActiveFocus())
-        self.assertInView(split)
-        QTest.keyClick(self.window, Qt.Key_Up)
-        self.assertTrue(connect.hasActiveFocus())
-        self.assertInView(connect)
+        self.assertFalse(self.item('accountSplitTunnelingButton').isVisible())
         from PySide6.QtTest import QSignalSpy
         menu = QSignalSpy(self.page.remoteMenuRequested)
-        QTest.keyClick(self.window, Qt.Key_Up)
+        QTest.keyClick(self.window, Qt.Key_Down)
         self.assertEqual(menu.count(), 1)
-        QTest.keyClick(self.window, Qt.Key_Down)
-        QTest.keyClick(self.window, Qt.Key_Down)
+        self.assertTrue(connect.hasActiveFocus())
+        self.assertInView(connect)
+        QTest.keyClick(self.window, Qt.Key_Up)
         self.assertEqual(menu.count(), 2)
+        self.assertTrue(connect.hasActiveFocus())
 
     def test_country_list_includes_offscreen_rows_and_filters(self):
         self.objects[0].setProperty('authenticated', True)
