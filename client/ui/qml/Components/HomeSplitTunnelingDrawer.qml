@@ -31,7 +31,10 @@ DrawerType2 {
 
     function focusableRows() {
         var rows = [root.splitServerItem, root.splitSitesItem]
-        return rows.filter(function(item) { return item && item.visible && item.enabled })
+        return rows.filter(function(item) {
+            return item && item.visible && item.enabled && item.rightButton
+                   && item.rightButton.visible && item.rightButton.enabled
+        })
     }
 
     function navigateRemote(forward) {
@@ -40,13 +43,14 @@ DrawerType2 {
         var rows = focusableRows()
         if (!rows.length)
             return true
-        var current = rows.findIndex(function(item) { return item.activeFocus })
+        var current = rows.findIndex(function(item) { return item.rightButton.activeFocus })
         var next = current < 0 ? 0 : (current + (forward ? 1 : rows.length - 1)) % rows.length
-        rows[next].forceActiveFocus(Qt.TabFocusReason)
+        rows[next].rightButton.forceActiveFocus(Qt.TabFocusReason)
         return true // never navigate underlying tab/page while sheet is open
     }
 
     function goToSplitSettings() {
+        if (root.navigatingToSettings) return
         root.navigatingToSettings = true
         root.closeTriggered()
         PageController.goToPage(PageEnum.PageSettingsSplitTunneling)
@@ -65,7 +69,7 @@ DrawerType2 {
                     return
                 var rows = focusableRows()
                 if (rows.length)
-                    rows[0].forceActiveFocus(Qt.TabFocusReason)
+                    rows[0].rightButton.forceActiveFocus(Qt.TabFocusReason)
             })
     }
 
@@ -121,19 +125,13 @@ DrawerType2 {
             Component.onDestruction: {
                 if (root.splitServerItem === splitTunnelingSwitch) root.splitServerItem = null
             }
-            isFocusable: SettingsController.isOnTv()
-            rightButton.isFocusable: !SettingsController.isOnTv()
-            rightButton.focusPolicy: SettingsController.isOnTv() ? Qt.NoFocus : Qt.StrongFocus
+            // Keep actual focus on the native Qt Button (chevron), which
+            // processes Android DPAD_CENTER/OK reliably. The parent row draws
+            // a full-width outline while its button has active focus.
+            rightButton.isFocusable: true
+            rightButton.focusPolicy: Qt.StrongFocus
             borderFocusedColor: AmneziaStyle.color.tcBlue
             borderFocusedWidth: SettingsController.isOnTv() ? 3 : 1
-            Keys.onPressed: function(event) {
-                if (SettingsController.isOnTv() && root.isOpened
-                        && (event.key === Qt.Key_Select || event.key === Qt.Key_Enter
-                            || event.key === Qt.Key_Return)) {
-                    root.goToSplitSettings()
-                    event.accepted = true
-                }
-            }
             textColor: AmneziaStyle.color.tcInk
             descriptionColor: AmneziaStyle.color.tcMuted
             rightImageColor: AmneziaStyle.color.tcBlue
@@ -160,19 +158,13 @@ DrawerType2 {
             Component.onDestruction: {
                 if (root.splitSitesItem === siteBasedSplitTunnelingSwitch) root.splitSitesItem = null
             }
-            isFocusable: SettingsController.isOnTv()
-            rightButton.isFocusable: !SettingsController.isOnTv()
-            rightButton.focusPolicy: SettingsController.isOnTv() ? Qt.NoFocus : Qt.StrongFocus
+            // Keep actual focus on the native Qt Button (chevron), which
+            // processes Android DPAD_CENTER/OK reliably. The parent row draws
+            // a full-width outline while its button has active focus.
+            rightButton.isFocusable: true
+            rightButton.focusPolicy: Qt.StrongFocus
             borderFocusedColor: AmneziaStyle.color.tcBlue
             borderFocusedWidth: SettingsController.isOnTv() ? 3 : 1
-            Keys.onPressed: function(event) {
-                if (SettingsController.isOnTv() && root.isOpened
-                        && (event.key === Qt.Key_Select || event.key === Qt.Key_Enter
-                            || event.key === Qt.Key_Return)) {
-                    root.goToSplitSettings()
-                    event.accepted = true
-                }
-            }
             textColor: AmneziaStyle.color.tcInk
             descriptionColor: AmneziaStyle.color.tcMuted
             rightImageColor: AmneziaStyle.color.tcBlue
