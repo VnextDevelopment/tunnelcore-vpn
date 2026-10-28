@@ -80,8 +80,11 @@ class AndroidEdgeToEdgeTest(unittest.TestCase):
         self.assertNotIn("window.navigationBarColor =", activity)
         self.assertNotIn("statusBarColor =", activity)
         self.assertIn('androidx-core = "1.17.0"', versions)
-        self.assertIn("prepareQtAndroidSources", qt_gradle)
-        self.assertIn("dependsOn(prepareQtAndroidSources)", qt_gradle)
+        self.assertIn("qt-6.10.1/QtDisplayManager.java", qt_gradle)
+        self.assertIn('"exclude" to listOf("Qt6Android.jar")', qt_gradle)
+        self.assertIn('java.setSrcDirs(listOf("$qtAndroidDir/src"))', qt_gradle)
+        self.assertIn("patchQtAndroidJar", qt_gradle)
+        self.assertIn("api(files(patchedQtJar).builtBy(patchQtAndroidJar))", qt_gradle)
 
     def test_legacy_theme_colors_are_defined(self):
         for path in (
