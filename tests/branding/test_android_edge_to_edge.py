@@ -86,6 +86,16 @@ class AndroidEdgeToEdgeTest(unittest.TestCase):
         self.assertIn("patchQtAndroidJar", qt_gradle)
         self.assertIn("api(files(patchedQtJar).builtBy(patchQtAndroidJar))", qt_gradle)
 
+    def test_androidx_edge_to_edge_build_toolchain_is_compatible(self):
+        """Core 1.17 requires AGP 8.9.1+, and AGP 8.10 needs Gradle 8.11.1."""
+        versions = (ROOT / "client/android/gradle/libs.versions.toml").read_text()
+        settings = (ROOT / "client/android/settings.gradle.kts").read_text()
+        wrapper = (ROOT / "client/android/gradle/wrapper/gradle-wrapper.properties").read_text()
+        self.assertIn('androidx-core = "1.17.0"', versions)
+        self.assertIn('agp = "8.10.1"', versions)
+        self.assertIn('id("com.android.settings") version "8.10.1"', settings)
+        self.assertIn('gradle-8.11.1-bin.zip', wrapper)
+
     def test_legacy_theme_colors_are_defined(self):
         for path in (
             "client/android/res/values/styles.xml",
