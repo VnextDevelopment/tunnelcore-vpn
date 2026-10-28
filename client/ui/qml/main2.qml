@@ -168,6 +168,9 @@ Window  {
         objectName: "pageStart"
         width: root.width
         height: root.height
+        // TV confirmations must be modal: the D-pad cannot activate or
+        // navigate the page underneath while a question is visible.
+        enabled: !(SettingsController.isOnTv() && questionDrawer.isOpened)
     }
 
     Item {

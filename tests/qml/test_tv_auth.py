@@ -32,6 +32,11 @@ class TvAuthTest(unittest.TestCase):
         field = cls.path / 'Controls2/TextFieldWithHeaderType.qml'
         field.write_text(field.read_text().replace('id: textField', 'id: textField\nobjectName: "editor"'))
         (cls.path / 'Components').mkdir()
+        shutil.copy(QML / 'Components/QuestionDrawer.qml', cls.path / 'Components/QuestionDrawer.qml')
+        home_split = (QML / 'Components/HomeSplitTunnelingDrawer.qml').read_text()
+        home_split = home_split.replace('import PageEnum 1.0', '')
+        home_split = home_split.replace('PageEnum.PageSettingsSplitTunneling', '42')
+        (cls.path / 'Components/HomeSplitTunnelingDrawer.qml').write_text(home_split)
         connect = (QML / 'Components/ConnectButton.qml').read_text()
         for module in ['ConnectionState', 'AppIcons', 'PageEnum']:
             connect = connect.replace('import ' + module + ' 1.0', '')
@@ -48,13 +53,14 @@ property bool opened: false
 function requestNative(position) {} }
 ''')
         (cls.path / 'Controls2/ImageButtonType.qml').write_text('''import QtQuick.Controls
-Button { property string image; property string imageColor }
+Button { property string image; property string imageColor; property bool isFocusable: true }
 ''')
         colors = set()
         for file in (cls.path / 'Controls2').rglob('*.qml'):
             colors.update(re.findall(r'AmneziaStyle.color.(\w+)', file.read_text()))
         source = (QML / 'Pages2/PageTunnelCoreAccount.qml').read_text()
         colors.update(re.findall(r'AmneziaStyle.color.(\w+)', source))
+        colors.update(re.findall(r'AmneziaStyle.color.(\w+)', home_split))
         style = cls.path / 'Style'
         style.mkdir()
         (style / 'qmldir').write_text('module Style\nsingleton AmneziaStyle 1.0 AmneziaStyle.qml\n')
@@ -89,14 +95,29 @@ signal changed()
 function clearError() {} function loginCode(code) { submits++ }
 function loginEmail(email, password) { submits++ }
 function registerEmail(email, password) { submits++ }''',
-            'PageController': 'property int imeHeight: 0; property int safeAreaTopMargin: 0; property int safeAreaBottomMargin: 0',
+            'PageController': 'property int imeHeight: 0; property int safeAreaTopMargin: 0; property int safeAreaBottomMargin: 0; property int drawerDepth: 0; property int navigations: 0; function goToPage(page) { navigations++ } signal closeTopDrawer(); function incrementDrawerDepth() { return ++drawerDepth } function decrementDrawerDepth() { drawerDepth-- } function getDrawerDepth() { return drawerDepth } function getInitialPageNavigationBarColor() { return 0xff1c1d21 } function updateNavigationBarColor(color) {}',
             'ConnectionController': 'property bool isConnected: false; property bool isConnectionInProgress: false; signal connectionStateChanged(); signal preparingConfig(); property string connectionStateText: "Disconnected"; property int clicks: 0; function connectButtonClicked() { clicks++ }',
             'ImportController': 'function activateTunnelCoreProfile(key) { return true } signal importFinished(); signal importErrorOccurred(string error, bool goToPageHome)',
             'LanguageUiController': 'function getLineHeightAppend() { return 0 }',
-            'FocusController': 'function resetRootObject() {} function setFocusOnDefaultItem() {} function setFocusItem(item) { item.forceActiveFocus() } function nextKeyDownItem() { testedPage.navigateRemote(true) } function nextKeyUpItem() { testedPage.navigateRemote(false) }',
+            'FocusController': '''function resetRootObject() {}
+function setFocusOnDefaultItem() {}
+function setFocusItem(item) { item.forceActiveFocus() }
+function nextKeyDownItem() {
+    if (typeof testedDrawer !== "undefined" && testedDrawer && testedDrawer.isOpened)
+        testedDrawer.navigateRemote(true)
+    else testedPage.navigateRemote(true)
+}
+function nextKeyUpItem() {
+    if (typeof testedDrawer !== "undefined" && testedDrawer && testedDrawer.isOpened)
+        testedDrawer.navigateRemote(false)
+    else testedPage.navigateRemote(false)
+}
+function pushRootObject(item) {}
+function dropRootObject(item) {}''',
             'IpSplitTunnelingController': 'property bool isSplitTunnelingEnabled: false',
             'AppSplitTunnelingController': 'property bool isSplitTunnelingEnabled: false',
             'ServersUiController': 'property bool isDefaultServerDefaultContainerHasSplitTunneling: false',
+            'SettingsController': 'function isOnTv() { return true }',
         }
         for name, body in mocks.items():
             comp = QQmlComponent(self.engine)
@@ -139,6 +160,221 @@ function registerEmail(email, password) { submits++ }''',
         top = item.mapToItem(scroll, 0, 0).y()
         self.assertGreaterEqual(top, -1)
         self.assertLessEqual(top + item.height(), scroll.height() + 1)
+
+    def test_tv_focus_is_visible_on_welcome_and_auth_inputs(self):
+        welcome = self.item('welcomeSignIn')
+        welcome.forceActiveFocus()
+        QTest.qWait(30)
+        self.assertTrue(welcome.hasActiveFocus())
+        self.assertEqual(welcome.property('borderFocusedWidth'), 3)
+        QTest.keyClick(self.window, Qt.Key_Down)
+        register = self.item('welcomeRegister')
+        self.assertTrue(register.hasActiveFocus())
+        self.assertFalse(welcome.hasActiveFocus())
+        self.assertEqual(register.property('borderFocusedWidth'), 3)
+        QTest.keyClick(self.window, Qt.Key_Select)
+        QTest.qWait(50)
+        self.assertFalse(self.page.property('showWelcome'))
+        self.assertTrue(self.editor('loginField').hasActiveFocus())
+        self.assertEqual(self.item('loginField').property('borderFocusedColor'), '#336699')
+
+    def test_tv_connect_focus_ring_tracks_dpad_navigation(self):
+        self.objects[0].setProperty('authenticated', True)
+        QTest.qWait(50)
+        self.evaluate('focusPageControl()')
+        connect = self.item('accountConnectButton')
+        ring = connect.findChild(type(connect), 'tvConnectFocusRing')
+        self.assertIsNotNone(ring)
+        self.assertTrue(ring.isVisible())
+        # TV intentionally has no split-tunneling action: leaving the only
+        # dashboard control requests focus in the bottom navigation.
+        self.assertFalse(self.item('accountSplitTunnelingButton').isVisible())
+        from PySide6.QtTest import QSignalSpy
+        menu = QSignalSpy(self.page.remoteMenuRequested)
+        QTest.keyClick(self.window, Qt.Key_Down)
+        self.assertEqual(menu.count(), 1)
+        self.assertTrue(connect.hasActiveFocus())
+        self.assertTrue(ring.isVisible())
+
+    def test_tv_confirmation_keeps_dpad_on_modal_and_cancel_restores_focus(self):
+        self.objects[0].setProperty('authenticated', True)
+        QTest.qWait(60)
+        self.evaluate('focusPageControl()')
+        previous = self.item('accountConnectButton')
+        self.assertTrue(previous.hasActiveFocus())
+
+        comp = QQmlComponent(self.engine, QUrl.fromLocalFile(str(
+            self.path / 'Components/QuestionDrawer.qml')))
+        drawer = comp.create()
+        self.assertIsNotNone(drawer, str(comp.errors()))
+        drawer.setParentItem(self.window.contentItem())
+        drawer.setWidth(960)
+        drawer.setHeight(540)
+        drawer.setProperty('headerText', 'Sign out?')
+        drawer.setProperty('yesButtonText', 'Sign out')
+        drawer.setProperty('noButtonText', 'Cancel')
+        # Production main2 closes first, then runs the selected callback.
+        self.engine.rootContext().setContextProperty('testQuestionDrawer', drawer)
+        self.evaluate('true')  # Keep the same live QML engine for navigation.
+        def selected(name):
+            obj = drawer.property(name)
+            self.assertIsNotNone(obj)
+            return obj
+        drawer.openTriggered.emit()
+        QTest.qWait(100)
+        cancel = selected('noButtonItem')
+        confirm = selected('yesButtonItem')
+        self.assertTrue(cancel.hasActiveFocus())
+        QTest.keyClick(self.window, Qt.Key_Down)
+        self.assertTrue(confirm.hasActiveFocus())
+        QTest.keyClick(self.window, Qt.Key_Up)
+        self.assertTrue(cancel.hasActiveFocus())
+        QTest.keyClick(self.window, Qt.Key_Back)
+        QTest.qWait(100)
+        self.assertTrue(drawer.property('isClosed'))
+        self.assertTrue(previous.hasActiveFocus())
+        drawer.setParentItem(None)
+        drawer.deleteLater()
+
+    def test_tv_dropdown_initial_focus_and_center_key(self):
+        from PySide6.QtQuick import QQuickItem
+        # Let the PageType initial-focus timer finish before opening a modal.
+        QTest.qWait(290)
+        # Exercise the real DropDownType + DrawerType2 lifecycle, including
+        # the delayed creation of a listView Component and remote Key_Select.
+        comp = QQmlComponent(self.engine)
+        source = """import QtQuick
+import QtQuick.Controls
+import "Controls2"
+Item {
+    id: host
+    width: 960; height: 540
+    DropDownType {
+        id: picker
+        objectName: "tvDropdownTest"
+        width: 320; height: 56
+        drawerParent: host
+        drawerHeight: 0.8
+        text: "Country traffic directly"
+        headerText: "Country traffic directly"
+        property var testList: null
+        onPopupOpened: if (testList) testList.forceActiveFocus(Qt.TabFocusReason)
+        listView: Item {
+            id: loadedList
+            objectName: "tvDropdownLoadedList"
+            Component.onCompleted: picker.testList = loadedList
+            Component.onDestruction: {
+                if (picker.testList === loadedList) picker.testList = null
+            }
+        }
+    }
+}
+"""
+        comp.setData(source.encode(), QUrl.fromLocalFile(str(self.path / 'TvDropdownTest.qml')))
+        host = comp.create()
+        self.assertIsNotNone(host, str(comp.errors()))
+        host.setParentItem(self.window.contentItem())
+        dropdown = host.findChild(QQuickItem, 'tvDropdownTest')
+        self.assertIsNotNone(dropdown)
+        dropdown.forceActiveFocus()
+        QTest.keyClick(self.window, Qt.Key_Select)
+        QTest.qWait(90)
+        self.assertTrue(dropdown.property('popupIsOpen'))
+        loaded = host.findChild(QQuickItem, 'tvDropdownLoadedList')
+        self.assertIsNotNone(loaded)
+        self.assertTrue(loaded.hasActiveFocus(),
+                        f"popup_ready={dropdown.property('popupReadyNotified')}, "
+                        f"content_ready={dropdown.property('popupContentReady')}, "
+                        f"active_item={self.window.activeFocusItem()}")
+        dropdown.closeTriggered.emit()
+        QTest.qWait(75)
+        self.assertFalse(dropdown.property('popupIsOpen'))
+        host.setParentItem(None)
+        host.deleteLater()
+
+    def test_tv_home_split_sheet_keeps_focus_and_opens_settings(self):
+        # Real dashboard overlay: its focus must land on an actual Qt Button,
+        # not the surrounding Item (which does not activate on remote OK).
+        from PySide6.QtQuick import QQuickItem
+        self.objects[0].setProperty('authenticated', True)
+        QTest.qWait(60)
+        self.evaluate('focusPageControl()')
+        previous = self.item('accountConnectButton')
+        self.assertTrue(previous.hasActiveFocus())
+
+        comp = QQmlComponent(self.engine, QUrl.fromLocalFile(
+            str(self.path / 'Components/HomeSplitTunnelingDrawer.qml')))
+        drawer = comp.create()
+        self.assertIsNotNone(drawer, str(comp.errors()))
+        drawer.setParentItem(self.page)
+        drawer.setWidth(960)
+        drawer.setHeight(540)
+        self.engine.rootContext().setContextProperty('testedDrawer', drawer)
+        drawer.openTriggered.emit()
+        QTest.qWait(100)
+        site = drawer.findChild(QQuickItem, 'homeSplitSitesRow')
+        server = drawer.findChild(QQuickItem, 'homeSplitServerRow')
+        self.assertIsNotNone(site)
+        self.assertIsNotNone(server)
+        site_button = drawer.findChild(QQuickItem, 'homeSplitSitesChevron')
+        server_button = drawer.findChild(QQuickItem, 'homeSplitServerChevron')
+        self.assertIsNotNone(site_button)
+        self.assertIsNotNone(server_button)
+        self.assertTrue(drawer.property('isOpened'))
+        self.assertTrue(site_button.hasActiveFocus())  # only visible row
+        self.assertFalse(site.hasActiveFocus())  # native button owns OK
+        QTest.keyClick(self.window, Qt.Key_Down)
+        self.assertTrue(site_button.hasActiveFocus())  # no movement to tabs behind
+        self.assertFalse(previous.hasActiveFocus())
+        QTest.keyClick(self.window, Qt.Key_Back)
+        QTest.qWait(70)
+        self.assertTrue(drawer.property('isClosed'))
+        self.assertTrue(previous.hasActiveFocus())
+
+        # Two-row case: navigation stays within the overlay.
+        self.objects[8].setProperty('isDefaultServerDefaultContainerHasSplitTunneling', True)
+        drawer.openTriggered.emit()
+        QTest.qWait(80)
+        self.assertTrue(server_button.hasActiveFocus())
+        QTest.keyClick(self.window, Qt.Key_Down)
+        self.assertTrue(site_button.hasActiveFocus())
+        QTest.keyClick(self.window, Qt.Key_Up)
+        self.assertTrue(server_button.hasActiveFocus())
+        QTest.keyClick(self.window, Qt.Key_Down)
+        self.assertTrue(site_button.hasActiveFocus())
+        before = self.objects[1].property('navigations')
+        QTest.keyClick(self.window, Qt.Key_Select)
+        QTest.qWait(70)
+        self.assertEqual(self.objects[1].property('navigations'), before + 1)
+        self.assertTrue(drawer.property('isClosed'))
+        drawer.setParentItem(None)
+        drawer.deleteLater()
+
+    def test_tv_home_split_sheet_single_item_ok_enters_settings(self):
+        from PySide6.QtQuick import QQuickItem
+        self.objects[0].setProperty('authenticated', True)
+        comp = QQmlComponent(self.engine, QUrl.fromLocalFile(
+            str(self.path / 'Components/HomeSplitTunnelingDrawer.qml')))
+        drawer = comp.create()
+        self.assertIsNotNone(drawer, str(comp.errors()))
+        drawer.setParentItem(self.page)
+        drawer.setWidth(960)
+        drawer.setHeight(540)
+        self.engine.rootContext().setContextProperty('testedDrawer', drawer)
+        drawer.openTriggered.emit()
+        QTest.qWait(100)
+        site = drawer.findChild(QQuickItem, 'homeSplitSitesRow')
+        self.assertIsNotNone(site)
+        site_button = drawer.findChild(QQuickItem, 'homeSplitSitesChevron')
+        self.assertIsNotNone(site_button)
+        self.assertTrue(site_button.hasActiveFocus())
+        before = self.objects[1].property('navigations')
+        QTest.keyClick(self.window, Qt.Key_Select)
+        QTest.qWait(70)
+        self.assertEqual(self.objects[1].property('navigations'), before + 1)
+        self.assertTrue(drawer.property('isClosed'))
+        drawer.setParentItem(None)
+        drawer.deleteLater()
 
     def test_remote_reaches_inputs_submit_and_cancel(self):
         for email, register in [(False, False), (True, False), (True, True)]:
@@ -222,20 +458,16 @@ function registerEmail(email, password) { submits++ }''',
         self.assertInView(connect)
         QTest.keyClick(self.window, Qt.Key_Select)
         self.assertEqual(self.objects[2].property('clicks'), 1)
-        QTest.keyClick(self.window, Qt.Key_Down)
-        split = self.item('accountSplitTunnelingButton')
-        self.assertTrue(split.hasActiveFocus())
-        self.assertInView(split)
-        QTest.keyClick(self.window, Qt.Key_Up)
-        self.assertTrue(connect.hasActiveFocus())
-        self.assertInView(connect)
+        self.assertFalse(self.item('accountSplitTunnelingButton').isVisible())
         from PySide6.QtTest import QSignalSpy
         menu = QSignalSpy(self.page.remoteMenuRequested)
-        QTest.keyClick(self.window, Qt.Key_Up)
+        QTest.keyClick(self.window, Qt.Key_Down)
         self.assertEqual(menu.count(), 1)
-        QTest.keyClick(self.window, Qt.Key_Down)
-        QTest.keyClick(self.window, Qt.Key_Down)
+        self.assertTrue(connect.hasActiveFocus())
+        self.assertInView(connect)
+        QTest.keyClick(self.window, Qt.Key_Up)
         self.assertEqual(menu.count(), 2)
+        self.assertTrue(connect.hasActiveFocus())
 
     def test_country_list_includes_offscreen_rows_and_filters(self):
         self.objects[0].setProperty('authenticated', True)

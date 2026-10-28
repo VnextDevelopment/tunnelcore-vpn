@@ -61,6 +61,12 @@ android {
 
     buildTypes {
         release {
+            // R8 is required for Google Play DEX optimization. Preserve the
+            // Qt/JNI entry points with targeted rules instead of disabling shrinking.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+
             // exclude coroutine debug resource from release build
             packaging {
                 resources.excludes += "DebugProbesKt.bin"

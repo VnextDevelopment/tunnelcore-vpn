@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Window
 import QtQuick.Controls
 import QtQuick.Layouts
 
@@ -21,6 +22,82 @@ DrawerType2 {
 
     property var yesButtonFunction
     property var noButtonFunction
+
+    // Confirmation sheets are modal for the TV remote. The global focus
+    // controller otherwise keeps moving across the page behind the sheet.
+    property var focusBeforeOpen: null
+    property var yesButtonItem: null
+    property var noButtonItem: null
+
+    function moveConfirmationFocus(forward) {
+        if (!SettingsController.isOnTv() || !root.isExpandedStateActive())
+            return
+        var buttons = root.noButtonItem && root.noButtonItem.visible && root.noButtonItem.enabled
+                ? [root.noButtonItem, root.yesButtonItem] : [root.yesButtonItem]
+        buttons = buttons.filter(function(button) { return button && button.visible && button.enabled })
+        if (!buttons.length)
+            return
+        var index = buttons.findIndex(function(button) { return button.activeFocus })
+        var next = index < 0 ? 0
+                : (index + (forward ? 1 : buttons.length - 1)) % buttons.length
+        buttons[next].forceActiveFocus(Qt.TabFocusReason)
+    }
+
+    function cancelConfirmation() {
+        if (!root.isExpandedStateActive())
+            return
+        if (root.noButtonFunction && typeof root.noButtonFunction === "function")
+            root.noButtonFunction()
+        else
+            root.closeTriggered()
+    }
+
+    onAboutToShow: {
+        if (SettingsController.isOnTv() && root.Window.window)
+            focusBeforeOpen = root.Window.window.activeFocusItem
+    }
+
+    onOpened: {
+        if (SettingsController.isOnTv()) {
+            Qt.callLater(function() {
+                if (!root.isExpandedStateActive())
+                    return
+                // Start on Cancel: signing out/deleting an account must not be
+                // accidentally confirmed by pressing OK a second time.
+                var initial = root.noButtonItem && root.noButtonItem.visible && root.noButtonItem.enabled
+                        ? root.noButtonItem : root.yesButtonItem
+                if (initial && initial.visible && initial.enabled)
+                    initial.forceActiveFocus(Qt.TabFocusReason)
+            })
+        }
+    }
+
+    onClosed: {
+        if (SettingsController.isOnTv()) {
+            Qt.callLater(function() {
+                var previous = root.focusBeforeOpen
+                root.focusBeforeOpen = null
+                if (root.isCollapsedStateActive() && previous
+                        && previous.visible && previous.enabled)
+                    FocusController.setFocusItem(previous)
+            })
+        } else {
+            focusBeforeOpen = null
+        }
+    }
+
+    // Consume Back/Escape inside the modal instead of forwarding it to the
+    // page underneath (where it can close a screen instead of the dialog).
+    Keys.onBackPressed: function(event) {
+        if (!root.isExpandedStateActive()) return
+        root.cancelConfirmation()
+        event.accepted = true
+    }
+    Keys.onEscapePressed: function(event) {
+        if (!root.isExpandedStateActive()) return
+        root.cancelConfirmation()
+        event.accepted = true
+    }
 
     expandedStateContent: ColumnLayout {
         id: content
@@ -55,12 +132,19 @@ DrawerType2 {
 
         BasicButtonType {
             id: yesButton
+            Component.onCompleted: root.yesButtonItem = yesButton
+            Component.onDestruction: { if (root.yesButtonItem === yesButton) root.yesButtonItem = null }
             Layout.fillWidth: true
             Layout.topMargin: 16
             Layout.rightMargin: 16
             Layout.leftMargin: 16
 
             text: root.yesButtonText
+            navigationHandler: SettingsController.isOnTv() ? root.moveConfirmationFocus : null
+            borderFocusedColor: SettingsController.isOnTv() ? AmneziaStyle.color.tcBlue : AmneziaStyle.color.paleGray
+            borderFocusedWidth: SettingsController.isOnTv() ? 3 : 1
+            // On TV make the affirmative text readable against the light button.
+            textColor: SettingsController.isOnTv() ? AmneziaStyle.color.tcInk : AmneziaStyle.color.midnightBlack
 
             clickedFunc: function() {
                 if (root.yesButtonFunction && typeof root.yesButtonFunction === "function") {
@@ -71,6 +155,8 @@ DrawerType2 {
 
         BasicButtonType {
             id: noButton
+            Component.onCompleted: root.noButtonItem = noButton
+            Component.onDestruction: { if (root.noButtonItem === noButton) root.noButtonItem = null }
             Layout.fillWidth: true
             Layout.rightMargin: 16
             Layout.leftMargin: 16
@@ -85,6 +171,9 @@ DrawerType2 {
             visible: root.noButtonText !== ""
 
             text: root.noButtonText
+            navigationHandler: SettingsController.isOnTv() ? root.moveConfirmationFocus : null
+            borderFocusedColor: SettingsController.isOnTv() ? AmneziaStyle.color.tcBlue : AmneziaStyle.color.paleGray
+            borderFocusedWidth: SettingsController.isOnTv() ? 3 : 1
 
             clickedFunc: function() {
                 if (root.noButtonFunction && typeof root.noButtonFunction === "function") {

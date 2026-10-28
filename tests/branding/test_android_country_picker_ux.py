@@ -60,9 +60,12 @@ class CountryPickerUxTest(unittest.TestCase):
         picker = source.split("id: countryBypassSelector", 1)[1].split(
             "id: selector", 1
         )[0]
-        self.assertIn("onOpenTriggered: {", picker)
-        self.assertIn("countrySearchInput.clear()", picker)
-        self.assertIn("onTextChanged: geoCountriesList.positionViewAtBeginning()", picker)
+        # The picker now focuses its loaded content on the modal's
+        # popupOpened signal; onOpenTriggered fires before Loader is ready.
+        self.assertIn("onPopupOpened: {", picker)
+        self.assertIn("root.tvCountrySearch.clear()", picker)
+        self.assertIn("onTextChanged: {", picker)
+        self.assertIn("geoCountriesList.positionViewAtBeginning()", picker)
 
         results = picker.split("id: countryResultsViewport", 1)[1].split(
             "LabelTextType {", 1

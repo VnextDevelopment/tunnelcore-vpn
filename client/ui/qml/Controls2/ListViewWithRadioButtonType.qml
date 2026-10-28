@@ -23,6 +23,9 @@ ListViewType {
     property string imageSource: "qrc:/images/controls/check.svg"
 
     property var clickedFunction
+    // Optional D-pad focus trap for modal TV pickers; desktop keeps the
+    // existing global focus chain.
+    property var tvNavigationHandler: null
 
     property int selectedIndex: 0
 
@@ -69,11 +72,17 @@ ListViewType {
             }
 
             Keys.onUpPressed: {
-                FocusController.nextKeyUpItem()
+                if (root.tvNavigationHandler)
+                    root.tvNavigationHandler(false)
+                else
+                    FocusController.nextKeyUpItem()
             }
 
             Keys.onDownPressed: {
-                FocusController.nextKeyDownItem()
+                if (root.tvNavigationHandler)
+                    root.tvNavigationHandler(true)
+                else
+                    FocusController.nextKeyDownItem()
             }
 
             Keys.onLeftPressed: {
@@ -90,8 +99,11 @@ ListViewType {
                 color: radioButton.checked
                        ? root.itemSelectedColor
                        : (radioButton.hovered ? root.itemHoveredColor : root.itemColor)
-                border.color: radioButton.focus ? AmneziaStyle.color.paleGray : AmneziaStyle.color.transparent
-                border.width: radioButton.focus ? 1 : 0
+                border.color: radioButton.activeFocus ?
+                        (SettingsController.isOnTv() ? AmneziaStyle.color.tcBlue
+                                                   : AmneziaStyle.color.paleGray)
+                        : AmneziaStyle.color.transparent
+                border.width: radioButton.activeFocus ? (SettingsController.isOnTv() ? 3 : 1) : 0
 
                 Behavior on color {
                     PropertyAnimation { duration: 200 }

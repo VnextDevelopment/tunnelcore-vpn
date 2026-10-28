@@ -18,9 +18,9 @@ Button {
     property string textColor: AmneziaStyle.color.midnightBlack
 
     property string borderColor: AmneziaStyle.color.paleGray
-    property string borderFocusedColor: AmneziaStyle.color.paleGray
+    property string borderFocusedColor: SettingsController.isOnTv() ? AmneziaStyle.color.tcBlue : AmneziaStyle.color.paleGray
     property int borderWidth: 0
-    property int borderFocusedWidth: 1
+    property int borderFocusedWidth: SettingsController.isOnTv() ? 3 : 1
 
     property string leftImageSource
     property string rightImageSource
@@ -98,9 +98,9 @@ Button {
             id: background
 
             anchors.fill: focusBorder
-            anchors.margins: root.activeFocus ? 2 : 0
+            anchors.margins: root.activeFocus ? (SettingsController.isOnTv() ? 5 : 2) : 0
 
-            radius: root.activeFocus ? 14 : 16
+            radius: root.activeFocus ? (SettingsController.isOnTv() ? 11 : 14) : 16
             color: {
                 if (root.enabled) {
                     if (root.pressed) {

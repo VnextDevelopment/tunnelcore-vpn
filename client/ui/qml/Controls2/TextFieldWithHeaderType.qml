@@ -57,7 +57,7 @@ Item {
     property bool textFieldEditable: true
 
     property string borderColor: AmneziaStyle.color.slateGray
-    property string borderFocusedColor: AmneziaStyle.color.paleGray
+    property string borderFocusedColor: SettingsController.isOnTv() ? AmneziaStyle.color.tcBlue : AmneziaStyle.color.paleGray
 
     property string backgroundColor: AmneziaStyle.color.onyxBlack
     property string backgroundDisabledColor: AmneziaStyle.color.transparent
@@ -97,7 +97,7 @@ Item {
             color: root.enabled ? root.backgroundColor : root.backgroundDisabledColor
             radius: 16
             border.color: getBackgroundBorderColor(root.borderColor)
-            border.width: 1
+            border.width: textField.activeFocus && SettingsController.isOnTv() ? 3 : 1
 
             Behavior on border.color {
                 PropertyAnimation { duration: 200 }
@@ -323,7 +323,7 @@ Item {
     }
 
     function getBackgroundBorderColor(noneFocusedColor) {
-        return textField.focus ? root.borderFocusedColor : noneFocusedColor
+        return textField.activeFocus ? root.borderFocusedColor : noneFocusedColor
     }
 
     Keys.onEnterPressed: {

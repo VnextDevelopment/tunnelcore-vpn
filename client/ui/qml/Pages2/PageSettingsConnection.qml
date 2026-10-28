@@ -104,11 +104,15 @@ PageType {
                 }
             }
 
-            DividerType { color: AmneziaStyle.color.tcStroke }
+            DividerType {
+                visible: !SettingsController.isOnTv()
+                color: AmneziaStyle.color.tcStroke
+            }
 
             LabelWithButtonType {
                 id: splitTunnelingButton
-
+                // Android TV: split tunneling is intentionally absent from the UI.
+                visible: !SettingsController.isOnTv()
                 Layout.fillWidth: true
 
                 text: qsTr("Site-based split tunneling")
@@ -119,11 +123,15 @@ PageType {
                 rightImageColor: AmneziaStyle.color.tcBlue
 
                 clickedFunction: function() {
-                    PageController.goToPage(PageEnum.PageSettingsSplitTunneling)
+                    if (!SettingsController.isOnTv())
+                        PageController.goToPage(PageEnum.PageSettingsSplitTunneling)
                 }
             }
 
-            DividerType { color: AmneziaStyle.color.tcStroke }
+            DividerType {
+                visible: !SettingsController.isOnTv()
+                color: AmneziaStyle.color.tcStroke
+            }
 
         }
 

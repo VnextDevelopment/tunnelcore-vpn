@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Window
 import QtQuick.Controls
 import QtQuick.Layouts
 
@@ -15,7 +16,86 @@ DrawerType2 {
     defaultColor: AmneziaStyle.color.tcBackground
     borderColor: AmneziaStyle.color.tcStroke
     anchors.fill: parent
-    expandedHeight: parent.height * 0.9
+    expandedHeight: parent ? parent.height * 0.9 : 0
+
+    // This is the HOME screen's split-tunneling sheet, not the separate
+    // PageSettingsSplitTunneling page. Its controls must receive remote focus
+    // when the sheet opens; otherwise D-pad events navigate the tabs behind it.
+    readonly property bool remoteNavigationScope: SettingsController.isOnTv() && root.isOpened
+    property var focusBeforeOpen: null
+    property bool navigatingToSettings: false
+    // expandedStateContent is a separate QML Component scope; register its
+    // instantiated controls instead of referring to private component ids.
+    property var splitServerItem: null
+    property var splitSitesItem: null
+
+    function focusableRows() {
+        var rows = [root.splitServerItem, root.splitSitesItem]
+        return rows.filter(function(item) {
+            return item && item.visible && item.enabled && item.rightButton
+                   && item.rightButton.visible && item.rightButton.enabled
+        })
+    }
+
+    function navigateRemote(forward) {
+        if (!root.remoteNavigationScope)
+            return false
+        var rows = focusableRows()
+        if (!rows.length)
+            return true
+        var current = rows.findIndex(function(item) { return item.rightButton.activeFocus })
+        var next = current < 0 ? 0 : (current + (forward ? 1 : rows.length - 1)) % rows.length
+        rows[next].rightButton.forceActiveFocus(Qt.TabFocusReason)
+        return true // never navigate underlying tab/page while sheet is open
+    }
+
+    function goToSplitSettings() {
+        if (root.navigatingToSettings) return
+        root.navigatingToSettings = true
+        root.closeTriggered()
+        PageController.goToPage(PageEnum.PageSettingsSplitTunneling)
+    }
+
+    onAboutToShow: {
+        navigatingToSettings = false
+        if (SettingsController.isOnTv() && root.Window.window)
+            focusBeforeOpen = root.Window.window.activeFocusItem
+    }
+
+    onOpened: {
+        if (SettingsController.isOnTv())
+            Qt.callLater(function() {
+                if (!root.isOpened)
+                    return
+                var rows = focusableRows()
+                if (rows.length)
+                    rows[0].rightButton.forceActiveFocus(Qt.TabFocusReason)
+            })
+    }
+
+    onClosed: {
+        if (SettingsController.isOnTv() && !root.navigatingToSettings) {
+            Qt.callLater(function() {
+                var previous = root.focusBeforeOpen
+                root.focusBeforeOpen = null
+                if (root.isClosed && previous && previous.visible && previous.enabled)
+                    FocusController.setFocusItem(previous)
+            })
+        } else {
+            focusBeforeOpen = null
+        }
+    }
+
+    Keys.onBackPressed: function(event) {
+        if (!root.isOpened) return
+        root.closeTriggered()
+        event.accepted = true
+    }
+    Keys.onEscapePressed: function(event) {
+        if (!root.isOpened) return
+        root.closeTriggered()
+        event.accepted = true
+    }
 
     expandedStateContent: ColumnLayout {
         id: content
@@ -40,6 +120,19 @@ DrawerType2 {
 
         LabelWithButtonType {
             id: splitTunnelingSwitch
+            objectName: "homeSplitServerRow"
+            rightButton.objectName: "homeSplitServerChevron"
+            Component.onCompleted: root.splitServerItem = splitTunnelingSwitch
+            Component.onDestruction: {
+                if (root.splitServerItem === splitTunnelingSwitch) root.splitServerItem = null
+            }
+            // Keep actual focus on the native Qt Button (chevron), which
+            // processes Android DPAD_CENTER/OK reliably. The parent row draws
+            // a full-width outline while its button has active focus.
+            rightButton.isFocusable: true
+            rightButton.focusPolicy: Qt.StrongFocus
+            borderFocusedColor: AmneziaStyle.color.tcBlue
+            borderFocusedWidth: SettingsController.isOnTv() ? 3 : 1
             textColor: AmneziaStyle.color.tcInk
             descriptionColor: AmneziaStyle.color.tcMuted
             rightImageColor: AmneziaStyle.color.tcBlue
@@ -52,10 +145,7 @@ DrawerType2 {
             descriptionText: qsTr("Enabled \nCan't be disabled for current server")
             rightImageSource: "qrc:/images/controls/chevron-right.svg"
 
-            clickedFunction: function() {
-                PageController.goToPage(PageEnum.PageSettingsSplitTunneling)
-                root.closeTriggered()
-            }
+            clickedFunction: root.goToSplitSettings
         }
 
         DividerType {
@@ -64,6 +154,19 @@ DrawerType2 {
 
         LabelWithButtonType {
             id: siteBasedSplitTunnelingSwitch
+            objectName: "homeSplitSitesRow"
+            rightButton.objectName: "homeSplitSitesChevron"
+            Component.onCompleted: root.splitSitesItem = siteBasedSplitTunnelingSwitch
+            Component.onDestruction: {
+                if (root.splitSitesItem === siteBasedSplitTunnelingSwitch) root.splitSitesItem = null
+            }
+            // Keep actual focus on the native Qt Button (chevron), which
+            // processes Android DPAD_CENTER/OK reliably. The parent row draws
+            // a full-width outline while its button has active focus.
+            rightButton.isFocusable: true
+            rightButton.focusPolicy: Qt.StrongFocus
+            borderFocusedColor: AmneziaStyle.color.tcBlue
+            borderFocusedWidth: SettingsController.isOnTv() ? 3 : 1
             textColor: AmneziaStyle.color.tcInk
             descriptionColor: AmneziaStyle.color.tcMuted
             rightImageColor: AmneziaStyle.color.tcBlue
@@ -74,10 +177,7 @@ DrawerType2 {
             descriptionText: enabled && IpSplitTunnelingController.isSplitTunnelingEnabled ? qsTr("Enabled") : qsTr("Disabled")
             rightImageSource: "qrc:/images/controls/chevron-right.svg"
 
-            clickedFunction: function() {
-                PageController.goToPage(PageEnum.PageSettingsSplitTunneling)
-                root.closeTriggered()
-            }
+            clickedFunction: root.goToSplitSettings
         }
 
     }

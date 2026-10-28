@@ -30,8 +30,8 @@ Item {
     property string rootButtonBackgroundHoveredColor: AmneziaStyle.color.onyxBlack
     property string rootButtonBackgroundPressedColor: AmneziaStyle.color.onyxBlack
 
-    property string borderFocusedColor: AmneziaStyle.color.paleGray
-    property int borderFocusedWidth: 1
+    property string borderFocusedColor: SettingsController.isOnTv() ? AmneziaStyle.color.tcBlue : AmneziaStyle.color.paleGray
+    property int borderFocusedWidth: SettingsController.isOnTv() ? 3 : 1
 
     property string rootButtonHoveredBorderColor: AmneziaStyle.color.charcoalGray
     property string rootButtonDefaultBorderColor: AmneziaStyle.color.slateGray
@@ -54,6 +54,25 @@ Item {
 
     signal openTriggered
     signal closeTriggered
+    // Fired after the drawer content Loader has had a chance to instantiate.
+    // Consumers must not reach into listView's separate Component scope by id.
+    signal popupOpened
+    signal popupClosed
+
+    readonly property bool popupIsOpen: menu.isOpened
+    property var popupBackItem: null
+    property bool popupContentReady: false
+    property bool popupReadyNotified: false
+
+    function notifyPopupReady() {
+        // listView is a Component: its ids do not exist until Loader is ready.
+        // Never transfer remote focus to an uninstantiated search/list item.
+        if (!menu.isOpened || popupReadyNotified ||
+                (!popupContentReady && root.listView))
+            return
+        popupReadyNotified = true
+        root.popupOpened()
+    }
 
     readonly property bool isFocusable: true
 
@@ -114,6 +133,13 @@ Item {
         if (menu.isClosed) {
             menu.openTriggered()
         }
+    }
+
+    // Some Android TV remotes report DPAD_CENTER as Key_Select rather than
+    // Return. The picker is an Item, so it has no native Button click handler.
+    Keys.onSelectPressed: {
+        if (menu.isClosed && root.enabled)
+            menu.openTriggered()
     }
 
     Rectangle {
@@ -222,6 +248,17 @@ Item {
 
     DrawerType2 {
         id: menu
+
+        onOpened: {
+            root.popupReadyNotified = false
+            Qt.callLater(root.notifyPopupReady)
+        }
+        onClosed: {
+            root.popupReadyNotified = false
+            Qt.callLater(function() {
+                if (menu.isClosed) root.popupClosed()
+            })
+        }
         defaultColor: root.drawerBackgroundColor
         borderColor: root.drawerBorderColor
 
@@ -253,6 +290,11 @@ Item {
 
                 BackButtonType {
                     id: backButton
+                    Component.onCompleted: root.popupBackItem = backButton.focusButton
+                    Component.onDestruction: {
+                        if (root.popupBackItem === backButton.focusButton)
+                            root.popupBackItem = null
+                    }
                     backButtonImage: root.headerBackButtonImage
                     imageColor: root.drawerBackButtonColor
                     backButtonFunction: function() { menu.closeTriggered() }
@@ -272,6 +314,14 @@ Item {
                 Loader {
                     id: listViewLoader
                     sourceComponent: root.listView
+                    onLoaded: {
+                        root.popupContentReady = true
+                        Qt.callLater(root.notifyPopupReady)
+                    }
+                    onStatusChanged: {
+                        if (status !== Loader.Ready)
+                            root.popupContentReady = false
+                    }
 
                     Layout.fillHeight: true
                     Layout.fillWidth: true

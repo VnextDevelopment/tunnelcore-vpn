@@ -36,8 +36,8 @@ Item {
     property string descriptionDisabledColor: AmneziaStyle.color.charcoalGray
     property real textOpacity: 1.0
 
-    property string borderFocusedColor: AmneziaStyle.color.paleGray
-    property int borderFocusedWidth: 1
+    property string borderFocusedColor: SettingsController.isOnTv() ? AmneziaStyle.color.tcBlue : AmneziaStyle.color.paleGray
+    property int borderFocusedWidth: SettingsController.isOnTv() ? 3 : 1
 
     property string rightImageColor: AmneziaStyle.color.paleGray
     property string leftImageColor: ""
@@ -314,15 +314,26 @@ Item {
     Rectangle {
         id: background
         anchors.fill: root
+        radius: SettingsController.isOnTv() ? 16 : 0
         color: AmneziaStyle.color.transparent
 
-        border.color: root.activeFocus ? root.borderFocusedColor : AmneziaStyle.color.transparent
-        border.width: root.activeFocus ? root.borderFocusedWidth : 0
+        border.color: root.activeFocus || (SettingsController.isOnTv() && root.rightButton.activeFocus)
+                      ? root.borderFocusedColor : AmneziaStyle.color.transparent
+        border.width: root.activeFocus || (SettingsController.isOnTv() && root.rightButton.activeFocus)
+                      ? root.borderFocusedWidth : 0
 
 
         Behavior on color {
             PropertyAnimation { duration: 200 }
         }
+    }
+
+    // Item has no native DPAD_CENTER click handling. Process Select only
+    // when no right-side Qt Button owns the action, preventing duplicates.
+    Keys.onSelectPressed: {
+        if (root.activeFocus && root.enabled && !rightImageSource &&
+                clickedFunction && typeof clickedFunction === "function")
+            clickedFunction()
     }
 
     Keys.onEnterPressed: {
