@@ -66,7 +66,7 @@ class AndroidTvFocusTest(unittest.TestCase):
     def test_tv_split_tunneling_has_scrollable_header_and_focus_order(self):
         self.assertIn('objectName: "splitTunnelingHeaderViewport"', SPLIT)
         self.assertIn('contentHeight: header.y + header.implicitHeight', SPLIT)
-        self.assertIn('interactive: root.tvMode', SPLIT)
+        self.assertIn('interactive: root.tvMode && !root.tvModalOpen', SPLIT)
         self.assertIn('anchors.top: tvHeaderViewport.bottom', SPLIT)
         self.assertIn('readonly property bool remoteNavigationScope: tvMode', SPLIT)
         self.assertIn('function navigateRemote(forward)', SPLIT)
@@ -80,6 +80,35 @@ class AndroidTvFocusTest(unittest.TestCase):
         self.assertIn('Keys.onSelectPressed: if (currentItem) currentItem.clicked()', SPLIT)
         self.assertIn('countryRow.ListView.isCurrentItem', SPLIT)
         self.assertIn('modeOptionsList.itemAtIndex(modeOptionsList.selectedIndex)', SPLIT)
+
+    def test_tv_split_picker_is_real_modal_with_no_background_scrolling(self):
+        PAGE_START = (ROOT / "client/ui/qml/Pages2/PageStart.qml").read_text()
+        DROP = (CONTROLS / "DropDownType.qml").read_text()
+        RADIO = (CONTROLS / "ListViewWithRadioButtonType.qml").read_text()
+        self.assertIn('readonly property bool tvModalOpen:', SPLIT)
+        self.assertIn('function handleTvModalKey(key)', SPLIT)
+        self.assertIn('enabled: !root.tvModalOpen', SPLIT)
+        self.assertIn('enabled: root.pageEnabled && !root.tvModalOpen', SPLIT)
+        self.assertIn('readonly property bool tvChildModalOpen:', PAGE_START)
+        self.assertIn('if (root.tvChildModalOpen)', PAGE_START)
+        self.assertIn('visible: TunnelCoreController.authenticated && !root.tvChildModalOpen', PAGE_START)
+        self.assertIn('signal popupOpened', DROP)
+        self.assertIn('signal popupClosed', DROP)
+        self.assertIn('Keys.onSelectPressed:', DROP)
+        self.assertIn('onPopupOpened:', SPLIT)
+        self.assertIn('onPopupClosed:', SPLIT)
+        self.assertIn('Component.onCompleted: root.tvCountryList = geoCountriesList', SPLIT)
+        self.assertIn('Component.onCompleted: root.tvCountrySearch = countrySearchInput', SPLIT)
+        self.assertIn('Component.onCompleted: root.tvModeList = modeOptionsList', SPLIT)
+        self.assertIn('tvNavigationHandler: root.tvMode ? root.tvMoveMode : null', SPLIT)
+        self.assertIn('property var tvNavigationHandler:', RADIO)
+
+    def test_tv_split_layout_collapses_empty_sites_list_and_footer(self):
+        self.assertIn('visible: !root.tvMode || count > 0', SPLIT)
+        self.assertIn('id: footerBar', SPLIT)
+        self.assertIn('anchors.top: root.tvMode ? (listView.count > 0', SPLIT)
+        self.assertIn('height: root.tvMode', SPLIT)
+        self.assertIn('drawerHeight: root.tvMode ? 0.98', SPLIT)
 
     def test_basic_button_does_not_dispatch_center_twice(self):
         # The Qt Button already handles DPAD_CENTER. A second attached
