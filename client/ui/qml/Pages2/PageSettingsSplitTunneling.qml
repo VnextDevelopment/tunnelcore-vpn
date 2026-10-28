@@ -25,6 +25,9 @@ PageType {
     
     property bool pageEnabled
     readonly property bool tvMode: SettingsController.isOnTv()
+    // PageType's global 200 ms reset can steal focus from a TV modal.
+    // Use this page's TV-specific entry timer, which respects tvModalOpen.
+    enableTimer: !tvMode
     // Give the TV remote a logical focus order independent of what is
     // currently visible inside the vertically scrollable header.
     readonly property bool remoteNavigationScope: tvMode
