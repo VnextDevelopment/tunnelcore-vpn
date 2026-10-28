@@ -18,6 +18,12 @@ PageType {
     property bool isControlsDisabled: false
     property bool isTabBarDisabled: false
 
+    // A TV picker belongs to the currently pushed page, not to the bottom
+    // navigation. While it is open the bottom menu must not steal D-pad focus.
+    readonly property bool tvChildModalOpen: SettingsController.isOnTv()
+            && tabBarStackView.currentItem
+            && tabBarStackView.currentItem.tvModalOpen === true
+
     Connections {
         objectName: "pageControllerConnection"
 
@@ -284,6 +290,13 @@ PageType {
         }
 
         Keys.onPressed: function(event) {
+            if (root.tvChildModalOpen) {
+                var page = tabBarStackView.currentItem
+                if (page && typeof page.handleTvModalKey === "function")
+                    page.handleTvModalKey(event.key)
+                event.accepted = true
+                return
+            }
             switch (event.key) {
             case Qt.Key_Tab:
             case Qt.Key_Down:
@@ -306,7 +319,8 @@ PageType {
         target: tabBarStackView.currentItem
         ignoreUnknownSignals: true
         function onRemoteMenuRequested() {
-            FocusController.setFocusItem(tabBar.itemAt(tabBar.currentIndex))
+            if (!root.tvChildModalOpen)
+                FocusController.setFocusItem(tabBar.itemAt(tabBar.currentIndex))
         }
     }
 
@@ -348,8 +362,9 @@ PageType {
 
         height: visible ? homeTabButton.implicitHeight + tabBar.topPadding + tabBar.bottomPadding : 0
 
-        visible: TunnelCoreController.authenticated
-        enabled: !root.isControlsDisabled && !root.isTabBarDisabled && !TunnelCoreController.busy
+        visible: TunnelCoreController.authenticated && !root.tvChildModalOpen
+        enabled: !root.isControlsDisabled && !root.isTabBarDisabled &&
+                 !TunnelCoreController.busy && !root.tvChildModalOpen
 
         background: Shape {
             objectName: "backgroundShape"
