@@ -1,0 +1,3 @@
+Android 15 ve 16'da sistem çubukları ve ekran çentikleri çevresindeki arayüz görünümü iyileştirildi.
+Android TV'de kumandayla gezinme ve seçili öğelerin vurgulanması iyileştirildi.
+Arayüz hataları giderildi ve uygulamanın kararlılığı artırıldı.

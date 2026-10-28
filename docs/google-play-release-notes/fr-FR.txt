@@ -1,0 +1,3 @@
+Amélioration de l’affichage de l’interface sur Android 15 et 16, notamment autour des barres système et des découpes de l’écran.
+Navigation à la télécommande et mise en évidence des éléments sélectionnés améliorées sur Android TV.
+Correction de problèmes d’interface et amélioration de la stabilité.

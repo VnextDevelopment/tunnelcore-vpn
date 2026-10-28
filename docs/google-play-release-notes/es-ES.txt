@@ -1,0 +1,3 @@
+Se ha mejorado la visualización de la interfaz en Android 15 y 16, incluidas las barras del sistema y los recortes de pantalla.
+Se ha mejorado la navegación con el mando y el resaltado de los elementos seleccionados en Android TV.
+Se han corregido errores de la interfaz y mejorado la estabilidad.

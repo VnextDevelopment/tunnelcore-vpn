@@ -1,0 +1,3 @@
+Improved interface layout on Android 15 and 16, including system bars and display cutouts.
+Improved remote navigation and focus highlighting on Android TV.
+Fixed interface issues and improved stability.
