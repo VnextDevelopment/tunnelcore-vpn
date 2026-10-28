@@ -75,11 +75,13 @@ class AndroidTvFocusTest(unittest.TestCase):
         self.assertIn('property alias remoteSiteAction: site.rightButton', SPLIT)
 
     def test_tv_split_tunneling_country_picker_has_dpad_selection(self):
-        self.assertIn('geoCountriesList.forceActiveFocus(Qt.TabFocusReason)', SPLIT)
+        self.assertIn('function tvFocusCountryList()', SPLIT)
+        self.assertIn('view.forceActiveFocus(Qt.TabFocusReason)', SPLIT)
         self.assertIn('geoCountriesList.positionViewAtIndex(', SPLIT)
         self.assertIn('Keys.onSelectPressed: if (currentItem) currentItem.clicked()', SPLIT)
         self.assertIn('countryRow.ListView.isCurrentItem', SPLIT)
-        self.assertIn('modeOptionsList.itemAtIndex(modeOptionsList.selectedIndex)', SPLIT)
+        self.assertIn('function tvFocusModeList()', SPLIT)
+        self.assertIn('function tvMoveMode(forward)', SPLIT)
 
     def test_tv_split_picker_is_real_modal_with_no_background_scrolling(self):
         PAGE_START = (ROOT / "client/ui/qml/Pages2/PageStart.qml").read_text()
