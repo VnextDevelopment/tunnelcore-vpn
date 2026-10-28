@@ -8,6 +8,7 @@ ACCOUNT = (ROOT / "client/ui/qml/Pages2/PageTunnelCoreAccount.qml").read_text()
 CONNECT = (ROOT / "client/ui/qml/Components/ConnectButton.qml").read_text()
 QUESTION = (ROOT / "client/ui/qml/Components/QuestionDrawer.qml").read_text()
 MAIN = (ROOT / "client/ui/qml/main2.qml").read_text()
+SPLIT = (ROOT / "client/ui/qml/Pages2/PageSettingsSplitTunneling.qml").read_text()
 
 
 class AndroidTvFocusTest(unittest.TestCase):
@@ -44,6 +45,24 @@ class AndroidTvFocusTest(unittest.TestCase):
         self.assertIn("Keys.onEscapePressed:", QUESTION)
         self.assertIn("FocusController.setFocusItem(previous)", QUESTION)
         self.assertIn("enabled: !(SettingsController.isOnTv() && questionDrawer.isOpened)", MAIN)
+
+    def test_tv_split_tunneling_has_scrollable_header_and_focus_order(self):
+        self.assertIn('objectName: "splitTunnelingHeaderViewport"', SPLIT)
+        self.assertIn('contentHeight: header.y + header.implicitHeight', SPLIT)
+        self.assertIn('interactive: root.tvMode', SPLIT)
+        self.assertIn('anchors.top: tvHeaderViewport.bottom', SPLIT)
+        self.assertIn('readonly property bool remoteNavigationScope: tvMode', SPLIT)
+        self.assertIn('function navigateRemote(forward)', SPLIT)
+        self.assertIn('root.scrollHeaderTo(target)', SPLIT)
+        self.assertIn('function focusSite(index)', SPLIT)
+        self.assertIn('property alias remoteSiteAction: site.rightButton', SPLIT)
+
+    def test_tv_split_tunneling_country_picker_has_dpad_selection(self):
+        self.assertIn('geoCountriesList.forceActiveFocus(Qt.TabFocusReason)', SPLIT)
+        self.assertIn('geoCountriesList.positionViewAtIndex(', SPLIT)
+        self.assertIn('Keys.onSelectPressed: if (currentItem) currentItem.clicked()', SPLIT)
+        self.assertIn('countryRow.ListView.isCurrentItem', SPLIT)
+        self.assertIn('modeOptionsList.itemAtIndex(modeOptionsList.selectedIndex)', SPLIT)
 
     def test_basic_button_does_not_dispatch_center_twice(self):
         # The Qt Button already handles DPAD_CENTER. A second attached
