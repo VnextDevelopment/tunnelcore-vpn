@@ -388,28 +388,21 @@ PageType {
 
             // Keep the search box and matching country rows visible when
             // the Android IME reduces the available page height.
-            drawerHeight: (Qt.inputMethod.visible || PageController.imeHeight > 0) ? 0.95 : 0.7
+            drawerHeight: root.tvMode ? 0.98
+                    : ((Qt.inputMethod.visible || PageController.imeHeight > 0) ? 0.95 : 0.7)
             drawerParent: root
 
-            onCloseTriggered: {
-                if (root.tvMode) Qt.callLater(function() {
-                    if (root.visible && countryBypassSelector.visible) {
-                        FocusController.setFocusItem(countryBypassSelector)
-                        root.scrollHeaderTo(countryBypassSelector)
-                    }
-                })
+            onPopupClosed: {
+                if (root.tvMode && root.visible && countryBypassSelector.visible) {
+                    FocusController.setFocusItem(countryBypassSelector)
+                    root.scrollHeaderTo(countryBypassSelector)
+                }
             }
 
-            onOpenTriggered: {
-                countrySearchInput.clear()
-                Qt.callLater(function() {
-                    geoCountriesList.positionViewAtBeginning()
-                    if (root.tvMode) {
-                        geoCountriesList.currentIndex = root.geoCountryModelIndex()
-                        geoCountriesList.positionViewAtIndex(geoCountriesList.currentIndex, ListView.Contain)
-                        geoCountriesList.forceActiveFocus(Qt.TabFocusReason)
-                    }
-                })
+            onPopupOpened: {
+                if (root.tvCountrySearch) root.tvCountrySearch.clear()
+                if (root.tvMode) root.tvFocusCountryList()
+                else if (root.tvCountryList) root.tvCountryList.positionViewAtBeginning()
             }
 
             visible: TunnelCoreController.authenticated
@@ -466,6 +459,14 @@ PageType {
                                 TextField {
                                     id: countrySearchInput
                                     objectName: "splitTunnelingCountrySearchInput"
+                                    Component.onCompleted: root.tvCountrySearch = countrySearchInput
+                                    Component.onDestruction: {
+                                        if (root.tvCountrySearch === countrySearchInput)
+                                            root.tvCountrySearch = null
+                                    }
+                                    Keys.onDownPressed: if (root.tvMode) root.tvFocusCountryList()
+                                    Keys.onUpPressed: if (root.tvMode && countryBypassSelector.popupBackItem)
+                                        countryBypassSelector.popupBackItem.forceActiveFocus(Qt.TabFocusReason)
                                     Layout.fillWidth: true
                                     implicitHeight: 28
                                     focusPolicy: Qt.StrongFocus
@@ -564,6 +565,20 @@ PageType {
                         ListViewType {
                             id: geoCountriesList
                             objectName: "splitTunnelingCountryList"
+                            Component.onCompleted: root.tvCountryList = geoCountriesList
+                            Component.onDestruction: {
+                                if (root.tvCountryList === geoCountriesList)
+                                    root.tvCountryList = null
+                            }
+                            Keys.onUpPressed: function(event) {
+                                if (root.tvMode && currentIndex <= 0) {
+                                    if (root.tvCountrySearch)
+                                        root.tvCountrySearch.forceActiveFocus(Qt.TabFocusReason)
+                                    event.accepted = true
+                                } else {
+                                    event.accepted = false
+                                }
+                            }
                             anchors.fill: parent
                             clip: true
                             boundsBehavior: Flickable.StopAtBounds
@@ -685,23 +700,15 @@ PageType {
             id: selector
             headerBackButtonImage: root.tvMode ? "qrc:/images/controls/arrow-left.svg" : ""
 
-            onCloseTriggered: {
-                if (root.tvMode) Qt.callLater(function() {
-                    if (root.visible && selector.visible) {
-                        FocusController.setFocusItem(selector)
-                        root.scrollHeaderTo(selector)
-                    }
-                })
+            onPopupClosed: {
+                if (root.tvMode && root.visible && selector.visible) {
+                    FocusController.setFocusItem(selector)
+                    root.scrollHeaderTo(selector)
+                }
             }
 
-            onOpenTriggered: {
-                if (root.tvMode) Qt.callLater(function() {
-                    var row = modeOptionsList.itemAtIndex(modeOptionsList.selectedIndex)
-                    if (row && row.selectable)
-                        row.selectable.forceActiveFocus(Qt.TabFocusReason)
-                    else
-                        modeOptionsList.forceActiveFocus(Qt.TabFocusReason)
-                })
+            onPopupOpened: {
+                if (root.tvMode) root.tvFocusModeList()
             }
 
             Layout.fillWidth: true
@@ -709,7 +716,7 @@ PageType {
             Layout.leftMargin: 16
             Layout.rightMargin: 16
 
-            drawerHeight: 0.4375
+            drawerHeight: root.tvMode ? 0.8 : 0.4375
             drawerParent: root
 
             enabled: root.pageEnabled
@@ -718,6 +725,11 @@ PageType {
 
             listView: ListViewWithRadioButtonType {
                 id: modeOptionsList
+                Component.onCompleted: root.tvModeList = modeOptionsList
+                Component.onDestruction: {
+                    if (root.tvModeList === modeOptionsList)
+                        root.tvModeList = null
+                }
                 rootWidth: root.width
                 textColor: AmneziaStyle.color.tcInk
                 itemColor: AmneziaStyle.color.tcCard
