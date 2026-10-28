@@ -33,6 +33,10 @@ class TvAuthTest(unittest.TestCase):
         field.write_text(field.read_text().replace('id: textField', 'id: textField\nobjectName: "editor"'))
         (cls.path / 'Components').mkdir()
         shutil.copy(QML / 'Components/QuestionDrawer.qml', cls.path / 'Components/QuestionDrawer.qml')
+        home_split = (QML / 'Components/HomeSplitTunnelingDrawer.qml').read_text()
+        home_split = home_split.replace('import PageEnum 1.0', '')
+        home_split = home_split.replace('PageEnum.PageSettingsSplitTunneling', '42')
+        (cls.path / 'Components/HomeSplitTunnelingDrawer.qml').write_text(home_split)
         connect = (QML / 'Components/ConnectButton.qml').read_text()
         for module in ['ConnectionState', 'AppIcons', 'PageEnum']:
             connect = connect.replace('import ' + module + ' 1.0', '')
@@ -49,13 +53,14 @@ property bool opened: false
 function requestNative(position) {} }
 ''')
         (cls.path / 'Controls2/ImageButtonType.qml').write_text('''import QtQuick.Controls
-Button { property string image; property string imageColor }
+Button { property string image; property string imageColor; property bool isFocusable: true }
 ''')
         colors = set()
         for file in (cls.path / 'Controls2').rglob('*.qml'):
             colors.update(re.findall(r'AmneziaStyle.color.(\w+)', file.read_text()))
         source = (QML / 'Pages2/PageTunnelCoreAccount.qml').read_text()
         colors.update(re.findall(r'AmneziaStyle.color.(\w+)', source))
+        colors.update(re.findall(r'AmneziaStyle.color.(\w+)', home_split))
         style = cls.path / 'Style'
         style.mkdir()
         (style / 'qmldir').write_text('module Style\nsingleton AmneziaStyle 1.0 AmneziaStyle.qml\n')
@@ -90,11 +95,25 @@ signal changed()
 function clearError() {} function loginCode(code) { submits++ }
 function loginEmail(email, password) { submits++ }
 function registerEmail(email, password) { submits++ }''',
-            'PageController': 'property int imeHeight: 0; property int safeAreaTopMargin: 0; property int safeAreaBottomMargin: 0; property int drawerDepth: 0; signal closeTopDrawer(); function incrementDrawerDepth() { return ++drawerDepth } function decrementDrawerDepth() { drawerDepth-- } function getDrawerDepth() { return drawerDepth } function getInitialPageNavigationBarColor() { return 0xff1c1d21 } function updateNavigationBarColor(color) {}',
+            'PageController': 'property int imeHeight: 0; property int safeAreaTopMargin: 0; property int safeAreaBottomMargin: 0; property int drawerDepth: 0; property int navigations: 0; function goToPage(page) { navigations++ }; signal closeTopDrawer(); function incrementDrawerDepth() { return ++drawerDepth } function decrementDrawerDepth() { drawerDepth-- } function getDrawerDepth() { return drawerDepth } function getInitialPageNavigationBarColor() { return 0xff1c1d21 } function updateNavigationBarColor(color) {}',
             'ConnectionController': 'property bool isConnected: false; property bool isConnectionInProgress: false; signal connectionStateChanged(); signal preparingConfig(); property string connectionStateText: "Disconnected"; property int clicks: 0; function connectButtonClicked() { clicks++ }',
             'ImportController': 'function activateTunnelCoreProfile(key) { return true } signal importFinished(); signal importErrorOccurred(string error, bool goToPageHome)',
             'LanguageUiController': 'function getLineHeightAppend() { return 0 }',
-            'FocusController': 'function resetRootObject() {} function setFocusOnDefaultItem() {} function setFocusItem(item) { item.forceActiveFocus() } function nextKeyDownItem() { testedPage.navigateRemote(true) } function nextKeyUpItem() { testedPage.navigateRemote(false) } function pushRootObject(item) {} function dropRootObject(item) {}',
+            'FocusController': '''function resetRootObject() {}
+function setFocusOnDefaultItem() {}
+function setFocusItem(item) { item.forceActiveFocus() }
+function nextKeyDownItem() {
+    if (typeof testedDrawer !== "undefined" && testedDrawer && testedDrawer.isOpened)
+        testedDrawer.navigateRemote(true)
+    else testedPage.navigateRemote(true)
+}
+function nextKeyUpItem() {
+    if (typeof testedDrawer !== "undefined" && testedDrawer && testedDrawer.isOpened)
+        testedDrawer.navigateRemote(false)
+    else testedPage.navigateRemote(false)
+}
+function pushRootObject(item) {}
+function dropRootObject(item) {}''',
             'IpSplitTunnelingController': 'property bool isSplitTunnelingEnabled: false',
             'AppSplitTunnelingController': 'property bool isSplitTunnelingEnabled: false',
             'ServersUiController': 'property bool isDefaultServerDefaultContainerHasSplitTunneling: false',
@@ -210,6 +229,60 @@ function registerEmail(email, password) { submits++ }''',
         QTest.qWait(100)
         self.assertTrue(drawer.property('isClosed'))
         self.assertTrue(previous.hasActiveFocus())
+        drawer.setParentItem(None)
+        drawer.deleteLater()
+
+    def test_tv_home_split_sheet_keeps_focus_and_opens_settings(self):
+        # This is the actual overlay shown from the VPN dashboard (not
+        # PageSettingsSplitTunneling, which has a separate scroll layout).
+        from PySide6.QtQuick import QQuickItem
+        self.objects[0].setProperty('authenticated', True)
+        QTest.qWait(60)
+        self.evaluate('focusPageControl()')
+        previous = self.item('accountConnectButton')
+        self.assertTrue(previous.hasActiveFocus())
+
+        comp = QQmlComponent(self.engine, QUrl.fromLocalFile(
+            str(self.path / 'Components/HomeSplitTunnelingDrawer.qml')))
+        drawer = comp.create()
+        self.assertIsNotNone(drawer, str(comp.errors()))
+        drawer.setParentItem(self.page)
+        drawer.setWidth(960)
+        drawer.setHeight(540)
+        self.engine.rootContext().setContextProperty('testedDrawer', drawer)
+        drawer.openTriggered.emit()
+        QTest.qWait(100)
+        site = drawer.findChild(QQuickItem, 'homeSplitSitesRow')
+        server = drawer.findChild(QQuickItem, 'homeSplitServerRow')
+        self.assertIsNotNone(site)
+        self.assertIsNotNone(server)
+        self.assertTrue(drawer.property('isOpened'))
+        self.assertTrue(site.hasActiveFocus())  # only visible row
+        QTest.keyClick(self.window, Qt.Key_Down)
+        self.assertTrue(site.hasActiveFocus())  # no movement to tabs behind
+        self.assertFalse(previous.hasActiveFocus())
+        QTest.keyClick(self.window, Qt.Key_Back)
+        QTest.qWait(70)
+        self.assertTrue(drawer.property('isClosed'))
+        self.assertTrue(previous.hasActiveFocus())
+
+        # Two-row case: navigation stays within the sheet and OK opens
+        # the split settings page exactly once.
+        self.objects[8].setProperty('isDefaultServerDefaultContainerHasSplitTunneling', True)
+        drawer.openTriggered.emit()
+        QTest.qWait(80)
+        self.assertTrue(server.hasActiveFocus())
+        QTest.keyClick(self.window, Qt.Key_Down)
+        self.assertTrue(site.hasActiveFocus())
+        QTest.keyClick(self.window, Qt.Key_Up)
+        self.assertTrue(server.hasActiveFocus())
+        QTest.keyClick(self.window, Qt.Key_Down)
+        self.assertTrue(site.hasActiveFocus())
+        before = self.objects[1].property('navigations')
+        QTest.keyClick(self.window, Qt.Key_Select)
+        QTest.qWait(70)
+        self.assertEqual(self.objects[1].property('navigations'), before + 1)
+        self.assertTrue(drawer.property('isClosed'))
         drawer.setParentItem(None)
         drawer.deleteLater()
 
