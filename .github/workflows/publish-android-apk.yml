@@ -234,13 +234,22 @@ jobs:
           (cd deploy/artifacts && sha256sum "TunnelCoreVPN_${VERSION}_android_universal.apk" \
             > "TunnelCoreVPN_${VERSION}_android_universal.sha256")
 
+      # upload-artifact@v7 with archive: false requires exactly ONE file.
+      # Keep the signed APK directly downloadable without wrapping it in a zip.
       - name: Upload signed Universal APK to Actions Artifacts
         uses: actions/upload-artifact@v7
         with:
           name: TunnelCoreVPN-Android-Universal-Signed
-          path: |
-            deploy/artifacts/TunnelCoreVPN_*_android_universal.apk
-            deploy/artifacts/TunnelCoreVPN_*_android_universal.sha256
+          path: deploy/artifacts/TunnelCoreVPN_*_android_universal.apk
+          if-no-files-found: error
+          archive: false
+          retention-days: 30
+
+      - name: Upload APK SHA-256 checksum to Actions Artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: TunnelCoreVPN-Android-Universal-SHA256
+          path: deploy/artifacts/TunnelCoreVPN_*_android_universal.sha256
           if-no-files-found: error
           archive: false
           retention-days: 30
