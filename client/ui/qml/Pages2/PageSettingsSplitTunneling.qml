@@ -50,8 +50,7 @@ PageType {
     }
 
     readonly property bool tvModalOpen: tvMode &&
-            (countryBypassSelector.popupIsOpen || selector.popupIsOpen ||
-             moreActionsDrawer.isOpened || importSitesDrawer.isOpened)
+            (countryBypassSelector.popupIsOpen || selector.popupIsOpen)
 
     function tvFocusCountryList() {
         if (!root.tvMode || !countryBypassSelector.popupIsOpen || !root.tvCountryList)
