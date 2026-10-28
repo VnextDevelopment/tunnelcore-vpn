@@ -192,6 +192,9 @@ fi
 args=()
 [[ -n "$CMAKE_GENERATOR" ]]           && args+=("-G" "$CMAKE_GENERATOR")
 [[ -n "$CMAKE_BUILD_TYPE" ]]          && args+=("-DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE")
+# Explicit Android release version (for optional matching GitHub Release).
+# Other builds keep the existing CMake default 5.0.2.<workflow run number>.
+[[ -n "${AMNEZIAVPN_VERSION:-}" ]]     && args+=("-DAMNEZIAVPN_VERSION=$AMNEZIAVPN_VERSION")
 [[ -n "$CMAKE_PREFIX_PATH" ]]         && args+=("-DCMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH")
 [[ -n "$CMAKE_TOOLCHAIN_FILE" ]]      && args+=("-DCMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE")
 [[ -n "$QT_HOST_PATH" ]]              && args+=("-DQT_HOST_PATH=$QT_HOST_PATH")
