@@ -512,7 +512,10 @@ PageType {
 
                                     // Filtering must start at the first match,
                                     // even if the old list was scrolled down.
-                                    onTextChanged: geoCountriesList.positionViewAtBeginning()
+                                    onTextChanged: {
+                                        geoCountriesList.currentIndex = 0
+                                        geoCountriesList.positionViewAtBeginning()
+                                    }
 
                                 }
                             }
@@ -571,13 +574,27 @@ PageType {
                                     root.tvCountryList = null
                             }
                             Keys.onUpPressed: function(event) {
-                                if (root.tvMode && currentIndex <= 0) {
+                                if (!root.tvMode) {
+                                    event.accepted = false
+                                    return
+                                }
+                                if (currentIndex <= 0) {
                                     if (root.tvCountrySearch)
                                         root.tvCountrySearch.forceActiveFocus(Qt.TabFocusReason)
-                                    event.accepted = true
                                 } else {
-                                    event.accepted = false
+                                    currentIndex--
+                                    positionViewAtIndex(currentIndex, ListView.Contain)
                                 }
+                                event.accepted = true
+                            }
+                            Keys.onDownPressed: function(event) {
+                                if (!root.tvMode) {
+                                    event.accepted = false
+                                    return
+                                }
+                                currentIndex = Math.min(count - 1, currentIndex + 1)
+                                positionViewAtIndex(currentIndex, ListView.Contain)
+                                event.accepted = true
                             }
                             anchors.fill: parent
                             clip: true
@@ -725,6 +742,7 @@ PageType {
 
             listView: ListViewWithRadioButtonType {
                 id: modeOptionsList
+                tvNavigationHandler: root.tvMode ? root.tvMoveMode : null
                 Component.onCompleted: root.tvModeList = modeOptionsList
                 Component.onDestruction: {
                     if (root.tvModeList === modeOptionsList)
