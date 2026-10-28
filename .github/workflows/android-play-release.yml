@@ -165,6 +165,9 @@ jobs:
               exit 1
             fi
           done
+          # R8 may keep deprecated AndroidX Window bar setters even after Qt fixes.
+          # Reject the actual Play DEX before anyone uploads a new version.
+          python3 scripts/check_android_window_apis.py "$AAB"
           cp "$AAB" "deploy/artifacts/TunnelCoreVPN_${VERSION}_play.aab"
 
       - name: Upload Play AAB

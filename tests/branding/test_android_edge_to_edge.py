@@ -73,10 +73,12 @@ class AndroidEdgeToEdgeTest(unittest.TestCase):
         activity = (ROOT / "client/android/src/org/amnezia/vpn/AmneziaActivity.kt").read_text()
         versions = (ROOT / "client/android/gradle/libs.versions.toml").read_text()
         qt_gradle = (ROOT / "client/android/qt/build.gradle.kts").read_text()
-        self.assertIn("WindowCompat.enableEdgeToEdge(window)", activity)
+        self.assertIn("applyEdgeToEdgeWithoutColorSetters()", activity)
         self.assertIn("SOFT_INPUT_ADJUST_RESIZE", activity)
         self.assertIn("setupPassiveImeInsetsObserver()", activity)
-        self.assertNotIn("WindowCompat.setDecorFitsSystemWindows(window, false)", activity)
+        self.assertIn("WindowCompat.setDecorFitsSystemWindows(window, false)", activity)
+        self.assertNotIn("WindowCompat.enableEdgeToEdge(window)", activity)
+        self.assertIn("window.isStatusBarContrastEnforced = false", activity)
         self.assertNotIn("window.navigationBarColor =", activity)
         self.assertNotIn("statusBarColor =", activity)
         self.assertIn('androidx-core = "1.17.0"', versions)
@@ -95,6 +97,12 @@ class AndroidEdgeToEdgeTest(unittest.TestCase):
         self.assertIn('agp = "8.10.1"', versions)
         self.assertIn('id("com.android.settings") version "8.10.1"', settings)
         self.assertIn('gradle-8.11.1-bin.zip', wrapper)
+
+    def test_android_14_bar_colors_are_declarative(self):
+        theme = (ROOT / "client/android/res/values-v34/styles.xml").read_text()
+        self.assertIn('<item name="android:statusBarColor">@android:color/transparent</item>', theme)
+        self.assertIn('<item name="android:navigationBarColor">@android:color/transparent</item>', theme)
+        self.assertIn('name="android:windowSplashScreenAnimatedIcon"', theme)
 
     def test_legacy_theme_colors_are_defined(self):
         for path in (
