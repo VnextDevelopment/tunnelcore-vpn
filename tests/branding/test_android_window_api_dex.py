@@ -16,9 +16,9 @@ spec.loader.exec_module(module)
 def fixture(owner, method):
     values = (owner, method)
     data = bytearray(112)
-    data[:8] = b"dex\\n035\\x00"
+    data[:8] = b"dex\n035\x00"
     strings_at = len(data)
-    data.extend(b"\\x00" * 8)
+    data.extend(b"\x00" * 8)
     types_at = len(data)
     data.extend(struct.pack("<I", 0))
     methods_at = len(data)
@@ -28,7 +28,7 @@ def fixture(owner, method):
         struct.pack_into("<I", data, strings_at + 4 * i, offset)
         encoded = value.encode("ascii")
         assert len(encoded) < 128
-        data.extend(bytes((len(encoded),)) + encoded + b"\\x00")
+        data.extend(bytes((len(encoded),)) + encoded + b"\x00")
     for pos, value in ((0x38, 2), (0x3C, strings_at), (0x40, 1),
                        (0x44, types_at), (0x58, 1), (0x5C, methods_at)):
         struct.pack_into("<I", data, pos, value)
