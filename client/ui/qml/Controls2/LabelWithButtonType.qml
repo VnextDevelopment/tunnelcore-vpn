@@ -328,6 +328,14 @@ Item {
         }
     }
 
+    // Item has no native DPAD_CENTER click handling. Process Select only
+    // when no right-side Qt Button owns the action, preventing duplicates.
+    Keys.onSelectPressed: {
+        if (root.activeFocus && root.enabled && !rightImageSource &&
+                clickedFunction && typeof clickedFunction === "function")
+            clickedFunction()
+    }
+
     Keys.onEnterPressed: {
         if (!rightImageSource && clickedFunction && typeof clickedFunction === "function") {
             clickedFunction()
