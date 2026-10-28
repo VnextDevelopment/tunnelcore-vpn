@@ -29,7 +29,7 @@ def _skip_uleb128(data, pos):
 
 
 def find_unsupported_window_calls(dex):
-    if len(dex) < 112 or not dex.startswith(b"dex\\n") or dex[7] != 0:
+    if len(dex) < 112 or not dex.startswith(b"dex\n") or dex[7] != 0:
         raise ValueError("Invalid Android DEX")
     string_count, string_off = _u32(dex, 0x38), _u32(dex, 0x3C)
     type_count, type_off = _u32(dex, 0x40), _u32(dex, 0x44)
@@ -77,8 +77,8 @@ def check_package(path):
     if not inspected:
         raise RuntimeError(f"No DEX files in {path}")
     if problems:
-        raise RuntimeError("Google Play Android 15 unsupported APIs still in DEX:\\n" +
-                           "\\n".join(problems))
+        raise RuntimeError("Google Play Android 15 unsupported APIs still in DEX:\n" +
+                           "\n".join(problems))
     print(f"Validated {inspected} DEX files in {path}: no deprecated Window bar setters")
 
 
