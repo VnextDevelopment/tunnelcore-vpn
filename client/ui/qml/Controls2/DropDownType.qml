@@ -61,6 +61,18 @@ Item {
 
     readonly property bool popupIsOpen: menu.isOpened
     property var popupBackItem: null
+    property bool popupContentReady: false
+    property bool popupReadyNotified: false
+
+    function notifyPopupReady() {
+        // listView is a Component: its ids do not exist until Loader is ready.
+        // Never transfer remote focus to an uninstantiated search/list item.
+        if (!menu.isOpened || popupReadyNotified ||
+                (!popupContentReady && root.listView))
+            return
+        popupReadyNotified = true
+        root.popupOpened()
+    }
 
     readonly property bool isFocusable: true
 
@@ -237,12 +249,16 @@ Item {
     DrawerType2 {
         id: menu
 
-        onOpened: Qt.callLater(function() {
-            if (menu.isOpened) root.popupOpened()
-        })
-        onClosed: Qt.callLater(function() {
-            if (menu.isClosed) root.popupClosed()
-        })
+        onOpened: {
+            root.popupReadyNotified = false
+            Qt.callLater(root.notifyPopupReady)
+        }
+        onClosed: {
+            root.popupReadyNotified = false
+            Qt.callLater(function() {
+                if (menu.isClosed) root.popupClosed()
+            })
+        }
         defaultColor: root.drawerBackgroundColor
         borderColor: root.drawerBorderColor
 
@@ -298,6 +314,14 @@ Item {
                 Loader {
                     id: listViewLoader
                     sourceComponent: root.listView
+                    onLoaded: {
+                        root.popupContentReady = true
+                        Qt.callLater(root.notifyPopupReady)
+                    }
+                    onStatusChanged: {
+                        if (status !== Loader.Ready)
+                            root.popupContentReady = false
+                    }
 
                     Layout.fillHeight: true
                     Layout.fillWidth: true
