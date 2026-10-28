@@ -38,3 +38,35 @@ Use the **upload key** intended for Google Play App Signing, keep the keystore b
 - Complete the VPN Service declaration and app content forms (Data safety, privacy policy, content rating, target audience, screenshots, store listing).
 - Check the **Play** flavor's subscription/purchase flow against current Google Play payments rules. The Android client currently uses a consumption-only flow and must not route users to an external payment website or bot from within the Play app where that would violate Google Play policy.
 - Verify app signing certificate fingerprints if any backend/auth integrations bind their identity to the signing certificate.
+
+## Release notes for the next Google Play build (after PR #31)
+
+Use these short **user-facing** notes for the next Android Play release.
+They describe changes merged on October 28, 2026. Do not publish notes for a
+new AAB until that specific artifact has passed validation on test devices.
+Google Play release notes are entered separately per locale in Play Console:
+this Markdown file does **not** update the Play listing automatically.
+
+### ru-RU
+
+Улучшена совместимость с Android 15 и 16: исправлено отображение интерфейса возле системных панелей и вырезов экрана.
+
+Улучшена навигация с пульта на Android TV и подсветка выбранных элементов.
+
+Исправлены ошибки интерфейса и повышена стабильность работы.
+
+### en-US
+
+Improved compatibility with Android 15 and 16, including layouts around system bars and display cutouts.
+
+Improved remote-control navigation and focus highlights on Android TV.
+
+UI fixes and stability improvements.
+
+### tr-TR
+
+Android 15 ve 16 ile uyumluluk iyileştirildi; sistem çubukları ve ekran çentikleri çevresindeki görünüm düzeltildi.
+
+Android TV'de kumandayla gezinme ve seçili öğelerin vurgulanması iyileştirildi.
+
+Arayüz hataları giderildi ve uygulama kararlılığı artırıldı.
