@@ -24,10 +24,14 @@ DrawerType2 {
     readonly property bool remoteNavigationScope: SettingsController.isOnTv() && root.isOpened
     property var focusBeforeOpen: null
     property bool navigatingToSettings: false
+    // expandedStateContent is a separate QML Component scope; register its
+    // instantiated controls instead of referring to private component ids.
+    property var splitServerItem: null
+    property var splitSitesItem: null
 
     function focusableRows() {
-        var rows = [splitTunnelingSwitch, siteBasedSplitTunnelingSwitch]
-        return rows.filter(function(item) { return item.visible && item.enabled })
+        var rows = [root.splitServerItem, root.splitSitesItem]
+        return rows.filter(function(item) { return item && item.visible && item.enabled })
     }
 
     function navigateRemote(forward) {
@@ -113,6 +117,10 @@ DrawerType2 {
         LabelWithButtonType {
             id: splitTunnelingSwitch
             objectName: "homeSplitServerRow"
+            Component.onCompleted: root.splitServerItem = splitTunnelingSwitch
+            Component.onDestruction: {
+                if (root.splitServerItem === splitTunnelingSwitch) root.splitServerItem = null
+            }
             isFocusable: SettingsController.isOnTv()
             rightButton.isFocusable: !SettingsController.isOnTv()
             rightButton.focusPolicy: SettingsController.isOnTv() ? Qt.NoFocus : Qt.StrongFocus
@@ -148,6 +156,10 @@ DrawerType2 {
         LabelWithButtonType {
             id: siteBasedSplitTunnelingSwitch
             objectName: "homeSplitSitesRow"
+            Component.onCompleted: root.splitSitesItem = siteBasedSplitTunnelingSwitch
+            Component.onDestruction: {
+                if (root.splitSitesItem === siteBasedSplitTunnelingSwitch) root.splitSitesItem = null
+            }
             isFocusable: SettingsController.isOnTv()
             rightButton.isFocusable: !SettingsController.isOnTv()
             rightButton.focusPolicy: SettingsController.isOnTv() ? Qt.NoFocus : Qt.StrongFocus
