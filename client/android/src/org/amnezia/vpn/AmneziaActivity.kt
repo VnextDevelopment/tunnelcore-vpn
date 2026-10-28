@@ -209,7 +209,10 @@ class AmneziaActivity : QtActivity() {
                 // Wait for QtWindow setup before watching its final layout.
                 qtInitialized.await()
                 window.decorView.post {
-                    if (!isFinishing && !isDestroyed) setupPassiveImeInsetsObserver()
+                    if (!isFinishing && !isDestroyed) {
+                        WindowCompat.enableEdgeToEdge(window)
+                        setupPassiveImeInsetsObserver()
+                    }
                 }
             }
         }
@@ -441,41 +444,27 @@ class AmneziaActivity : QtActivity() {
     }
 
     private fun configureWindowForEdgeToEdge() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            window.apply {
-                addFlags(LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
-                // FLAG_LAYOUT_NO_LIMITS keeps the native window outside the
-                // IME-adjustable area and breaks soft keyboard on some Samsung
-                // devices. Use WindowCompat for edge-to-edge instead.
-                clearFlags(LayoutParams.FLAG_LAYOUT_NO_LIMITS)
-                WindowCompat.setDecorFitsSystemWindows(window, false)
-                setSoftInputMode(LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
-                // Android 15+ enforces transparent system bars. Writing their
-                // deprecated colors has no effect on gesture navigation.
-                // Only configure legacy bars on pre-35 devices.
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-                    statusBarColor = android.graphics.Color.TRANSPARENT
-                    navigationBarColor = android.graphics.Color.TRANSPARENT
-                }
-            }
-
-            WindowInsetsControllerCompat(window, window.decorView).apply {
-                isAppearanceLightStatusBars = false
-                isAppearanceLightNavigationBars = false
-            }
-
-            // The passive IME observer is registered after Qt initialization.
-        } else {
-            window.apply {
-                addFlags(LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
-                statusBarColor = getColor(R.color.black)
-            }
-
-            WindowInsetsControllerCompat(window, window.decorView).apply {
-                isAppearanceLightStatusBars = false
-                isAppearanceLightNavigationBars = false
-            }
+        window.apply {
+            addFlags(LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+            // FLAG_LAYOUT_NO_LIMITS prevents Qt's soft keyboard from resizing
+            // the native surface on Samsung/Poco. Never enable it here.
+            clearFlags(LayoutParams.FLAG_LAYOUT_NO_LIMITS)
+            setSoftInputMode(LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            // QtActivity is a plain Activity, not a ComponentActivity, so the
+            // AndroidX Activity enableEdgeToEdge() extension cannot be used.
+            // AndroidX Core 1.17 provides its equivalent for any Window.
+            WindowCompat.enableEdgeToEdge(window)
+        }
+
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            isAppearanceLightStatusBars = false
+            isAppearanceLightNavigationBars = false
+        }
+        // Insets remain observed passively after Qt initializes. Do not
+        // install another listener on Qt's decor view: it breaks the QML IME.
     }
 
     private fun setupPassiveImeInsetsObserver() {
@@ -1044,15 +1033,11 @@ class AmneziaActivity : QtActivity() {
         }
     }
 
-    @Suppress("unused")
+    @Suppress("unused", "UNUSED_PARAMETER")
     fun setNavigationBarColor(color: Int) {
-        Log.v(TAG, "Change navigation bar color: ${"#%08X".format(color)}")
-        mainScope.launch {
-            // On API 35+ the QML view draws its own background under the
-            // navigation bar; changing Window.navigationBarColor is obsolete.
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM)
-                window.navigationBarColor = color
-        }
+        // Called by the cross-platform Qt controller. For Android 15+ the
+        // navigation bar is transparent; on older versions the theme controls
+        // its background. Avoid compiling the deprecated Window color API.
     }
 
     @Suppress("unused")
