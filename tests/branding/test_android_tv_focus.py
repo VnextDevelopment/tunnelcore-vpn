@@ -9,6 +9,7 @@ CONNECT = (ROOT / "client/ui/qml/Components/ConnectButton.qml").read_text()
 QUESTION = (ROOT / "client/ui/qml/Components/QuestionDrawer.qml").read_text()
 MAIN = (ROOT / "client/ui/qml/main2.qml").read_text()
 SPLIT = (ROOT / "client/ui/qml/Pages2/PageSettingsSplitTunneling.qml").read_text()
+HOME_SPLIT = (ROOT / "client/ui/qml/Components/HomeSplitTunnelingDrawer.qml").read_text()
 
 
 class AndroidTvFocusTest(unittest.TestCase):
@@ -45,6 +46,18 @@ class AndroidTvFocusTest(unittest.TestCase):
         self.assertIn("Keys.onEscapePressed:", QUESTION)
         self.assertIn("FocusController.setFocusItem(previous)", QUESTION)
         self.assertIn("enabled: !(SettingsController.isOnTv() && questionDrawer.isOpened)", MAIN)
+
+    def test_home_split_sheet_is_remotely_focusable_not_only_settings_page(self):
+        # This is the modal visible in the TV screenshot above the five tabs.
+        self.assertIn('readonly property bool remoteNavigationScope:', HOME_SPLIT)
+        self.assertIn('function navigateRemote(forward)', HOME_SPLIT)
+        self.assertIn('function focusableRows()', HOME_SPLIT)
+        self.assertIn('rows[0].forceActiveFocus(Qt.TabFocusReason)', HOME_SPLIT)
+        self.assertIn('objectName: "homeSplitSitesRow"', HOME_SPLIT)
+        self.assertIn('objectName: "homeSplitServerRow"', HOME_SPLIT)
+        self.assertIn('Keys.onBackPressed:', HOME_SPLIT)
+        self.assertIn('FocusController.setFocusItem(previous)', HOME_SPLIT)
+        self.assertIn('root.goToSplitSettings()', HOME_SPLIT)
 
     def test_tv_split_tunneling_has_scrollable_header_and_focus_order(self):
         self.assertIn('objectName: "splitTunnelingHeaderViewport"', SPLIT)
