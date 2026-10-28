@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Window
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
@@ -23,6 +24,85 @@ PageType {
     property var isServerFromTelegramApi: ServersUiController.isServerFromApi(ServersUiController.defaultServerId)
     
     property bool pageEnabled
+    readonly property bool tvMode: SettingsController.isOnTv()
+    // Give the TV remote a logical focus order independent of what is
+    // currently visible inside the vertically scrollable header.
+    readonly property bool remoteNavigationScope: tvMode
+
+    function inside(item, container) {
+        for (var current = item; current; current = current.parent)
+            if (current === container) return true
+        return false
+    }
+
+    function scrollHeaderTo(item) {
+        if (!root.tvMode || !item || !root.inside(item, header))
+            return
+        var top = item.mapToItem(header, 0, 0).y
+        var bottom = top + item.height
+        var y = tvHeaderViewport.contentY
+        if (bottom + 12 > y + tvHeaderViewport.height)
+            y = bottom + 12 - tvHeaderViewport.height
+        if (top - 12 < y)
+            y = top - 12
+        tvHeaderViewport.contentY = Math.max(0, Math.min(y,
+                Math.max(0, tvHeaderViewport.contentHeight - tvHeaderViewport.height)))
+    }
+
+    function focusSite(index) {
+        if (listView.count === 0)
+            return
+        index = Math.max(0, Math.min(index, listView.count - 1))
+        listView.currentIndex = index
+        listView.positionViewAtIndex(index, ListView.Contain)
+        Qt.callLater(function() {
+            if (!root.visible || !root.tvMode || !listView.enabled)
+                return
+            var row = listView.itemAtIndex(index)
+            if (row && row.remoteSiteAction)
+                row.remoteSiteAction.forceActiveFocus(Qt.TabFocusReason)
+            else
+                listView.forceActiveFocus(Qt.TabFocusReason)
+        })
+    }
+
+    function navigateRemote(forward) {
+        if (!root.tvMode || moreActionsDrawer.isOpened || importSitesDrawer.isOpened)
+            return false
+        var focused = root.Window.window ? root.Window.window.activeFocusItem : null
+        var controls = [backButton.focusButton, headerSwitch.switcher,
+                        countryBypassSelector, selector]
+        if (listView.count > 0 && listView.enabled)
+            controls.push(listView)
+        controls.push(searchField.textField, addSiteButtonImage)
+        controls = controls.filter(function(item) {
+            return item && item.visible && item.enabled
+        })
+        var current = controls.findIndex(function(item) {
+            return focused && root.inside(focused, item)
+        })
+        // Country/mode picker and other drawers handle their own D-pad focus.
+        if (current < 0)
+            return false
+        if (controls[current] === listView && listView.count > 0) {
+            var nextSite = listView.currentIndex + (forward ? 1 : -1)
+            if (nextSite >= 0 && nextSite < listView.count) {
+                root.focusSite(nextSite)
+                return true
+            }
+        }
+        var next = current + (forward ? 1 : -1)
+        if (next < 0 || next >= controls.length)
+            return false
+        var target = controls[next]
+        if (target === listView)
+            root.focusSite(forward ? 0 : listView.count - 1)
+        else {
+            FocusController.setFocusItem(target)
+            root.scrollHeaderTo(target)
+        }
+        return true
+    }
 
     ListModel {
         id: geoCountriesListModel
@@ -134,6 +214,27 @@ PageType {
         color: AmneziaStyle.color.tcBackground
     }
 
+    // Previously the header was fixed above a ListView of sites. On Android
+    // TV the country and mode controls could extend below the viewport and
+    // could never be reached with the remote. Keep the sites list separate,
+    // but give the entire header a real, bounded scrollable viewport.
+    Flickable {
+        id: tvHeaderViewport
+        objectName: "splitTunnelingHeaderViewport"
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: root.tvMode
+                ? Math.min(header.implicitHeight, Math.max(120,
+                    root.height - (addSiteButton.implicitHeight + 48) - 120))
+                : header.implicitHeight
+        contentWidth: width
+        contentHeight: header.implicitHeight
+        flickableDirection: Flickable.VerticalFlick
+        boundsBehavior: Flickable.StopAtBounds
+        interactive: root.tvMode
+        clip: root.tvMode
+
     ColumnLayout {
         id: header
 
@@ -149,6 +250,7 @@ PageType {
         }
 
         HeaderTypeWithSwitcher {
+            id: headerSwitch
             headerColor: AmneziaStyle.color.tcInk
             Layout.fillWidth: true
             Layout.leftMargin: 16
@@ -508,13 +610,14 @@ PageType {
             }
         }
     }
+    } // tvHeaderViewport
 
     ListViewType {
         id: listView
 
         ScrollBar.vertical: ScrollBarType { policy: ScrollBar.AlwaysOn }
 
-        anchors.top: header.bottom
+        anchors.top: tvHeaderViewport.bottom
         anchors.topMargin: 16
         anchors.bottom: parent.bottom
         anchors.bottomMargin: addSiteButton.implicitHeight + 48 + (searchField.textField.activeFocus ? 0 : PageController.imeHeight)
@@ -523,6 +626,7 @@ PageType {
 
         enabled: root.pageEnabled
         clip: true
+        keyNavigationEnabled: true
 
         model: SortFilterProxyModel {
             id: proxyIpSplitTunnelingModel
@@ -545,6 +649,7 @@ PageType {
 
         delegate: ColumnLayout {
             width: listView.width
+            property alias remoteSiteAction: site.rightButton
 
             LabelWithButtonType {
             textColor: AmneziaStyle.color.tcInk
@@ -556,6 +661,16 @@ PageType {
                 descriptionText: ip
                 rightImageSource: "qrc:/images/controls/trash.svg"
                 rightImageColor: AmneziaStyle.color.tcBlue
+
+                // Highlight the whole row when its delete action has TV focus.
+                Rectangle {
+                    anchors.fill: parent
+                    color: "transparent"
+                    radius: 14
+                    border.color: root.tvMode && site.rightButton.activeFocus
+                                  ? AmneziaStyle.color.tcBlue : "transparent"
+                    border.width: root.tvMode && site.rightButton.activeFocus ? 3 : 0
+                }
 
                 clickedFunction: function() {
                     var headerText = qsTr("Remove ") + url + "?"
