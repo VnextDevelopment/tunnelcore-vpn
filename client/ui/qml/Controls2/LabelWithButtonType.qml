@@ -317,8 +317,10 @@ Item {
         radius: SettingsController.isOnTv() ? 16 : 0
         color: AmneziaStyle.color.transparent
 
-        border.color: root.activeFocus ? root.borderFocusedColor : AmneziaStyle.color.transparent
-        border.width: root.activeFocus ? root.borderFocusedWidth : 0
+        border.color: root.activeFocus || (SettingsController.isOnTv() && root.rightButton.activeFocus)
+                      ? root.borderFocusedColor : AmneziaStyle.color.transparent
+        border.width: root.activeFocus || (SettingsController.isOnTv() && root.rightButton.activeFocus)
+                      ? root.borderFocusedWidth : 0
 
 
         Behavior on color {
