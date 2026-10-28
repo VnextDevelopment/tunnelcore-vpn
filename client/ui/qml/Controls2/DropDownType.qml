@@ -123,6 +123,13 @@ Item {
         }
     }
 
+    // Some Android TV remotes report DPAD_CENTER as Key_Select rather than
+    // Return. The picker is an Item, so it has no native Button click handler.
+    Keys.onSelectPressed: {
+        if (menu.isClosed && root.enabled)
+            menu.openTriggered()
+    }
+
     Rectangle {
         id: focusBorder
 
