@@ -298,6 +298,15 @@ PageType {
             drawerHeight: (Qt.inputMethod.visible || PageController.imeHeight > 0) ? 0.95 : 0.7
             drawerParent: root
 
+            onCloseTriggered: {
+                if (root.tvMode) Qt.callLater(function() {
+                    if (root.visible && countryBypassSelector.visible) {
+                        FocusController.setFocusItem(countryBypassSelector)
+                        root.scrollHeaderTo(countryBypassSelector)
+                    }
+                })
+            }
+
             onOpenTriggered: {
                 countrySearchInput.clear()
                 Qt.callLater(function() {
@@ -582,6 +591,15 @@ PageType {
             drawerBackButtonColor: AmneziaStyle.color.tcInk
             id: selector
             headerBackButtonImage: root.tvMode ? "qrc:/images/controls/arrow-left.svg" : ""
+
+            onCloseTriggered: {
+                if (root.tvMode) Qt.callLater(function() {
+                    if (root.visible && selector.visible) {
+                        FocusController.setFocusItem(selector)
+                        root.scrollHeaderTo(selector)
+                    }
+                })
+            }
 
             onOpenTriggered: {
                 if (root.tvMode) Qt.callLater(function() {
