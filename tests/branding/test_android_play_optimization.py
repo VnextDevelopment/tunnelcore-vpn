@@ -43,8 +43,12 @@ class AndroidReleaseAndTvVisibilityTest(unittest.TestCase):
             self.assertIn('<item name="android:windowLayoutInDisplayCutoutMode">always</item>', content)
             self.assertNotIn('>shortEdges<', content)
         activity = (ANDROID / "src/org/amnezia/vpn/AmneziaActivity.kt").read_text()
-        self.assertIn("Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM", activity)
-        self.assertIn("WindowCompat.setDecorFitsSystemWindows(window, false)", activity)
+        # QtActivity is not a ComponentActivity; use AndroidX Core's
+        # Window-based modern equivalent on all Android 14+ devices.
+        self.assertIn("WindowCompat.enableEdgeToEdge(window)", activity)
+        self.assertNotIn("WindowCompat.setDecorFitsSystemWindows(window, false)", activity)
+        self.assertNotIn("window.navigationBarColor =", activity)
+        self.assertNotIn("statusBarColor =", activity)
         self.assertIn("WindowInsetsCompat.Type.systemBars()", activity)
 
 
