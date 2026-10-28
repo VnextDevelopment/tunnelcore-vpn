@@ -225,11 +225,11 @@ PageType {
         anchors.left: parent.left
         anchors.right: parent.right
         height: root.tvMode
-                ? Math.min(header.implicitHeight, Math.max(120,
+                ? Math.min(header.y + header.implicitHeight + 12, Math.max(120,
                     root.height - (addSiteButton.implicitHeight + 48) - 120))
-                : header.implicitHeight
+                : header.y + header.implicitHeight
         contentWidth: width
-        contentHeight: header.implicitHeight
+        contentHeight: header.y + header.implicitHeight + (root.tvMode ? 12 : 0)
         flickableDirection: Flickable.VerticalFlick
         boundsBehavior: Flickable.StopAtBounds
         interactive: root.tvMode
@@ -282,6 +282,7 @@ PageType {
             drawerHeaderColor: AmneziaStyle.color.tcInk
             drawerBackButtonColor: AmneziaStyle.color.tcInk
             id: countryBypassSelector
+            headerBackButtonImage: root.tvMode ? "qrc:/images/controls/arrow-left.svg" : ""
 
             Layout.fillWidth: true
             Layout.topMargin: 24
@@ -295,7 +296,14 @@ PageType {
 
             onOpenTriggered: {
                 countrySearchInput.clear()
-                Qt.callLater(function() { geoCountriesList.positionViewAtBeginning() })
+                Qt.callLater(function() {
+                    geoCountriesList.positionViewAtBeginning()
+                    if (root.tvMode) {
+                        geoCountriesList.currentIndex = root.geoCountryModelIndex()
+                        geoCountriesList.positionViewAtIndex(geoCountriesList.currentIndex, ListView.Contain)
+                        geoCountriesList.forceActiveFocus(Qt.TabFocusReason)
+                    }
+                })
             }
 
             visible: TunnelCoreController.authenticated
@@ -455,6 +463,9 @@ PageType {
                             boundsBehavior: Flickable.StopAtBounds
                             flickableDirection: Flickable.VerticalFlick
                             keyNavigationEnabled: true
+                            Keys.onReturnPressed: if (currentItem) currentItem.clicked()
+                            Keys.onEnterPressed: if (currentItem) currentItem.clicked()
+                            Keys.onSelectPressed: if (currentItem) currentItem.clicked()
                             ScrollBar.vertical: ScrollBarType {
                                 policy: ScrollBar.AsNeeded
                             }
@@ -485,9 +496,14 @@ PageType {
 
                                 background: Rectangle {
                                     radius: 12
-                                    color: countryRow.countrySelected || countryRow.down
+                                    readonly property bool tvRowFocus: root.tvMode
+                                            && countryRow.ListView.isCurrentItem
+                                            && geoCountriesList.activeFocus
+                                    color: countryRow.countrySelected || countryRow.down || tvRowFocus
                                            ? AmneziaStyle.color.tcSurfaceBlue
                                            : AmneziaStyle.color.tcCard
+                                    border.color: tvRowFocus ? AmneziaStyle.color.tcBlue : "transparent"
+                                    border.width: tvRowFocus ? 3 : 0
                                 }
 
                                 contentItem: RowLayout {
@@ -561,6 +577,17 @@ PageType {
             drawerHeaderColor: AmneziaStyle.color.tcInk
             drawerBackButtonColor: AmneziaStyle.color.tcInk
             id: selector
+            headerBackButtonImage: root.tvMode ? "qrc:/images/controls/arrow-left.svg" : ""
+
+            onOpenTriggered: {
+                if (root.tvMode) Qt.callLater(function() {
+                    var row = modeOptionsList.itemAtIndex(modeOptionsList.selectedIndex)
+                    if (row && row.selectable)
+                        row.selectable.forceActiveFocus(Qt.TabFocusReason)
+                    else
+                        modeOptionsList.forceActiveFocus(Qt.TabFocusReason)
+                })
+            }
 
             Layout.fillWidth: true
             Layout.topMargin: 32
@@ -575,6 +602,7 @@ PageType {
             headerText: qsTr("Mode")
 
             listView: ListViewWithRadioButtonType {
+                id: modeOptionsList
                 rootWidth: root.width
                 textColor: AmneziaStyle.color.tcInk
                 itemColor: AmneziaStyle.color.tcCard
