@@ -233,8 +233,8 @@ function dropRootObject(item) {}''',
         drawer.deleteLater()
 
     def test_tv_home_split_sheet_keeps_focus_and_opens_settings(self):
-        # This is the actual overlay shown from the VPN dashboard (not
-        # PageSettingsSplitTunneling, which has a separate scroll layout).
+        # Real dashboard overlay: its focus must land on an actual Qt Button,
+        # not the surrounding Item (which does not activate on remote OK).
         from PySide6.QtQuick import QQuickItem
         self.objects[0].setProperty('authenticated', True)
         QTest.qWait(60)
@@ -256,28 +256,56 @@ function dropRootObject(item) {}''',
         server = drawer.findChild(QQuickItem, 'homeSplitServerRow')
         self.assertIsNotNone(site)
         self.assertIsNotNone(server)
+        site_button = site.property('rightButton')
+        server_button = server.property('rightButton')
+        self.assertIsNotNone(site_button)
+        self.assertIsNotNone(server_button)
         self.assertTrue(drawer.property('isOpened'))
-        self.assertTrue(site.hasActiveFocus())  # only visible row
+        self.assertTrue(site_button.hasActiveFocus())  # only visible row
+        self.assertFalse(site.hasActiveFocus())  # native button owns OK
         QTest.keyClick(self.window, Qt.Key_Down)
-        self.assertTrue(site.hasActiveFocus())  # no movement to tabs behind
+        self.assertTrue(site_button.hasActiveFocus())  # no movement to tabs behind
         self.assertFalse(previous.hasActiveFocus())
         QTest.keyClick(self.window, Qt.Key_Back)
         QTest.qWait(70)
         self.assertTrue(drawer.property('isClosed'))
         self.assertTrue(previous.hasActiveFocus())
 
-        # Two-row case: navigation stays within the sheet and OK opens
-        # the split settings page exactly once.
+        # Two-row case: navigation stays within the overlay.
         self.objects[8].setProperty('isDefaultServerDefaultContainerHasSplitTunneling', True)
         drawer.openTriggered.emit()
         QTest.qWait(80)
-        self.assertTrue(server.hasActiveFocus())
+        self.assertTrue(server_button.hasActiveFocus())
         QTest.keyClick(self.window, Qt.Key_Down)
-        self.assertTrue(site.hasActiveFocus())
+        self.assertTrue(site_button.hasActiveFocus())
         QTest.keyClick(self.window, Qt.Key_Up)
-        self.assertTrue(server.hasActiveFocus())
+        self.assertTrue(server_button.hasActiveFocus())
         QTest.keyClick(self.window, Qt.Key_Down)
-        self.assertTrue(site.hasActiveFocus())
+        self.assertTrue(site_button.hasActiveFocus())
+        before = self.objects[1].property('navigations')
+        QTest.keyClick(self.window, Qt.Key_Select)
+        QTest.qWait(70)
+        self.assertEqual(self.objects[1].property('navigations'), before + 1)
+        self.assertTrue(drawer.property('isClosed'))
+        drawer.setParentItem(None)
+        drawer.deleteLater()
+
+    def test_tv_home_split_sheet_single_item_ok_enters_settings(self):
+        from PySide6.QtQuick import QQuickItem
+        self.objects[0].setProperty('authenticated', True)
+        comp = QQmlComponent(self.engine, QUrl.fromLocalFile(
+            str(self.path / 'Components/HomeSplitTunnelingDrawer.qml')))
+        drawer = comp.create()
+        self.assertIsNotNone(drawer, str(comp.errors()))
+        drawer.setParentItem(self.page)
+        drawer.setWidth(960)
+        drawer.setHeight(540)
+        self.engine.rootContext().setContextProperty('testedDrawer', drawer)
+        drawer.openTriggered.emit()
+        QTest.qWait(100)
+        site = drawer.findChild(QQuickItem, 'homeSplitSitesRow')
+        self.assertIsNotNone(site)
+        self.assertTrue(site.property('rightButton').hasActiveFocus())
         before = self.objects[1].property('navigations')
         QTest.keyClick(self.window, Qt.Key_Select)
         QTest.qWait(70)
