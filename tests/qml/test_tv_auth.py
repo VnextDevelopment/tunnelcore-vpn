@@ -232,6 +232,57 @@ function dropRootObject(item) {}''',
         drawer.setParentItem(None)
         drawer.deleteLater()
 
+    def test_tv_dropdown_initial_focus_and_center_key(self):
+        from PySide6.QtQuick import QQuickItem
+        # Exercise the real DropDownType + DrawerType2 lifecycle, including
+        # the delayed creation of a listView Component and remote Key_Select.
+        comp = QQmlComponent(self.engine)
+        source = """import QtQuick
+import QtQuick.Controls
+import "Controls2"
+Item {
+    id: host
+    width: 960; height: 540
+    DropDownType {
+        id: picker
+        objectName: "tvDropdownTest"
+        width: 320; height: 56
+        drawerParent: host
+        drawerHeight: 0.8
+        text: "Country traffic directly"
+        headerText: "Country traffic directly"
+        property var testList: null
+        onPopupOpened: if (testList) testList.forceActiveFocus(Qt.TabFocusReason)
+        listView: Item {
+            id: loadedList
+            objectName: "tvDropdownLoadedList"
+            Component.onCompleted: picker.testList = loadedList
+            Component.onDestruction: {
+                if (picker.testList === loadedList) picker.testList = null
+            }
+        }
+    }
+}
+"""
+        comp.setData(source.encode(), QUrl.fromLocalFile(str(self.path / 'TvDropdownTest.qml')))
+        host = comp.create()
+        self.assertIsNotNone(host, str(comp.errors()))
+        host.setParentItem(self.window.contentItem())
+        dropdown = host.findChild(QQuickItem, 'tvDropdownTest')
+        self.assertIsNotNone(dropdown)
+        dropdown.forceActiveFocus()
+        QTest.keyClick(self.window, Qt.Key_Select)
+        QTest.qWait(90)
+        self.assertTrue(dropdown.property('popupIsOpen'))
+        loaded = host.findChild(QQuickItem, 'tvDropdownLoadedList')
+        self.assertIsNotNone(loaded)
+        self.assertTrue(loaded.hasActiveFocus())
+        dropdown.closeTriggered.emit()
+        QTest.qWait(75)
+        self.assertFalse(dropdown.property('popupIsOpen'))
+        host.setParentItem(None)
+        host.deleteLater()
+
     def test_tv_home_split_sheet_keeps_focus_and_opens_settings(self):
         # Real dashboard overlay: its focus must land on an actual Qt Button,
         # not the surrounding Item (which does not activate on remote OK).
