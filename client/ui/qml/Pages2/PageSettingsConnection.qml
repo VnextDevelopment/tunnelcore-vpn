@@ -104,7 +104,10 @@ PageType {
                 }
             }
 
-            DividerType { color: AmneziaStyle.color.tcStroke }
+            DividerType {
+                visible: !SettingsController.isOnTv()
+                color: AmneziaStyle.color.tcStroke
+            }
 
             LabelWithButtonType {
                 id: splitTunnelingButton
