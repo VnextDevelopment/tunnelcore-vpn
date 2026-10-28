@@ -10,6 +10,8 @@ FocusScope {
     property string backButtonImage: "qrc:/images/controls/arrow-left.svg"
     property string imageColor: AmneziaStyle.color.paleGray
     property var backButtonFunction
+    // Expose the actual focusable icon for TV remote navigation.
+    property alias focusButton: backButton
 
     implicitWidth: content.implicitWidth
     implicitHeight: content.implicitHeight
