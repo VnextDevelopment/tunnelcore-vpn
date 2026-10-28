@@ -4,6 +4,7 @@ These ensure a GitHub Release is optional and that signed Android artifacts
 remain usable without publishing to GitHub Releases or Google Play.
 """
 from pathlib import Path
+import re
 import unittest
 
 
@@ -49,6 +50,24 @@ class AndroidSideloadReleaseWorkflowTest(unittest.TestCase):
         self.assertIn("TunnelCoreVPN_*_android_universal.apk", WORKFLOW)
         self.assertIn("TunnelCoreVPN_*_android_universal.sha256", WORKFLOW)
         self.assertNotIn("if: ${{ inputs.publish_release }}\n        uses: actions/upload-artifact", WORKFLOW)
+
+    def test_v7_direct_download_uploads_exactly_one_file_per_artifact(self):
+        # Regression for GitHub Actions run 40714008835: v7 rejects two
+        # files with archive: false even though the APK build is successful.
+        blocks = re.findall(
+            r"(?m)^      - name: (Upload .* to Actions Artifacts)\n"
+            r"((?:^        .*\n|^          .*\n)*)", WORKFLOW
+        )
+        self.assertEqual(len(blocks), 2)
+        for name, body in blocks:
+            with self.subTest(name=name):
+                self.assertIn("uses: actions/upload-artifact@v7", body)
+                self.assertIn("archive: false", body)
+                paths = re.findall(r"(?m)^          path: (.+)$", body)
+                self.assertEqual(len(paths), 1)
+                self.assertNotEqual(paths[0], "|")
+        self.assertIn("name: TunnelCoreVPN-Android-Universal-Signed", WORKFLOW)
+        self.assertIn("name: TunnelCoreVPN-Android-Universal-SHA256", WORKFLOW)
 
 
 if __name__ == "__main__":
