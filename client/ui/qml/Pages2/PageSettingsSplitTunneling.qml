@@ -34,6 +34,21 @@ PageType {
     property var tvCountrySearch: null
     property var tvModeList: null
 
+    function focusPageControl() {
+        if (!root.tvMode || root.tvModalOpen) return
+        backButton.focusButton.forceActiveFocus(Qt.TabFocusReason)
+        tvHeaderViewport.contentY = 0
+    }
+
+    // The inherited PageType resets focus at 200 ms after a page push.
+    // Give the TV screen an explicit and visible entry point afterward.
+    Timer {
+        interval: 280
+        repeat: false
+        running: root.tvMode
+        onTriggered: if (root.visible && !root.tvModalOpen) root.focusPageControl()
+    }
+
     readonly property bool tvModalOpen: tvMode &&
             (countryBypassSelector.popupIsOpen || selector.popupIsOpen ||
              moreActionsDrawer.isOpened || importSitesDrawer.isOpened)
