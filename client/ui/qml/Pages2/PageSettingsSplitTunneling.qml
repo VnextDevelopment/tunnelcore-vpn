@@ -28,6 +28,98 @@ PageType {
     // Give the TV remote a logical focus order independent of what is
     // currently visible inside the vertically scrollable header.
     readonly property bool remoteNavigationScope: tvMode
+    // Separate QML Components loaded by DropDownType do not expose their ids
+    // to the page. They register the actual instances when instantiated.
+    property var tvCountryList: null
+    property var tvCountrySearch: null
+    property var tvModeList: null
+
+    readonly property bool tvModalOpen: tvMode &&
+            (countryBypassSelector.popupIsOpen || selector.popupIsOpen ||
+             moreActionsDrawer.isOpened || importSitesDrawer.isOpened)
+
+    function tvFocusCountryList() {
+        if (!root.tvMode || !countryBypassSelector.popupIsOpen || !root.tvCountryList)
+            return
+        var view = root.tvCountryList
+        var selected = Math.min(Math.max(root.geoCountryModelIndex(), 0), Math.max(0, view.count - 1))
+        view.currentIndex = selected
+        view.positionViewAtIndex(selected, ListView.Contain)
+        view.forceActiveFocus(Qt.TabFocusReason)
+    }
+
+    function tvFocusModeList() {
+        if (!root.tvMode || !selector.popupIsOpen || !root.tvModeList)
+            return
+        var view = root.tvModeList
+        var index = Math.min(Math.max(view.selectedIndex, 0), Math.max(0, view.count - 1))
+        view.currentIndex = index
+        view.positionViewAtIndex(index, ListView.Contain)
+        var row = view.itemAtIndex(index)
+        if (row && row.selectable)
+            row.selectable.forceActiveFocus(Qt.TabFocusReason)
+        else
+            view.forceActiveFocus(Qt.TabFocusReason)
+    }
+
+    function tvMoveMode(forward) {
+        if (!root.tvMode || !selector.popupIsOpen || !root.tvModeList)
+            return
+        var view = root.tvModeList
+        var next = Math.max(0, Math.min(view.count - 1,
+                view.currentIndex + (forward ? 1 : -1)))
+        view.currentIndex = next
+        view.positionViewAtIndex(next, ListView.Contain)
+        var row = view.itemAtIndex(next)
+        if (row && row.selectable)
+            row.selectable.forceActiveFocus(Qt.TabFocusReason)
+        else
+            view.forceActiveFocus(Qt.TabFocusReason)
+    }
+
+    // Fallback for remote events unhandled by the focused child.
+    // PageStart consumes them rather than navigating the bottom tab bar.
+    function handleTvModalKey(key) {
+        if (!root.tvModalOpen)
+            return false
+        if (key === Qt.Key_Back || key === Qt.Key_Escape) {
+            if (countryBypassSelector.popupIsOpen) countryBypassSelector.closeTriggered()
+            else if (selector.popupIsOpen) selector.closeTriggered()
+            else if (importSitesDrawer.isOpened) importSitesDrawer.closeTriggered()
+            else if (moreActionsDrawer.isOpened) moreActionsDrawer.closeTriggered()
+            return true
+        }
+        if (countryBypassSelector.popupIsOpen && root.tvCountryList) {
+            var view = root.tvCountryList
+            if (key === Qt.Key_Down || key === Qt.Key_Right) {
+                view.currentIndex = Math.min(view.count - 1, view.currentIndex + 1)
+                view.positionViewAtIndex(view.currentIndex, ListView.Contain)
+                view.forceActiveFocus(Qt.TabFocusReason)
+            } else if (key === Qt.Key_Up || key === Qt.Key_Left) {
+                if (view.currentIndex <= 0 && root.tvCountrySearch)
+                    root.tvCountrySearch.forceActiveFocus(Qt.TabFocusReason)
+                else {
+                    view.currentIndex = Math.max(0, view.currentIndex - 1)
+                    view.positionViewAtIndex(view.currentIndex, ListView.Contain)
+                    view.forceActiveFocus(Qt.TabFocusReason)
+                }
+            } else if (key === Qt.Key_Select || key === Qt.Key_Return || key === Qt.Key_Enter) {
+                if (view.currentItem) view.currentItem.clicked()
+            }
+            return true
+        }
+        if (selector.popupIsOpen) {
+            if (key === Qt.Key_Down || key === Qt.Key_Right) tvMoveMode(true)
+            else if (key === Qt.Key_Up || key === Qt.Key_Left) tvMoveMode(false)
+            else if (key === Qt.Key_Select || key === Qt.Key_Return || key === Qt.Key_Enter) {
+                var view = root.tvModeList
+                var row = view ? view.itemAtIndex(view.currentIndex) : null
+                if (row && row.selectable) row.selectable.clicked()
+            }
+            return true
+        }
+        return true // other open drawers must never pass keys to background
+    }
 
     function inside(item, container) {
         for (var current = item; current; current = current.parent)
@@ -67,7 +159,7 @@ PageType {
     }
 
     function navigateRemote(forward) {
-        if (!root.tvMode || moreActionsDrawer.isOpened || importSitesDrawer.isOpened)
+        if (!root.tvMode || root.tvModalOpen)
             return false
         var focused = root.Window.window ? root.Window.window.activeFocusItem : null
         var controls = [backButton.focusButton, headerSwitch.switcher,
@@ -225,14 +317,15 @@ PageType {
         anchors.left: parent.left
         anchors.right: parent.right
         height: root.tvMode
-                ? Math.min(header.y + header.implicitHeight + 12, Math.max(120,
-                    root.height - (addSiteButton.implicitHeight + 48) - 120))
-                : header.y + header.implicitHeight
+                ? Math.min(contentHeight, Math.max(130,
+                    root.height - footerBar.height - (listView.count > 0 ? 176 : 0) - 16))
+                : contentHeight
         contentWidth: width
         contentHeight: header.y + header.implicitHeight + (root.tvMode ? 12 : 0)
         flickableDirection: Flickable.VerticalFlick
         boundsBehavior: Flickable.StopAtBounds
-        interactive: root.tvMode
+        interactive: root.tvMode && !root.tvModalOpen
+        enabled: !root.tvModalOpen
         clip: root.tvMode
         ScrollBar.vertical: ScrollBarType {
             policy: root.tvMode && tvHeaderViewport.contentHeight > tvHeaderViewport.height
@@ -262,7 +355,7 @@ PageType {
 
             headerText: qsTr("Split tunneling")
 
-            enabled: root.pageEnabled
+            enabled: root.pageEnabled && !root.tvModalOpen
             showSwitcher: true
             switcher {
                 checked: IpSplitTunnelingController.isSplitTunnelingEnabled
@@ -668,13 +761,19 @@ PageType {
         ScrollBar.vertical: ScrollBarType { policy: ScrollBar.AlwaysOn }
 
         anchors.top: tvHeaderViewport.bottom
-        anchors.topMargin: 16
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: addSiteButton.implicitHeight + 48 + (searchField.textField.activeFocus ? 0 : PageController.imeHeight)
+        anchors.topMargin: root.tvMode ? (count > 0 ? 8 : 0) : 16
+        anchors.bottom: root.tvMode ? undefined : parent.bottom
+        anchors.bottomMargin: root.tvMode ? 0 :
+                addSiteButton.implicitHeight + 48 +
+                (searchField.textField.activeFocus ? 0 : PageController.imeHeight)
+        height: root.tvMode
+                ? (count > 0 ? Math.max(72, Math.min(164,
+                      root.height - tvHeaderViewport.height - footerBar.height - 24)) : 0)
+                : undefined
 
         width: parent.width
-
-        enabled: root.pageEnabled
+        visible: !root.tvMode || count > 0
+        enabled: root.pageEnabled && !root.tvModalOpen
         clip: true
         keyNavigationEnabled: true
 
@@ -748,11 +847,18 @@ PageType {
     }
 
     Rectangle {
+        id: footerBar
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        
+        // On TV put the entry controls immediately after the settings/list,
+        // rather than leaving a large empty ListView across the screen.
+        anchors.top: root.tvMode ? (listView.count > 0
+                     ? listView.bottom : tvHeaderViewport.bottom) : undefined
+        anchors.topMargin: root.tvMode ? 8 : 0
+        anchors.bottom: root.tvMode ? undefined : parent.bottom
+
         height: addSiteButton.implicitHeight + 48
+        enabled: !root.tvModalOpen
         
         color: AmneziaStyle.color.tcBackground
         
