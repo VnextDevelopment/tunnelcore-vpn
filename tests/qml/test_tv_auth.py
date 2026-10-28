@@ -234,6 +234,8 @@ function dropRootObject(item) {}''',
 
     def test_tv_dropdown_initial_focus_and_center_key(self):
         from PySide6.QtQuick import QQuickItem
+        # Let the PageType initial-focus timer finish before opening a modal.
+        QTest.qWait(290)
         # Exercise the real DropDownType + DrawerType2 lifecycle, including
         # the delayed creation of a listView Component and remote Key_Select.
         comp = QQmlComponent(self.engine)
