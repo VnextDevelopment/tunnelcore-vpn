@@ -54,6 +54,13 @@ Item {
 
     signal openTriggered
     signal closeTriggered
+    // Fired after the drawer content Loader has had a chance to instantiate.
+    // Consumers must not reach into listView's separate Component scope by id.
+    signal popupOpened
+    signal popupClosed
+
+    readonly property bool popupIsOpen: menu.isOpened
+    property var popupBackItem: null
 
     readonly property bool isFocusable: true
 
@@ -222,6 +229,13 @@ Item {
 
     DrawerType2 {
         id: menu
+
+        onOpened: Qt.callLater(function() {
+            if (menu.isOpened) root.popupOpened()
+        })
+        onClosed: Qt.callLater(function() {
+            if (menu.isClosed) root.popupClosed()
+        })
         defaultColor: root.drawerBackgroundColor
         borderColor: root.drawerBorderColor
 
@@ -253,6 +267,11 @@ Item {
 
                 BackButtonType {
                     id: backButton
+                    Component.onCompleted: root.popupBackItem = backButton.focusButton
+                    Component.onDestruction: {
+                        if (root.popupBackItem === backButton.focusButton)
+                            root.popupBackItem = null
+                    }
                     backButtonImage: root.headerBackButtonImage
                     imageColor: root.drawerBackButtonColor
                     backButtonFunction: function() { menu.closeTriggered() }
