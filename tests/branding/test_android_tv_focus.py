@@ -77,7 +77,7 @@ class AndroidTvFocusTest(unittest.TestCase):
     def test_tv_split_tunneling_country_picker_has_dpad_selection(self):
         self.assertIn('function tvFocusCountryList()', SPLIT)
         self.assertIn('view.forceActiveFocus(Qt.TabFocusReason)', SPLIT)
-        self.assertIn('geoCountriesList.positionViewAtIndex(', SPLIT)
+        self.assertIn('view.positionViewAtIndex(selected, ListView.Contain)', SPLIT)
         self.assertIn('Keys.onSelectPressed: if (currentItem) currentItem.clicked()', SPLIT)
         self.assertIn('countryRow.ListView.isCurrentItem', SPLIT)
         self.assertIn('function tvFocusModeList()', SPLIT)
