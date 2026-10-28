@@ -93,7 +93,7 @@ PageType {
         }
         var next = current + (forward ? 1 : -1)
         if (next < 0 || next >= controls.length)
-            return false
+            return true // do not jump into hidden/offscreen page controls
         var target = controls[next]
         if (target === listView)
             root.focusSite(forward ? 0 : listView.count - 1)
@@ -234,6 +234,10 @@ PageType {
         boundsBehavior: Flickable.StopAtBounds
         interactive: root.tvMode
         clip: root.tvMode
+        ScrollBar.vertical: ScrollBarType {
+            policy: root.tvMode && tvHeaderViewport.contentHeight > tvHeaderViewport.height
+                    ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
+        }
 
     ColumnLayout {
         id: header
