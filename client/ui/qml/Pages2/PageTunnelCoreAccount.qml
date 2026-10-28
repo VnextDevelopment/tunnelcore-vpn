@@ -555,6 +555,9 @@ PageType {
                                 ]
                                 delegate: RowLayout {
                                     required property var modelData
+                                    // Keep the onboarding feature list consistent with TV navigation.
+                                    visible: !SettingsController.isOnTv()
+                                             || modelData.icon !== "qrc:/images/controls/split-tunneling.svg"
                                     Layout.fillWidth: true
                                     spacing: 12
                                     IconImageType {
@@ -918,6 +921,7 @@ PageType {
                 }
                 BasicButtonType {
                     objectName: "accountSplitTunnelingButton"
+                    visible: !SettingsController.isOnTv()
                     enabled: !TunnelCoreController.busy && !root.importingProfile
                              && root.pendingVpnCountry.length === 0
                     Layout.fillWidth: true
@@ -933,7 +937,10 @@ PageType {
                     borderWidth: 1
                     borderColor: AmneziaStyle.color.tcStroke
                     textColor: AmneziaStyle.color.tcInk
-                    clickedFunc: function() { splitTunnelingDrawer.openTriggered() }
+                    clickedFunc: function() {
+                        if (!SettingsController.isOnTv())
+                            splitTunnelingDrawer.openTriggered()
+                    }
                 }
 
                 SmallTextType {
@@ -1503,6 +1510,9 @@ PageType {
     }
     HomeSplitTunnelingDrawer {
         id: splitTunnelingDrawer
+        // The TV UI must never expose this sheet even if focus is restored.
+        visible: !SettingsController.isOnTv()
+        enabled: !SettingsController.isOnTv()
         parent: root
     }
 
