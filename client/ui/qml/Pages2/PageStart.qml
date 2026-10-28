@@ -74,6 +74,9 @@ PageType {
         }
 
         function onGoToPage(page, slide) {
+            // Keep the settings page available on phones but inaccessible on TV.
+            if (SettingsController.isOnTv() && page === PageEnum.PageSettingsSplitTunneling)
+                return
             var pagePath = PageController.getPagePath(page)
 
             if (slide) {
