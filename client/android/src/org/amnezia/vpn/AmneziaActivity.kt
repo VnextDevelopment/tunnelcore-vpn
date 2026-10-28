@@ -450,8 +450,13 @@ class AmneziaActivity : QtActivity() {
                 clearFlags(LayoutParams.FLAG_LAYOUT_NO_LIMITS)
                 WindowCompat.setDecorFitsSystemWindows(window, false)
                 setSoftInputMode(LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
-                statusBarColor = android.graphics.Color.TRANSPARENT
-                navigationBarColor = android.graphics.Color.TRANSPARENT
+                // Android 15+ enforces transparent system bars. Writing their
+                // deprecated colors has no effect on gesture navigation.
+                // Only configure legacy bars on pre-35 devices.
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+                    statusBarColor = android.graphics.Color.TRANSPARENT
+                    navigationBarColor = android.graphics.Color.TRANSPARENT
+                }
             }
 
             WindowInsetsControllerCompat(window, window.decorView).apply {
@@ -1043,7 +1048,10 @@ class AmneziaActivity : QtActivity() {
     fun setNavigationBarColor(color: Int) {
         Log.v(TAG, "Change navigation bar color: ${"#%08X".format(color)}")
         mainScope.launch {
-            window.navigationBarColor = color
+            // On API 35+ the QML view draws its own background under the
+            // navigation bar; changing Window.navigationBarColor is obsolete.
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM)
+                window.navigationBarColor = color
         }
     }
 
