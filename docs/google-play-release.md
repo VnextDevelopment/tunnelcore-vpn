@@ -46,10 +46,13 @@ Translations cover all **13 languages in `LanguageSettings::AvailableLanguageEnu
 (including English). Each translation is also available as a separate plain-text
 file under `docs/google-play-release-notes/` for convenient copying.
 
-**Important:** the application's Qt language list and the locales enabled in
-Google Play Console are not necessarily identical. Use the corresponding Play
-Console locale if available; do not assume every `xx-YY` code can be entered
-unchanged. The separate files are not uploaded to Google Play automatically.
+**Important:** Google Play release-note locale codes differ from Qt translation codes.
+Specifically, use `uk`, `ur`, and `ar` instead of `uk-UA`, `ur-PK`, and
+`ar-EG`. Codes in this document were checked against Google's supported
+store-listing locale table. Copy the entire `docs/google-play-release-notes/google-play-console.txt`
+file into the release notes field. The files are not uploaded automatically.
+Translations must be added to the app's Play Store listing to be eligible for
+that app's release-note field.
 Upload and test the new AAB before publishing these release notes.
 
 ### en-US — English
@@ -76,9 +79,9 @@ Fixed interface issues and improved stability.
 改进了 Android TV 遥控器导航和选中项高亮显示。
 修复了界面问题并提升了应用稳定性。
 
-### uk-UA — Українська
+### uk — Українська
 
-`docs/google-play-release-notes/uk-UA.txt`
+`docs/google-play-release-notes/uk.txt`
 
 Покращено відображення інтерфейсу на Android 15 і 16, зокрема біля системних панелей та вирізів екрана.
 Покращено навігацію пультом і підсвічування вибраних елементів на Android TV.
@@ -92,9 +95,9 @@ Fixed interface issues and improved stability.
 پیمایش با کنترل از راه دور و برجسته‌سازی گزینه‌های انتخاب‌شده در Android TV بهبود یافته است.
 اشکالات رابط کاربری برطرف شده و پایداری برنامه افزایش یافته است.
 
-### ar-EG — العربية
+### ar — العربية
 
-`docs/google-play-release-notes/ar-EG.txt`
+`docs/google-play-release-notes/ar.txt`
 
 تحسين عرض الواجهة على Android 15 و16، بما في ذلك المناطق المحيطة بأشرطة النظام وفتحات الشاشة.
 تحسين التنقل باستخدام جهاز التحكم عن بُعد وإبراز العنصر المحدد على Android TV.
@@ -108,9 +111,9 @@ Android 15 နှင့် 16 တွင် စနစ်ဘားများ၊ 
 Android TV တွင် အဝေးထိန်းခလုတ်ဖြင့် သွားလာမှုနှင့် ရွေးထားသောအရာကို ပြသမှုကို မြှင့်တင်ထားသည်။
 အင်တာဖေ့စ်အမှားများကို ပြုပြင်ပြီး တည်ငြိမ်မှုကို မြှင့်တင်ထားသည်။
 
-### ur-PK — اردو
+### ur — اردو
 
-`docs/google-play-release-notes/ur-PK.txt`
+`docs/google-play-release-notes/ur.txt`
 
 Android 15 اور 16 پر انٹرفیس کی نمائش بہتر بنائی گئی ہے، بشمول سسٹم بارز اور اسکرین کے کٹ آؤٹس کے آس پاس کے حصے۔
 Android TV پر ریموٹ سے نیویگیشن اور منتخب عناصر کی نمایاں نشاندہی بہتر کی گئی ہے۔
