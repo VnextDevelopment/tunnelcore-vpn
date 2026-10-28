@@ -1,19 +1,26 @@
-name: Publish signed Android APK
+name: Build signed universal Android APK
 
-# Separate OSS/sideload APK, not the Google Play flavor.
+# The standard path builds the latest main commit and uploads a signed APK
+# to the workflow's Actions Artifacts. No GitHub Release or Google Play
+# publication is required. Optional publication uses an existing release tag.
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Published desktop release version, e.g. 5.0.2.63"
-        required: true
+        description: "Optional exact version (e.g. 5.0.2.173); blank = automatic 5.0.2.<run number>"
+        required: false
         type: string
+      publish_release:
+        description: "Also attach APK to an EXISTING published GitHub Release (requires version)"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
 
 concurrency:
-  group: android-sideload-release
+  group: android-sideload-apk-${{ github.ref }}
   cancel-in-progress: false
 
 env:
@@ -41,25 +48,52 @@ jobs:
       QT_ANDROID_KEYSTORE_STORE_PASS: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
       QT_ANDROID_KEYSTORE_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
     steps:
-      - name: Verify release and version
+      - name: Select version and build source
+        shell: bash
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+          PUBLISH_RELEASE: ${{ inputs.publish_release }}
+        run: |
+          set -euo pipefail
+          # By default CMake uses 5.0.2.${GITHUB_RUN_NUMBER}. The optional
+          # version is forwarded to CMake and its fourth field to Android
+          # versionCode generation, so the artifact and APK version agree.
+          if [[ -n "$REQUESTED_VERSION" ]]; then
+            if [[ ! "$REQUESTED_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[1-9][0-9]{0,7}$ ]]; then
+              echo "::error::Version must be four numeric components, e.g. 5.0.2.173 (last 1..99999999)"
+              exit 1
+            fi
+            build_number="${REQUESTED_VERSION##*.}"
+            echo "AMNEZIAVPN_VERSION=$REQUESTED_VERSION" >> "$GITHUB_ENV"
+          else
+            if [[ "$PUBLISH_RELEASE" == "true" ]]; then
+              echo "::error::Provide the exact published GitHub Release version when publish_release is enabled"
+              exit 1
+            fi
+            build_number="$GITHUB_RUN_NUMBER"
+          fi
+          echo "ANDROID_BUILD_NUMBER=$build_number" >> "$GITHUB_ENV"
+
+      - name: Checkout main (or matching release tag for optional publication)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.publish_release && format('v{0}', inputs.version) || 'main' }}
+          submodules: 'true'
+          fetch-depth: 10
+
+      - name: Verify optional published GitHub Release
+        if: ${{ inputs.publish_release }}
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]
-          gh release view "v$VERSION" --repo "${{ github.repository }}" --json isDraft,isPrerelease --jq '(.isDraft == false) and (.isPrerelease == false)' | grep -qx true
-          echo "ANDROID_RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
-          # CMake uses GITHUB_RUN_NUMBER as the fourth component of app version.
-          # The build command supplies the version without mutating a reserved GitHub variable.
-
-      - name: Checkout pinned release tag
-        uses: actions/checkout@v4
-        with:
-          ref: v${{ inputs.version }}
-          submodules: 'true'
-          fetch-depth: 10
+          # In release mode the checkout is pinned to the exact tag, so a
+          # newer main commit cannot accidentally be attached to an old release.
+          gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" \
+            --json isDraft,isPrerelease \
+            --jq '(.isDraft == false) and (.isPrerelease == false)' | grep -qx true
 
       - name: Install desktop Qt
         uses: jurplel/install-qt-action@v4
@@ -163,11 +197,21 @@ jobs:
           QT_INSTALL_DIR: ${{ runner.temp }}
         run: |
           set -euo pipefail
-          # Build all four native ABIs into ONE APK; the Play AAB uses a
-          # separate build workflow and is not changed by this release.
-          GITHUB_RUN_NUMBER="${ANDROID_RELEASE_VERSION##*.}" deploy/build.sh -t android \
+          # Build all four native ABIs into ONE APK; the Play AAB is separate.
+          # The fourth version component also controls Android versionCode.
+          GITHUB_RUN_NUMBER="$ANDROID_BUILD_NUMBER" deploy/build.sh -t android \
             --abi arm64-v8a --abi armeabi-v7a --abi x86 --abi x86_64 \
             --build ./deploy/build/android-oss-release --sign
+          VERSION=$(grep '^CMAKE_PROJECT_VERSION:STATIC=' deploy/build/android-oss-release/CMakeCache.txt | cut -d= -f2)
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+            echo "::error::Could not determine the CMake Android application version"
+            exit 1
+          }
+          if [[ -n "${AMNEZIAVPN_VERSION:-}" && "$VERSION" != "$AMNEZIAVPN_VERSION" ]]; then
+            echo "::error::Built version $VERSION does not match requested $AMNEZIAVPN_VERSION"
+            exit 1
+          fi
+          echo "ANDROID_RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
           mkdir -p deploy/artifacts
           mapfile -t apks < <(find deploy/build/android-oss-release/client/android-build/build/outputs/apk \
             -type f -name '*release-signed.apk')
@@ -185,14 +229,32 @@ jobs:
             fi
           done
           "${ANDROID_HOME}/build-tools/36.0.0/apksigner" verify --verbose --print-certs "${apks[0]}"
-          cp "${apks[0]}" "deploy/artifacts/TunnelCoreVPN_${ANDROID_RELEASE_VERSION}_android_universal.apk"
+          apk="deploy/artifacts/TunnelCoreVPN_${VERSION}_android_universal.apk"
+          cp "${apks[0]}" "$apk"
+          (cd deploy/artifacts && sha256sum "TunnelCoreVPN_${VERSION}_android_universal.apk" \
+            > "TunnelCoreVPN_${VERSION}_android_universal.sha256")
 
-      - name: Publish APK to the matching release
+      - name: Upload signed Universal APK to Actions Artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: TunnelCoreVPN-Android-Universal-Signed
+          path: |
+            deploy/artifacts/TunnelCoreVPN_*_android_universal.apk
+            deploy/artifacts/TunnelCoreVPN_*_android_universal.sha256
+          if-no-files-found: error
+          archive: false
+          retention-days: 30
+
+      - name: Optionally attach APK to matching GitHub Release
+        if: ${{ inputs.publish_release }}
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
+          # Never create a release implicitly. Desktop releases are approved
+          # separately by publish-release.yml; this only attaches Android.
           gh release upload "v${ANDROID_RELEASE_VERSION}" \
             "deploy/artifacts/TunnelCoreVPN_${ANDROID_RELEASE_VERSION}_android_universal.apk" \
-            --repo "${{ github.repository }}"
+            "deploy/artifacts/TunnelCoreVPN_${ANDROID_RELEASE_VERSION}_android_universal.sha256" \
+            --repo "$GITHUB_REPOSITORY"
