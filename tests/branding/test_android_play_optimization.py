@@ -43,10 +43,11 @@ class AndroidReleaseAndTvVisibilityTest(unittest.TestCase):
             self.assertIn('<item name="android:windowLayoutInDisplayCutoutMode">always</item>', content)
             self.assertNotIn('>shortEdges<', content)
         activity = (ANDROID / "src/org/amnezia/vpn/AmneziaActivity.kt").read_text()
-        # QtActivity is not a ComponentActivity; use AndroidX Core's
-        # Window-based modern equivalent on all Android 14+ devices.
-        self.assertIn("WindowCompat.enableEdgeToEdge(window)", activity)
-        self.assertNotIn("WindowCompat.setDecorFitsSystemWindows(window, false)", activity)
+        # AndroidX Core 1.17's edge-to-edge helper still invokes APIs
+        # deprecated on Android 15; use its safe layout method directly.
+        self.assertIn("applyEdgeToEdgeWithoutColorSetters()", activity)
+        self.assertIn("WindowCompat.setDecorFitsSystemWindows(window, false)", activity)
+        self.assertNotIn("WindowCompat.enableEdgeToEdge(window)", activity)
         self.assertNotIn("window.navigationBarColor =", activity)
         self.assertNotIn("statusBarColor =", activity)
         self.assertIn("WindowInsetsCompat.Type.systemBars()", activity)

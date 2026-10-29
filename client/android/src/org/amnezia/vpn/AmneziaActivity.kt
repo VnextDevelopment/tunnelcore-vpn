@@ -210,7 +210,7 @@ class AmneziaActivity : QtActivity() {
                 qtInitialized.await()
                 window.decorView.post {
                     if (!isFinishing && !isDestroyed) {
-                        WindowCompat.enableEdgeToEdge(window)
+                        applyEdgeToEdgeWithoutColorSetters()
                         setupPassiveImeInsetsObserver()
                     }
                 }
@@ -443,6 +443,32 @@ class AmneziaActivity : QtActivity() {
         }
     }
 
+    /**
+     * Enable edge-to-edge without referencing deprecated system-bar color setters.
+     *
+     * AndroidX Core's WindowCompat.enableEdgeToEdge() calls Window color APIs,
+     * which Play flags on Android 15. Android 14+ uses transparent system bars
+     * from the v34 theme; Android 15+ enforces transparency itself.
+     * We must not replace Qt's window-insets listener (breaks IME in QML).
+     */
+    private fun applyEdgeToEdgeWithoutColorSetters() {
+        // Force decor initialization before writing window attributes so Qt
+        // and the framework do not overwrite them during initialization.
+        window.decorView
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val attributes = window.attributes
+            if (attributes.layoutInDisplayCutoutMode != LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS) {
+                attributes.layoutInDisplayCutoutMode = LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+                window.attributes = attributes
+            }
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isStatusBarContrastEnforced = false
+            window.isNavigationBarContrastEnforced = false
+        }
+    }
+
     private fun configureWindowForEdgeToEdge() {
         window.apply {
             addFlags(LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
@@ -453,10 +479,10 @@ class AmneziaActivity : QtActivity() {
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            // QtActivity is a plain Activity, not a ComponentActivity, so the
-            // AndroidX Activity enableEdgeToEdge() extension cannot be used.
-            // AndroidX Core 1.17 provides its equivalent for any Window.
-            WindowCompat.enableEdgeToEdge(window)
+            // QtActivity is a plain Activity. Avoid AndroidX Core 1.17's
+            // WindowCompat.enableEdgeToEdge(): it invokes unsupported
+            // Window.setStatusBarColor/setNavigationBarColor even on API 35.
+            applyEdgeToEdgeWithoutColorSetters()
         }
 
         WindowInsetsControllerCompat(window, window.decorView).apply {

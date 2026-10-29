@@ -228,6 +228,7 @@ jobs:
               exit 1
             fi
           done
+          python3 scripts/check_android_window_apis.py "${apks[0]}"
           "${ANDROID_HOME}/build-tools/36.0.0/apksigner" verify --verbose --print-certs "${apks[0]}"
           apk="deploy/artifacts/TunnelCoreVPN_${VERSION}_android_universal.apk"
           cp "${apks[0]}" "$apk"
