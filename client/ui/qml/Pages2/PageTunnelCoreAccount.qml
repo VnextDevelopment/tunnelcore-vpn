@@ -919,7 +919,11 @@ PageType {
                         }
                     }
                 }
-                BasicButtonType {
+                // A compact full-width action, not a centered single-line
+                // BasicButtonType: long translations previously overflowed
+                // and squeezed the icons on narrow Android phone screens.
+                Button {
+                    id: accountSplitButton
                     objectName: "accountSplitTunnelingButton"
                     visible: !SettingsController.isOnTv()
                     enabled: !TunnelCoreController.busy && !root.importingProfile
@@ -928,19 +932,75 @@ PageType {
                     readonly property bool splitEnabled: IpSplitTunnelingController.isSplitTunnelingEnabled
                             || AppSplitTunnelingController.isSplitTunnelingEnabled
                             || ServersUiController.isDefaultServerDefaultContainerHasSplitTunneling
-                    text: splitEnabled ? qsTranslate("PageHome", "Split tunneling enabled")
-                                       : qsTranslate("PageHome", "Split tunneling disabled")
-                    leftImageSource: "qrc:/images/controls/split-tunneling.svg"
-                    rightImageSource: "qrc:/images/controls/chevron-down.svg"
-                    defaultColor: AmneziaStyle.color.tcCard
-                    hoveredColor: AmneziaStyle.color.tcSurfaceBlue
-                    borderWidth: 1
-                    borderColor: AmneziaStyle.color.tcStroke
-                    textColor: AmneziaStyle.color.tcInk
-                    clickedFunc: function() {
-                        if (!SettingsController.isOnTv())
-                            splitTunnelingDrawer.openTriggered()
+                    implicitHeight: Math.max(72, splitButtonLabels.implicitHeight + topPadding + bottomPadding)
+                    leftPadding: 16
+                    rightPadding: 16
+                    topPadding: 12
+                    bottomPadding: 12
+                    hoverEnabled: true
+                    opacity: enabled ? 1 : 0.6
+
+                    background: Rectangle {
+                        radius: 18
+                        color: accountSplitButton.pressed || accountSplitButton.hovered
+                               ? AmneziaStyle.color.tcSurfaceBlue : AmneziaStyle.color.tcCard
+                        border.width: accountSplitButton.activeFocus ? 2 : 1
+                        border.color: accountSplitButton.activeFocus
+                                      ? AmneziaStyle.color.tcBlue : AmneziaStyle.color.tcStroke
                     }
+
+                    contentItem: RowLayout {
+                        spacing: 12
+
+                        IconImageType {
+                            source: "qrc:/images/controls/split-tunneling.svg"
+                            tint: AmneziaStyle.color.tcBlue
+                            Layout.preferredWidth: 20
+                            Layout.preferredHeight: 20
+                            Layout.alignment: Qt.AlignVCenter
+                        }
+
+                        ColumnLayout {
+                            id: splitButtonLabels
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 0
+                            spacing: 2
+
+                            Text {
+                                objectName: "accountSplitTunnelingLabel"
+                                Layout.fillWidth: true
+                                text: qsTranslate("HomeSplitTunnelingDrawer", "Split tunneling")
+                                color: AmneziaStyle.color.tcInk
+                                font.pixelSize: 16
+                                font.weight: Font.Medium
+                                wrapMode: Text.WordWrap
+                                maximumLineCount: 2
+                                elide: Text.ElideRight
+                            }
+
+                            Text {
+                                objectName: "accountSplitTunnelingStatus"
+                                Layout.fillWidth: true
+                                text: accountSplitButton.splitEnabled
+                                      ? qsTranslate("HomeSplitTunnelingDrawer", "Enabled")
+                                      : qsTranslate("HomeSplitTunnelingDrawer", "Disabled")
+                                color: accountSplitButton.splitEnabled
+                                       ? AmneziaStyle.color.tcBlue : AmneziaStyle.color.tcMuted
+                                font.pixelSize: 13
+                                elide: Text.ElideRight
+                            }
+                        }
+
+                        IconImageType {
+                            source: "qrc:/images/controls/chevron-down.svg"
+                            tint: AmneziaStyle.color.tcInk
+                            Layout.preferredWidth: 20
+                            Layout.preferredHeight: 20
+                            Layout.alignment: Qt.AlignVCenter
+                        }
+                    }
+
+                    onClicked: if (!SettingsController.isOnTv()) splitTunnelingDrawer.openTriggered()
                 }
 
                 SmallTextType {
