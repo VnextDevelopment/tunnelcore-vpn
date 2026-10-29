@@ -760,7 +760,6 @@ PageType {
             listView: ListViewWithRadioButtonType {
                 id: modeOptionsList
                 tvNavigationHandler: root.tvMode ? root.tvMoveMode : null
-                Component.onCompleted: root.tvModeList = modeOptionsList
                 Component.onDestruction: {
                     if (root.tvModeList === modeOptionsList)
                         root.tvModeList = null
@@ -784,6 +783,7 @@ PageType {
                 }
 
                 Component.onCompleted: {
+                    root.tvModeList = modeOptionsList
                     if (root.routeModesModel[selectedIndex].type === IpSplitTunnelingController.routeMode) {
                         selector.text = selectedText
                     } else {

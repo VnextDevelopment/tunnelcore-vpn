@@ -101,7 +101,11 @@ class AndroidTvFocusTest(unittest.TestCase):
         self.assertIn('onPopupClosed:', SPLIT)
         self.assertIn('Component.onCompleted: root.tvCountryList = geoCountriesList', SPLIT)
         self.assertIn('Component.onCompleted: root.tvCountrySearch = countrySearchInput', SPLIT)
-        self.assertIn('Component.onCompleted: root.tvModeList = modeOptionsList', SPLIT)
+        mode_list = SPLIT.split('id: modeOptionsList', 1)[1].split(
+            'Connections {', 1
+        )[0]
+        self.assertEqual(mode_list.count('Component.onCompleted'), 1)
+        self.assertIn('root.tvModeList = modeOptionsList', mode_list)
         self.assertIn('tvNavigationHandler: root.tvMode ? root.tvMoveMode : null', SPLIT)
         self.assertIn('property var tvNavigationHandler:', RADIO)
 
