@@ -147,6 +147,20 @@ class TunnelCoreUiTest(unittest.TestCase):
                 self.assertIn("color: AmneziaStyle.color.tcBackground", source)
                 self.assertIn("imageColor: AmneziaStyle.color.tcInk", source)
 
+    def test_phone_split_action_uses_bounded_two_line_layout(self):
+        block = ACCOUNT.split('objectName: "accountSplitTunnelingButton"', 1)[1].split(
+            "SmallTextType {", 1
+        )[0]
+        self.assertIn("contentItem: RowLayout", block)
+        self.assertIn("Layout.minimumWidth: 0", block)
+        self.assertIn("wrapMode: Text.WordWrap", block)
+        self.assertIn("maximumLineCount: 2", block)
+        self.assertIn("accountSplitTunnelingStatus", block)
+        self.assertIn('qsTranslate("HomeSplitTunnelingDrawer", "Disabled")', block)
+        self.assertIn("splitTunnelingDrawer.openTriggered()", block)
+        self.assertNotIn('qsTranslate("PageHome", "Split tunneling disabled")', block)
+        self.assertIn("visible: !SettingsController.isOnTv()", block)
+
     def test_split_tunneling_drawer_contrast(self):
         """Poco M6 Pro: avoid dark text on the old dark drawer background."""
         source = (QML / "Pages2" / "PageSettingsSplitTunneling.qml").read_text(
