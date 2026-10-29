@@ -117,7 +117,7 @@ function dropRootObject(item) {}''',
             'IpSplitTunnelingController': 'property bool isSplitTunnelingEnabled: false',
             'AppSplitTunnelingController': 'property bool isSplitTunnelingEnabled: false',
             'ServersUiController': 'property bool isDefaultServerDefaultContainerHasSplitTunneling: false',
-            'SettingsController': 'function isOnTv() { return true }',
+            'SettingsController': 'property bool tv: true; function isOnTv() { return tv }',
         }
         for name, body in mocks.items():
             comp = QQmlComponent(self.engine)
@@ -177,6 +177,37 @@ function dropRootObject(item) {}''',
         self.assertFalse(self.page.property('showWelcome'))
         self.assertTrue(self.editor('loginField').hasActiveFocus())
         self.assertEqual(self.item('loginField').property('borderFocusedColor'), '#336699')
+
+    def test_phone_split_tunneling_action_fits_narrow_screen(self):
+        """Regression: the old centered button clipped its icon and Russian text."""
+        self.objects[-1].setProperty('tv', False)
+        self.objects[0].setProperty('authenticated', True)
+        self.window.resize(320, 720)
+        self.page.setWidth(320)
+        self.page.setHeight(720)
+        QTest.qWait(150)
+
+        button = self.item('accountSplitTunnelingButton')
+        title = self.item('accountSplitTunnelingLabel')
+        status = self.item('accountSplitTunnelingStatus')
+        chevron = self.item('accountSplitTunnelingChevron')
+        self.assertIsNotNone(button)
+        self.assertIsNotNone(title)
+        self.assertIsNotNone(status)
+        self.assertIsNotNone(chevron)
+        self.assertTrue(button.isVisible())
+        self.assertLessEqual(button.width(), 320)
+        self.assertGreaterEqual(button.height(), 72)
+        self.assertGreater(title.width(), 60)
+        self.assertLessEqual(title.width(), button.width() - 60)
+        self.assertLessEqual(
+            chevron.mapToItem(button, 0, 0).x() + chevron.width(),
+            button.width() + 0.5,
+        )
+        self.assertEqual(status.property('text'), 'Disabled')
+        self.objects[6].setProperty('isSplitTunnelingEnabled', True)
+        QTest.qWait(50)
+        self.assertEqual(status.property('text'), 'Enabled')
 
     def test_tv_connect_focus_ring_tracks_dpad_navigation(self):
         self.objects[0].setProperty('authenticated', True)
