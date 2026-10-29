@@ -992,6 +992,7 @@ PageType {
                         }
 
                         IconImageType {
+                            objectName: "accountSplitTunnelingChevron"
                             source: "qrc:/images/controls/chevron-down.svg"
                             tint: AmneziaStyle.color.tcInk
                             Layout.preferredWidth: 20
