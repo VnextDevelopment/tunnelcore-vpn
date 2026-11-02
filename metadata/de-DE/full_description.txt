@@ -1,0 +1,21 @@
+TunnelCore VPN ist eine VPN-App für Android mit Serverauswahl und übersichtlicher Verbindungssteuerung. Verbinde dich mit einem verfügbaren VPN-Server und lege fest, wie deine Apps die Verbindung nutzen.
+
+EINFACHE VPN-VERBINDUNG
+Melde dich an, wähle einen verfügbaren Server und aktiviere die VPN-Verbindung mit wenigen Fingertipps. Den Verbindungsstatus siehst du direkt in der App.
+
+AUTOMATISCHE ODER MANUELLE SERVERAUSWAHL
+Lass TunnelCore VPN automatisch einen Server auswählen oder entscheide dich selbst für einen verfügbaren Standort. Die Auswahl hängt vom Konto und der Dienstverfügbarkeit ab.
+
+SPLIT-TUNNELING
+Auf unterstützten Android-Smartphones und -Tablets kannst du festlegen, welche Apps das VPN nutzen und welche sich direkt mit dem Internet verbinden. In der Android-TV-Oberfläche ist diese Funktion nicht verfügbar.
+
+FLEXIBLE ANMELDUNG
+Melde dich mit einem PIN aus dem TunnelCore-Telegram-Bot oder mit E-Mail-Adresse und Passwort an. Du kannst ein neues Konto erstellen und Telegram per PIN verknüpfen.
+
+24-STUNDEN-TESTPHASE
+Berechtigte neue Nutzer können einmalig eine 24-stündige Testphase aktivieren. Danach ist ein aktives kostenpflichtiges Abonnement erforderlich, um den TunnelCore-VPN-Dienst weiter zu nutzen.
+
+Ein VPN verschlüsselt den Datenverkehr zwischen deinem Gerät und dem ausgewählten VPN-Server. Verbindungsqualität und Serververfügbarkeit können je nach Netzwerk und Standort variieren.
+
+VPN-DIENST UND VERSCHLÜSSELUNG
+TunnelCore VPN nutzt die Android-VpnService-API ausschließlich zum Aufbau und zur Verwaltung von VPN-Verbindungen. Mit AmneziaWG entsteht ein VPN-Tunnel zwischen Gerät und ausgewähltem Server. Der Datenverkehr im Tunnel wird verschlüsselt. Die API wird nicht verwendet, um den Verkehr anderer Apps für Werbeeinnahmen zu verändern oder umzuleiten. Du kannst die VPN-Verbindung jederzeit aktivieren oder trennen.

@@ -1,0 +1,256 @@
+﻿"locale","title","short_description","full_description"
+"en-US","TunnelCore VPN","Secure VPN for Android with server selection and split tunneling.","TunnelCore VPN is a paid VPN service for Android with a one-time 24-hour trial for eligible new users. Connect to an available VPN server and manage your connection with a simple, user-friendly interface.
+
+EASY VPN CONNECTION
+Sign in, select an available VPN server and connect in a few taps. View your VPN connection status and disconnect whenever you choose.
+
+AUTOMATIC OR MANUAL SERVER SELECTION
+Let TunnelCore VPN select an available server automatically, or manually choose from available server locations. Server and location availability depends on your account and network conditions.
+
+SPLIT TUNNELING
+On supported Android phones and tablets, choose which apps use the VPN connection and which connect directly to the internet. Split tunneling is not available in the Android TV interface.
+
+SIGN IN WITH PIN OR EMAIL
+• Sign in with a PIN code obtained from the TunnelCore Telegram bot.
+• Sign in with your email address and password.
+• Create an account with email and password.
+• Link an email account to Telegram with a PIN code.
+
+24-HOUR TRIAL AND SUBSCRIPTION
+Eligible new users can activate a one-time 24-hour VPN trial. After the trial, an active paid subscription is required to continue using the TunnelCore VPN service.
+
+VPN SERVICE AND ENCRYPTION
+TunnelCore VPN uses the Android VpnService API exclusively to establish and manage VPN connections. It creates a network tunnel between your Android device and the selected TunnelCore VPN server using the AmneziaWG protocol. Network traffic routed through that tunnel is encrypted between your device and the VPN server.
+
+The VpnService API is not used to manipulate or redirect traffic from other apps for advertising monetization. You remain in control of your VPN connection and can connect or disconnect at any time."
+"ru-RU","TunnelCore VPN","VPN для Android с выбором сервера и раздельным туннелированием.","TunnelCore VPN — приложение VPN для Android с удобным подключением, выбором сервера и управлением трафиком приложений. Подключайтесь к доступному VPN-серверу и настраивайте соединение под свои задачи.
+
+ПРОСТОЕ ПОДКЛЮЧЕНИЕ
+Войдите в аккаунт, выберите доступный сервер и включите VPN за несколько нажатий. Статус подключения отображается прямо в приложении.
+
+АВТОМАТИЧЕСКИЙ И РУЧНОЙ ВЫБОР СЕРВЕРА
+Доверьте выбор доступного сервера приложению или выберите страну самостоятельно. Список серверов зависит от аккаунта и доступности сервиса.
+
+РАЗДЕЛЬНОЕ ТУННЕЛИРОВАНИЕ
+На поддерживаемых телефонах и планшетах с Android можно выбирать, какие приложения используют VPN, а какие подключаются к интернету напрямую. В интерфейсе Android TV эта функция недоступна.
+
+УДОБНЫЙ ВХОД
+Войдите по PIN-коду из Telegram-бота TunnelCore или используйте электронную почту и пароль. Можно зарегистрировать новый аккаунт и привязать Telegram с помощью PIN-кода.
+
+ПРОБНЫЙ ПЕРИОД 24 ЧАСА
+Для новых пользователей, отвечающих условиям, доступен однократный пробный период на 24 часа. Для дальнейшего использования сервиса TunnelCore VPN нужна активная платная подписка.
+
+VPN шифрует трафик на участке между устройством и выбранным VPN-сервером. Качество соединения и доступность серверов могут зависеть от сети и местоположения.
+
+VPN-СЕРВИС И ШИФРОВАНИЕ
+TunnelCore VPN использует Android VpnService API исключительно для создания и управления VPN-подключением. С помощью протокола AmneziaWG создаётся VPN-туннель между устройством и выбранным сервером. Трафик, направляемый через туннель, шифруется. VpnService API не используется для изменения или перенаправления трафика других приложений ради монетизации рекламы. Подключить или отключить VPN можно в любой момент."
+"tr-TR","TunnelCore VPN","Sunucu seçimi ve bölünmüş tünelleme özellikli Android VPN uygulaması.","TunnelCore VPN, Android için sunucu seçimi ve bağlantı kontrolü sunan bir VPN uygulamasıdır. Kullanılabilir bir VPN sunucusuna bağlanın ve uygulama trafiğinin nasıl yönlendirileceğini belirleyin.
+
+KOLAY VPN BAĞLANTISI
+Hesabınıza giriş yapın, kullanılabilir bir sunucu seçin ve birkaç dokunuşla VPN bağlantısını başlatın. Bağlantı durumunu doğrudan uygulamadan takip edin.
+
+OTOMATİK VEYA MANUEL SUNUCU SEÇİMİ
+Sunucuyu TunnelCore VPN'in otomatik seçmesini sağlayın ya da mevcut konumlar arasından kendiniz seçim yapın. Sunucu kullanılabilirliği hesabınıza ve hizmet durumuna bağlıdır.
+
+BÖLÜNMÜŞ TÜNELLEME
+Desteklenen Android telefon ve tabletlerde, hangi uygulamaların VPN'i kullanacağını ve hangilerinin doğrudan internete bağlanacağını seçin. Bu özellik Android TV arayüzünde sunulmaz.
+
+ESNEK GİRİŞ
+TunnelCore Telegram botundan alınan PIN koduyla veya e-posta adresiniz ve şifrenizle giriş yapın. Yeni bir hesap oluşturabilir, Telegram hesabınızı PIN koduyla bağlayabilirsiniz.
+
+24 SAATLİK DENEME
+Uygun yeni kullanıcılar tek seferlik 24 saatlik deneme süresini etkinleştirebilir. Deneme sonrasında TunnelCore VPN hizmetini kullanmaya devam etmek için aktif ücretli abonelik gerekir.
+
+VPN bağlantısı, cihazınız ile seçilen VPN sunucusu arasındaki trafiği şifreler. Bağlantı kalitesi ve sunucu erişimi ağa ve konuma göre değişebilir.
+
+VPN HİZMETİ VE ŞİFRELEME
+TunnelCore VPN, Android VpnService API'sini yalnızca VPN bağlantısı kurmak ve yönetmek için kullanır. AmneziaWG protokolüyle cihazınız ve seçilen sunucu arasında VPN tüneli oluşturulur. Tünelden geçen trafik şifrelenir. VpnService API'si diğer uygulamaların trafiğini reklam geliri amacıyla değiştirmek veya yönlendirmek için kullanılmaz. VPN bağlantısını istediğiniz zaman açıp kapatabilirsiniz."
+"ur","TunnelCore VPN","Android کے لیے VPN، سرور کے انتخاب اور اسپلٹ ٹنلنگ کے ساتھ۔","TunnelCore VPN ایک Android VPN ایپ ہے جو سرور منتخب کرنے اور کنکشن کو کنٹرول کرنے کی سہولت فراہم کرتی ہے۔ دستیاب VPN سرور سے جڑیں اور یہ طے کریں کہ ایپس کا ٹریفک کس راستے سے گزرے۔
+
+آسان VPN کنکشن
+اپنے اکاؤنٹ میں سائن اِن کریں، دستیاب سرور منتخب کریں اور چند ٹیپس میں VPN سے جڑ جائیں۔ کنکشن کی حالت ایپ میں دیکھیں۔
+
+خودکار یا دستی سرور کا انتخاب
+TunnelCore VPN کو خودکار طور پر سرور منتخب کرنے دیں یا دستیاب مقامات میں سے خود انتخاب کریں۔ سرورز کی دستیابی اکاؤنٹ اور سروس کی صورتحال پر منحصر ہے۔
+
+اسپلٹ ٹنلنگ
+سپورٹ شدہ Android فونز اور ٹیبلٹس پر منتخب کریں کہ کون سی ایپس VPN استعمال کریں اور کون سی براہِ راست انٹرنیٹ سے جڑیں۔ یہ سہولت Android TV کے انٹرفیس میں دستیاب نہیں۔
+
+سائن اِن کے مختلف طریقے
+TunnelCore کے Telegram بوٹ سے PIN کوڈ حاصل کرکے یا ای میل اور پاس ورڈ سے سائن اِن کریں۔ نیا اکاؤنٹ بنا کر Telegram اکاؤنٹ کو PIN سے منسلک بھی کرسکتے ہیں۔
+
+24 گھنٹے کا آزمائشی دورانیہ
+اہل نئے صارفین ایک مرتبہ 24 گھنٹے کا ٹرائل فعال کرسکتے ہیں۔ اس کے بعد TunnelCore VPN سروس استعمال کرنے کے لیے فعال بامعاوضہ سبسکرپشن ضروری ہے۔
+
+VPN آپ کی ڈیوائس اور منتخب VPN سرور کے درمیان ٹریفک کو انکرپٹ کرتا ہے۔ کنکشن کا معیار اور سرورز کی دستیابی نیٹ ورک اور مقام کے لحاظ سے مختلف ہوسکتی ہے۔
+
+VPN سروس اور انکرپشن
+TunnelCore VPN، Android VpnService API کو صرف VPN کنکشن بنانے اور منظم کرنے کے لیے استعمال کرتا ہے۔ AmneziaWG پروٹوکول کے ذریعے ڈیوائس اور منتخب سرور کے درمیان VPN ٹنل بنتی ہے اور اس سے گزرنے والا ٹریفک انکرپٹ ہوتا ہے۔ VpnService API کو اشتہارات سے آمدنی حاصل کرنے کے لیے دیگر ایپس کے ٹریفک کو تبدیل یا منتقل کرنے کے لیے استعمال نہیں کیا جاتا۔ آپ کنکشن کسی بھی وقت آن یا آف کر سکتے ہیں۔"
+"es-419","TunnelCore VPN","VPN para Android con selección de servidores y túnel dividido.","TunnelCore VPN es una aplicación VPN para Android que permite elegir servidores y controlar la conexión. Conéctate a un servidor VPN disponible y decide cómo se conecta cada aplicación.
+
+CONEXIÓN VPN SENCILLA
+Inicia sesión, selecciona un servidor disponible y activa la VPN en unos pocos pasos. Consulta el estado de la conexión desde la aplicación.
+
+SELECCIÓN AUTOMÁTICA O MANUAL
+Deja que TunnelCore VPN elija un servidor automáticamente o selecciona una ubicación disponible. Los servidores dependen de tu cuenta y de la disponibilidad del servicio.
+
+TÚNEL DIVIDIDO (SPLIT TUNNELING)
+En teléfonos y tabletas Android compatibles, elige qué aplicaciones usan la VPN y cuáles acceden directamente a Internet. Esta función no está disponible en la interfaz para Android TV.
+
+FORMAS DE INICIAR SESIÓN
+Entra con un código PIN del bot de Telegram de TunnelCore, con tu correo y contraseña, o crea una cuenta. También puedes vincular Telegram mediante un PIN.
+
+PRUEBA DE 24 HORAS
+Los usuarios nuevos que cumplan los requisitos pueden activar una prueba única de 24 horas. Después necesitarás una suscripción de pago activa para seguir usando el servicio TunnelCore VPN.
+
+La VPN cifra el tráfico entre tu dispositivo y el servidor VPN seleccionado. La calidad de la conexión y la disponibilidad de servidores pueden variar según la red y la ubicación.
+
+SERVICIO VPN Y CIFRADO
+TunnelCore VPN usa la API VpnService de Android exclusivamente para establecer y administrar conexiones VPN. Crea un túnel VPN entre tu dispositivo y el servidor seleccionado mediante AmneziaWG. El tráfico que pasa por el túnel se cifra. La API VpnService no se usa para modificar ni redirigir el tráfico de otras aplicaciones con fines de monetización publicitaria. Puedes conectar o desconectar la VPN en cualquier momento."
+"pt-BR","TunnelCore VPN","VPN para Android com escolha de servidor e tunelamento dividido.","TunnelCore VPN é um aplicativo VPN para Android com seleção de servidores e controles de conexão. Conecte-se a um servidor VPN disponível e escolha como o tráfego dos aplicativos será encaminhado.
+
+CONEXÃO VPN SIMPLES
+Entre na sua conta, selecione um servidor disponível e ative a VPN em poucos toques. Acompanhe o status da conexão pelo aplicativo.
+
+ESCOLHA AUTOMÁTICA OU MANUAL
+Deixe o TunnelCore VPN selecionar um servidor automaticamente ou escolha um local disponível. A disponibilidade depende da conta e das condições do serviço.
+
+TUNELAMENTO DIVIDIDO (SPLIT TUNNELING)
+Em celulares e tablets Android compatíveis, escolha quais aplicativos usam a VPN e quais acessam a internet diretamente. Esse recurso não está disponível na interface do Android TV.
+
+FORMAS DE ENTRAR
+Use um PIN obtido no bot do TunnelCore no Telegram, seu e-mail e senha ou crie uma conta. Também é possível vincular uma conta do Telegram por PIN.
+
+TESTE DE 24 HORAS
+Novos usuários elegíveis podem ativar um período de teste único de 24 horas. Após esse período, é necessária uma assinatura paga ativa para continuar usando o serviço TunnelCore VPN.
+
+A VPN criptografa o tráfego entre seu dispositivo e o servidor VPN selecionado. A qualidade da conexão e a disponibilidade dos servidores podem variar conforme a rede e a localização.
+
+SERVIÇO VPN E CRIPTOGRAFIA
+O TunnelCore VPN usa a API VpnService do Android apenas para estabelecer e gerenciar conexões VPN. Ele cria um túnel entre o dispositivo e o servidor selecionado usando AmneziaWG. O tráfego enviado pelo túnel é criptografado. A API VpnService não é usada para modificar ou redirecionar o tráfego de outros aplicativos visando à monetização de anúncios. Você pode conectar ou desconectar a VPN a qualquer momento."
+"de-DE","TunnelCore VPN","Android-VPN mit Serverauswahl und Split-Tunneling.","TunnelCore VPN ist eine VPN-App für Android mit Serverauswahl und übersichtlicher Verbindungssteuerung. Verbinde dich mit einem verfügbaren VPN-Server und lege fest, wie deine Apps die Verbindung nutzen.
+
+EINFACHE VPN-VERBINDUNG
+Melde dich an, wähle einen verfügbaren Server und aktiviere die VPN-Verbindung mit wenigen Fingertipps. Den Verbindungsstatus siehst du direkt in der App.
+
+AUTOMATISCHE ODER MANUELLE SERVERAUSWAHL
+Lass TunnelCore VPN automatisch einen Server auswählen oder entscheide dich selbst für einen verfügbaren Standort. Die Auswahl hängt vom Konto und der Dienstverfügbarkeit ab.
+
+SPLIT-TUNNELING
+Auf unterstützten Android-Smartphones und -Tablets kannst du festlegen, welche Apps das VPN nutzen und welche sich direkt mit dem Internet verbinden. In der Android-TV-Oberfläche ist diese Funktion nicht verfügbar.
+
+FLEXIBLE ANMELDUNG
+Melde dich mit einem PIN aus dem TunnelCore-Telegram-Bot oder mit E-Mail-Adresse und Passwort an. Du kannst ein neues Konto erstellen und Telegram per PIN verknüpfen.
+
+24-STUNDEN-TESTPHASE
+Berechtigte neue Nutzer können einmalig eine 24-stündige Testphase aktivieren. Danach ist ein aktives kostenpflichtiges Abonnement erforderlich, um den TunnelCore-VPN-Dienst weiter zu nutzen.
+
+Ein VPN verschlüsselt den Datenverkehr zwischen deinem Gerät und dem ausgewählten VPN-Server. Verbindungsqualität und Serververfügbarkeit können je nach Netzwerk und Standort variieren.
+
+VPN-DIENST UND VERSCHLÜSSELUNG
+TunnelCore VPN nutzt die Android-VpnService-API ausschließlich zum Aufbau und zur Verwaltung von VPN-Verbindungen. Mit AmneziaWG entsteht ein VPN-Tunnel zwischen Gerät und ausgewähltem Server. Der Datenverkehr im Tunnel wird verschlüsselt. Die API wird nicht verwendet, um den Verkehr anderer Apps für Werbeeinnahmen zu verändern oder umzuleiten. Du kannst die VPN-Verbindung jederzeit aktivieren oder trennen."
+"fr-FR","TunnelCore VPN","VPN Android avec choix du serveur et split tunneling.","TunnelCore VPN est une application VPN pour Android qui permet de choisir un serveur et de gérer sa connexion. Connectez-vous à un serveur VPN disponible et contrôlez le trafic de vos applications.
+
+CONNEXION VPN SIMPLE
+Connectez-vous à votre compte, choisissez un serveur disponible et activez le VPN en quelques gestes. Consultez l'état de la connexion dans l'application.
+
+CHOIX AUTOMATIQUE OU MANUEL DU SERVEUR
+Laissez TunnelCore VPN sélectionner automatiquement un serveur ou choisissez vous-même un emplacement disponible. Les serveurs accessibles dépendent de votre compte et de la disponibilité du service.
+
+SPLIT TUNNELING
+Sur les téléphones et tablettes Android compatibles, choisissez quelles applications passent par le VPN et lesquelles accèdent directement à Internet. Cette fonction n'est pas proposée dans l'interface Android TV.
+
+PLUSIEURS MODES DE CONNEXION
+Utilisez un code PIN fourni par le bot Telegram TunnelCore, votre adresse e-mail et votre mot de passe, ou créez un compte. Il est aussi possible d'associer Telegram avec un PIN.
+
+ESSAI DE 24 HEURES
+Les nouveaux utilisateurs éligibles peuvent activer un essai unique de 24 heures. Un abonnement payant actif est nécessaire pour continuer à utiliser le service TunnelCore VPN après cet essai.
+
+Le VPN chiffre le trafic entre votre appareil et le serveur VPN choisi. La qualité de connexion et la disponibilité des serveurs peuvent varier selon le réseau et l'emplacement.
+
+SERVICE VPN ET CHIFFREMENT
+TunnelCore VPN utilise l'API VpnService d'Android uniquement pour établir et gérer des connexions VPN. Un tunnel entre l'appareil et le serveur sélectionné est créé avec AmneziaWG. Le trafic passant par ce tunnel est chiffré. L'API VpnService ne sert pas à modifier ou rediriger le trafic d'autres applications pour monétiser la publicité. Vous pouvez connecter ou déconnecter le VPN à tout moment."
+"ar","TunnelCore VPN","VPN لأجهزة Android مع اختيار الخادم وتقسيم اتصال التطبيقات.","TunnelCore VPN هو تطبيق VPN لنظام Android يتيح اختيار الخادم والتحكم في الاتصال. اتصل بخادم VPN متاح وحدد كيفية مرور حركة بيانات تطبيقاتك.
+
+اتصال VPN بسهولة
+سجّل الدخول، واختر خادمًا متاحًا، ثم فعّل اتصال VPN بخطوات بسيطة. يمكنك متابعة حالة الاتصال داخل التطبيق.
+
+اختيار الخادم تلقائيًا أو يدويًا
+دع TunnelCore VPN يختار خادمًا تلقائيًا أو اختر موقعًا متاحًا بنفسك. تعتمد الخوادم المتاحة على حسابك وتوفر الخدمة.
+
+تقسيم الاتصال (SPLIT TUNNELING)
+على هواتف وأجهزة Android اللوحية المدعومة، اختر التطبيقات التي تستخدم VPN والتطبيقات التي تتصل بالإنترنت مباشرةً. هذه الميزة غير متاحة في واجهة Android TV.
+
+طرق مرنة لتسجيل الدخول
+استخدم رمز PIN من بوت TunnelCore على Telegram، أو سجّل الدخول بالبريد الإلكتروني وكلمة المرور، أو أنشئ حسابًا جديدًا. ويمكن ربط حساب Telegram باستخدام رمز PIN.
+
+تجربة لمدة 24 ساعة
+يمكن للمستخدمين الجدد المؤهلين تفعيل فترة تجريبية لمرة واحدة مدتها 24 ساعة. وبعد انتهائها يلزم اشتراك مدفوع نشط للاستمرار في استخدام خدمة TunnelCore VPN.
+
+يشفّر VPN البيانات بين جهازك وخادم VPN المحدد. قد تختلف جودة الاتصال وتوافر الخوادم حسب الشبكة والموقع.
+
+خدمة VPN والتشفير
+يستخدم TunnelCore VPN واجهة Android VpnService API لإنشاء اتصالات VPN وإدارتها فقط. يُنشأ نفق بين الجهاز والخادم المحدد باستخدام AmneziaWG، وتُشفَّر البيانات التي تمر عبره. لا تُستخدم VpnService API لتعديل حركة مرور التطبيقات الأخرى أو إعادة توجيهها بغرض تحقيق أرباح إعلانية. يمكنك تشغيل اتصال VPN أو إيقافه في أي وقت."
+"id","TunnelCore VPN","VPN Android dengan pilihan server dan split tunneling.","TunnelCore VPN adalah aplikasi VPN untuk Android dengan pilihan server dan kontrol koneksi yang mudah digunakan. Hubungkan perangkat ke server VPN yang tersedia dan atur lalu lintas aplikasi.
+
+KONEKSI VPN YANG MUDAH
+Masuk ke akun Anda, pilih server yang tersedia, lalu aktifkan VPN dalam beberapa ketukan. Status koneksi dapat dilihat langsung di aplikasi.
+
+PILIHAN SERVER OTOMATIS ATAU MANUAL
+Biarkan TunnelCore VPN memilih server secara otomatis atau pilih sendiri lokasi yang tersedia. Pilihan server bergantung pada akun dan ketersediaan layanan.
+
+SPLIT TUNNELING
+Di ponsel dan tablet Android yang didukung, tentukan aplikasi mana yang menggunakan VPN dan mana yang terhubung langsung ke internet. Fitur ini tidak tersedia pada antarmuka Android TV.
+
+PILIHAN MASUK AKUN
+Masuk menggunakan PIN dari bot Telegram TunnelCore, email dan kata sandi, atau buat akun baru. Anda juga dapat menautkan akun Telegram dengan PIN.
+
+UJI COBA 24 JAM
+Pengguna baru yang memenuhi syarat dapat mengaktifkan uji coba 24 jam satu kali. Setelahnya, langganan berbayar yang aktif diperlukan untuk terus menggunakan layanan TunnelCore VPN.
+
+VPN mengenkripsi lalu lintas antara perangkat dan server VPN yang dipilih. Kualitas koneksi dan ketersediaan server dapat berbeda menurut jaringan dan lokasi.
+
+LAYANAN VPN DAN ENKRIPSI
+TunnelCore VPN menggunakan Android VpnService API hanya untuk membuat dan mengelola koneksi VPN. Terowongan antara perangkat dan server pilihan dibuat dengan AmneziaWG, dan lalu lintas yang melewatinya dienkripsi. VpnService API tidak dipakai untuk mengubah atau mengalihkan lalu lintas aplikasi lain demi monetisasi iklan. Anda dapat menghubungkan atau memutuskan VPN kapan saja."
+"hi-IN","TunnelCore VPN","Android VPN: सर्वर चुनें और स्प्लिट टनलिंग से ऐप ट्रैफ़िक नियंत्रित करें।","TunnelCore VPN, Android के लिए एक VPN ऐप है, जिसमें सर्वर चुनने और कनेक्शन नियंत्रित करने की सुविधा मिलती है। उपलब्ध VPN सर्वर से जुड़ें और तय करें कि आपके ऐप्स का ट्रैफ़िक कैसे चले।
+
+आसान VPN कनेक्शन
+अपने खाते में साइन इन करें, उपलब्ध सर्वर चुनें और कुछ टैप में VPN चालू करें। कनेक्शन की स्थिति ऐप में देखें।
+
+अपने हिसाब से सर्वर चुनें
+TunnelCore VPN को सर्वर अपने आप चुनने दें या उपलब्ध स्थानों में से खुद चुनें। सर्वर की उपलब्धता खाते और सेवा पर निर्भर करती है।
+
+स्प्लिट टनलिंग
+संगत Android फ़ोन और टैबलेट पर चुनें कि कौन-से ऐप्स VPN का उपयोग करें और कौन-से सीधे इंटरनेट से जुड़ें। Android TV इंटरफ़ेस में यह सुविधा उपलब्ध नहीं है।
+
+साइन इन करने के विकल्प
+TunnelCore के Telegram बॉट से मिले PIN के साथ, या ईमेल और पासवर्ड से साइन इन करें। नया खाता बनाएँ और PIN की मदद से Telegram खाता लिंक करें।
+
+24 घंटे का ट्रायल
+पात्र नए उपयोगकर्ता एक बार 24 घंटे का ट्रायल सक्रिय कर सकते हैं। इसके बाद TunnelCore VPN सेवा का उपयोग जारी रखने के लिए सक्रिय सशुल्क सदस्यता चाहिए।
+
+VPN आपके डिवाइस और चुने गए VPN सर्वर के बीच ट्रैफ़िक को एन्क्रिप्ट करता है। कनेक्शन की गुणवत्ता और सर्वर की उपलब्धता नेटवर्क व स्थान के अनुसार बदल सकती है।
+
+VPN सेवा और एन्क्रिप्शन
+TunnelCore VPN, Android VpnService API का उपयोग केवल VPN कनेक्शन बनाने और प्रबंधित करने के लिए करता है। AmneziaWG के ज़रिए डिवाइस और चुने हुए सर्वर के बीच VPN टनल बनती है और इससे जाने वाला ट्रैफ़िक एन्क्रिप्ट होता है। VpnService API का उपयोग विज्ञापन से कमाई के लिए अन्य ऐप्स का ट्रैफ़िक बदलने या कहीं और भेजने के लिए नहीं किया जाता। VPN कभी भी कनेक्ट या डिस्कनेक्ट करें।"
+"ka-GE","TunnelCore VPN","VPN Android-ისთვის სერვერის არჩევით და გაყოფილი გვირაბით.","TunnelCore VPN არის VPN აპლიკაცია Android-ისთვის, რომელიც გაძლევთ სერვერის არჩევისა და კავშირის მართვის საშუალებას. დაუკავშირდით ხელმისაწვდომ VPN სერვერს და მართეთ აპლიკაციების ტრაფიკი.
+
+მარტივი VPN კავშირი
+შედით ანგარიშში, აირჩიეთ ხელმისაწვდომი სერვერი და რამდენიმე შეხებით ჩართეთ VPN. კავშირის სტატუსი ჩანს აპლიკაციაში.
+
+სერვერის ავტომატური ან ხელით არჩევა
+მიეცით TunnelCore VPN-ს სერვერის ავტომატურად არჩევის საშუალება ან თავად აირჩიეთ ხელმისაწვდომი მდებარეობა. სერვერების ხელმისაწვდომობა დამოკიდებულია ანგარიშსა და სერვისზე.
+
+გაყოფილი გვირაბი (SPLIT TUNNELING)
+მხარდაჭერილ Android ტელეფონებსა და პლანშეტებზე აირჩიეთ, რომელი აპლიკაციები გამოიყენებენ VPN-ს და რომლები დაუკავშირდებიან ინტერნეტს პირდაპირ. Android TV-ის ინტერფეისში ეს ფუნქცია არ არის.
+
+შესვლის რამდენიმე გზა
+შედით TunnelCore-ის Telegram ბოტიდან მიღებული PIN კოდით ან ელფოსტითა და პაროლით. შეგიძლიათ ახალი ანგარიშის შექმნა და Telegram-ის PIN კოდით დაკავშირება.
+
+24-საათიანი საცდელი პერიოდი
+შესაბამის ახალ მომხმარებლებს შეუძლიათ ერთჯერადად გაააქტიურონ 24-საათიანი საცდელი პერიოდი. შემდეგ TunnelCore VPN სერვისით სარგებლობის გასაგრძელებლად საჭიროა აქტიური ფასიანი გამოწერა.
+
+VPN შიფრავს ტრაფიკს თქვენს მოწყობილობასა და არჩეულ VPN სერვერს შორის. კავშირის ხარისხი და სერვერების ხელმისაწვდომობა შეიძლება განსხვავდებოდეს ქსელისა და მდებარეობის მიხედვით.
+
+VPN სერვისი და დაშიფვრა
+TunnelCore VPN Android-ის VpnService API-ს იყენებს მხოლოდ VPN კავშირების შესაქმნელად და სამართავად. AmneziaWG-ის გამოყენებით მოწყობილობასა და არჩეულ სერვერს შორის იქმნება VPN გვირაბი და მასში გამავალი ტრაფიკი იშიფრება. VpnService API არ გამოიყენება სხვა აპების ტრაფიკის შესაცვლელად ან სარეკლამო შემოსავლისთვის გადასამისამართებლად. VPN კავშირის ჩართვა ან გამორთვა ნებისმიერ დროს შეგიძლიათ."
