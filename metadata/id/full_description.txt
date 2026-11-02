@@ -1,0 +1,18 @@
+TunnelCore VPN adalah aplikasi VPN untuk Android dengan pilihan server dan kontrol koneksi yang mudah digunakan. Hubungkan perangkat ke server VPN yang tersedia dan atur lalu lintas aplikasi.
+
+KONEKSI VPN YANG MUDAH
+Masuk ke akun Anda, pilih server yang tersedia, lalu aktifkan VPN dalam beberapa ketukan. Status koneksi dapat dilihat langsung di aplikasi.
+
+PILIHAN SERVER OTOMATIS ATAU MANUAL
+Biarkan TunnelCore VPN memilih server secara otomatis atau pilih sendiri lokasi yang tersedia. Pilihan server bergantung pada akun dan ketersediaan layanan.
+
+SPLIT TUNNELING
+Di ponsel dan tablet Android yang didukung, tentukan aplikasi mana yang menggunakan VPN dan mana yang terhubung langsung ke internet. Fitur ini tidak tersedia pada antarmuka Android TV.
+
+PILIHAN MASUK AKUN
+Masuk menggunakan PIN dari bot Telegram TunnelCore, email dan kata sandi, atau buat akun baru. Anda juga dapat menautkan akun Telegram dengan PIN.
+
+UJI COBA 24 JAM
+Pengguna baru yang memenuhi syarat dapat mengaktifkan uji coba 24 jam satu kali. Setelahnya, langganan berbayar yang aktif diperlukan untuk terus menggunakan layanan TunnelCore VPN.
+
+VPN mengenkripsi lalu lintas antara perangkat dan server VPN yang dipilih. Kualitas koneksi dan ketersediaan server dapat berbeda menurut jaringan dan lokasi.

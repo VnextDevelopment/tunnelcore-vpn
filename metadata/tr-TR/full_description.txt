@@ -1,0 +1,18 @@
+TunnelCore VPN, Android için sunucu seçimi ve bağlantı kontrolü sunan bir VPN uygulamasıdır. Kullanılabilir bir VPN sunucusuna bağlanın ve uygulama trafiğinin nasıl yönlendirileceğini belirleyin.
+
+KOLAY VPN BAĞLANTISI
+Hesabınıza giriş yapın, kullanılabilir bir sunucu seçin ve birkaç dokunuşla VPN bağlantısını başlatın. Bağlantı durumunu doğrudan uygulamadan takip edin.
+
+OTOMATİK VEYA MANUEL SUNUCU SEÇİMİ
+Sunucuyu TunnelCore VPN'in otomatik seçmesini sağlayın ya da mevcut konumlar arasından kendiniz seçim yapın. Sunucu kullanılabilirliği hesabınıza ve hizmet durumuna bağlıdır.
+
+BÖLÜNMÜŞ TÜNELLEME
+Desteklenen Android telefon ve tabletlerde, hangi uygulamaların VPN'i kullanacağını ve hangilerinin doğrudan internete bağlanacağını seçin. Bu özellik Android TV arayüzünde sunulmaz.
+
+ESNEK GİRİŞ
+TunnelCore Telegram botundan alınan PIN koduyla veya e-posta adresiniz ve şifrenizle giriş yapın. Yeni bir hesap oluşturabilir, Telegram hesabınızı PIN koduyla bağlayabilirsiniz.
+
+24 SAATLİK DENEME
+Uygun yeni kullanıcılar tek seferlik 24 saatlik deneme süresini etkinleştirebilir. Deneme sonrasında TunnelCore VPN hizmetini kullanmaya devam etmek için aktif ücretli abonelik gerekir.
+
+VPN bağlantısı, cihazınız ile seçilen VPN sunucusu arasındaki trafiği şifreler. Bağlantı kalitesi ve sunucu erişimi ağa ve konuma göre değişebilir.
