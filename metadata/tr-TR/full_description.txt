@@ -16,3 +16,6 @@ TunnelCore Telegram botundan alınan PIN koduyla veya e-posta adresiniz ve şifr
 Uygun yeni kullanıcılar tek seferlik 24 saatlik deneme süresini etkinleştirebilir. Deneme sonrasında TunnelCore VPN hizmetini kullanmaya devam etmek için aktif ücretli abonelik gerekir.
 
 VPN bağlantısı, cihazınız ile seçilen VPN sunucusu arasındaki trafiği şifreler. Bağlantı kalitesi ve sunucu erişimi ağa ve konuma göre değişebilir.
+
+VPN HİZMETİ VE ŞİFRELEME
+TunnelCore VPN, Android VpnService API'sini yalnızca VPN bağlantısı kurmak ve yönetmek için kullanır. AmneziaWG protokolüyle cihazınız ve seçilen sunucu arasında VPN tüneli oluşturulur. Tünelden geçen trafik şifrelenir. VpnService API'si diğer uygulamaların trafiğini reklam geliri amacıyla değiştirmek veya yönlendirmek için kullanılmaz. VPN bağlantısını istediğiniz zaman açıp kapatabilirsiniz.

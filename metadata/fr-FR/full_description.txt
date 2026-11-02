@@ -16,3 +16,6 @@ ESSAI DE 24 HEURES
 Les nouveaux utilisateurs éligibles peuvent activer un essai unique de 24 heures. Un abonnement payant actif est nécessaire pour continuer à utiliser le service TunnelCore VPN après cet essai.
 
 Le VPN chiffre le trafic entre votre appareil et le serveur VPN choisi. La qualité de connexion et la disponibilité des serveurs peuvent varier selon le réseau et l'emplacement.
+
+SERVICE VPN ET CHIFFREMENT
+TunnelCore VPN utilise l'API VpnService d'Android uniquement pour établir et gérer des connexions VPN. Un tunnel entre l'appareil et le serveur sélectionné est créé avec AmneziaWG. Le trafic passant par ce tunnel est chiffré. L'API VpnService ne sert pas à modifier ou rediriger le trafic d'autres applications pour monétiser la publicité. Vous pouvez connecter ou déconnecter le VPN à tout moment.

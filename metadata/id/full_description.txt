@@ -16,3 +16,6 @@ UJI COBA 24 JAM
 Pengguna baru yang memenuhi syarat dapat mengaktifkan uji coba 24 jam satu kali. Setelahnya, langganan berbayar yang aktif diperlukan untuk terus menggunakan layanan TunnelCore VPN.
 
 VPN mengenkripsi lalu lintas antara perangkat dan server VPN yang dipilih. Kualitas koneksi dan ketersediaan server dapat berbeda menurut jaringan dan lokasi.
+
+LAYANAN VPN DAN ENKRIPSI
+TunnelCore VPN menggunakan Android VpnService API hanya untuk membuat dan mengelola koneksi VPN. Terowongan antara perangkat dan server pilihan dibuat dengan AmneziaWG, dan lalu lintas yang melewatinya dienkripsi. VpnService API tidak dipakai untuk mengubah atau mengalihkan lalu lintas aplikasi lain demi monetisasi iklan. Anda dapat menghubungkan atau memutuskan VPN kapan saja.

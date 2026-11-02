@@ -1,18 +1,24 @@
-TunnelCore VPN is a VPN app for Android with flexible server selection and clear connection controls. Connect through an available VPN server and choose how apps use your connection.
+TunnelCore VPN is a paid VPN service for Android with a one-time 24-hour trial for eligible new users. Connect to an available VPN server and manage your connection with a simple, user-friendly interface.
 
 EASY VPN CONNECTION
-Sign in, select an available server and connect in a few taps. View your connection status directly in the app.
+Sign in, select an available VPN server and connect in a few taps. View your VPN connection status and disconnect whenever you choose.
 
 AUTOMATIC OR MANUAL SERVER SELECTION
-Let TunnelCore VPN choose an available server automatically, or pick a location yourself. Available servers and locations depend on your account and service availability.
+Let TunnelCore VPN select an available server automatically, or manually choose from available server locations. Server and location availability depends on your account and network conditions.
 
 SPLIT TUNNELING
-On supported Android phones and tablets, choose which apps use the VPN and which connect directly to the internet. Split tunneling is not offered in the Android TV interface.
+On supported Android phones and tablets, choose which apps use the VPN connection and which connect directly to the internet. Split tunneling is not available in the Android TV interface.
 
-SIGN IN YOUR WAY
-Use a PIN code from the TunnelCore Telegram bot, sign in with your email and password, or create an account. Email users can link their Telegram account using a PIN.
+SIGN IN WITH PIN OR EMAIL
+• Sign in with a PIN code obtained from the TunnelCore Telegram bot.
+• Sign in with your email address and password.
+• Create an account with email and password.
+• Link an email account to Telegram with a PIN code.
 
-24-HOUR TRIAL
-Eligible new users can activate a one-time 24-hour trial. An active paid subscription is required to keep using the TunnelCore VPN service after the trial.
+24-HOUR TRIAL AND SUBSCRIPTION
+Eligible new users can activate a one-time 24-hour VPN trial. After the trial, an active paid subscription is required to continue using the TunnelCore VPN service.
 
-TunnelCore VPN uses a VPN connection to encrypt traffic between your device and the selected VPN server. Connection quality and server availability may vary by network and location.
+VPN SERVICE AND ENCRYPTION
+TunnelCore VPN uses the Android VpnService API exclusively to establish and manage VPN connections. It creates a network tunnel between your Android device and the selected TunnelCore VPN server using the AmneziaWG protocol. Network traffic routed through that tunnel is encrypted between your device and the VPN server.
+
+The VpnService API is not used to manipulate or redirect traffic from other apps for advertising monetization. You remain in control of your VPN connection and can connect or disconnect at any time.

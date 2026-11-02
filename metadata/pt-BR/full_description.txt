@@ -16,3 +16,6 @@ TESTE DE 24 HORAS
 Novos usuários elegíveis podem ativar um período de teste único de 24 horas. Após esse período, é necessária uma assinatura paga ativa para continuar usando o serviço TunnelCore VPN.
 
 A VPN criptografa o tráfego entre seu dispositivo e o servidor VPN selecionado. A qualidade da conexão e a disponibilidade dos servidores podem variar conforme a rede e a localização.
+
+SERVIÇO VPN E CRIPTOGRAFIA
+O TunnelCore VPN usa a API VpnService do Android apenas para estabelecer e gerenciar conexões VPN. Ele cria um túnel entre o dispositivo e o servidor selecionado usando AmneziaWG. O tráfego enviado pelo túnel é criptografado. A API VpnService não é usada para modificar ou redirecionar o tráfego de outros aplicativos visando à monetização de anúncios. Você pode conectar ou desconectar a VPN a qualquer momento.

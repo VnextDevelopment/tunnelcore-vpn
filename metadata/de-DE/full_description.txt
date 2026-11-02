@@ -16,3 +16,6 @@ Melde dich mit einem PIN aus dem TunnelCore-Telegram-Bot oder mit E-Mail-Adresse
 Berechtigte neue Nutzer können einmalig eine 24-stündige Testphase aktivieren. Danach ist ein aktives kostenpflichtiges Abonnement erforderlich, um den TunnelCore-VPN-Dienst weiter zu nutzen.
 
 Ein VPN verschlüsselt den Datenverkehr zwischen deinem Gerät und dem ausgewählten VPN-Server. Verbindungsqualität und Serververfügbarkeit können je nach Netzwerk und Standort variieren.
+
+VPN-DIENST UND VERSCHLÜSSELUNG
+TunnelCore VPN nutzt die Android-VpnService-API ausschließlich zum Aufbau und zur Verwaltung von VPN-Verbindungen. Mit AmneziaWG entsteht ein VPN-Tunnel zwischen Gerät und ausgewähltem Server. Der Datenverkehr im Tunnel wird verschlüsselt. Die API wird nicht verwendet, um den Verkehr anderer Apps für Werbeeinnahmen zu verändern oder umzuleiten. Du kannst die VPN-Verbindung jederzeit aktivieren oder trennen.

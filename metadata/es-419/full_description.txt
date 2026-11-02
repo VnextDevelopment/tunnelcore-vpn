@@ -16,3 +16,6 @@ PRUEBA DE 24 HORAS
 Los usuarios nuevos que cumplan los requisitos pueden activar una prueba única de 24 horas. Después necesitarás una suscripción de pago activa para seguir usando el servicio TunnelCore VPN.
 
 La VPN cifra el tráfico entre tu dispositivo y el servidor VPN seleccionado. La calidad de la conexión y la disponibilidad de servidores pueden variar según la red y la ubicación.
+
+SERVICIO VPN Y CIFRADO
+TunnelCore VPN usa la API VpnService de Android exclusivamente para establecer y administrar conexiones VPN. Crea un túnel VPN entre tu dispositivo y el servidor seleccionado mediante AmneziaWG. El tráfico que pasa por el túnel se cifra. La API VpnService no se usa para modificar ni redirigir el tráfico de otras aplicaciones con fines de monetización publicitaria. Puedes conectar o desconectar la VPN en cualquier momento.
