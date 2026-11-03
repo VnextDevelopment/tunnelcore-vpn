@@ -1067,7 +1067,7 @@ PageType {
                         spacing: 10
 
                         Header2TextType {
-                    color: AmneziaStyle.color.tcInk
+                            color: AmneziaStyle.color.tcInk
                             Layout.fillWidth: true
                             text: TunnelCoreController.subscriptionExpired
                                   ? qsTr("VPN subscription inactive")
