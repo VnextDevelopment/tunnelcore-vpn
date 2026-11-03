@@ -65,5 +65,12 @@ QtObject {
         readonly property color tcStroke: '#DBE8F8'
         readonly property color tcSurfaceBlue: '#EAF5FF'
         readonly property color tcSuccess: '#0BBE9C'
+        // Accessible text and surfaces for status messages on the light theme.
+        readonly property color tcErrorText: '#B42318'
+        readonly property color tcWarningText: '#815A00'
+        readonly property color tcErrorSurface: '#FFF3F1'
+        readonly property color tcWarningSurface: '#FFFAEB'
+        readonly property color tcErrorBorder: '#E9A39C'
+        readonly property color tcWarningBorder: '#E3BC72'
     }
 }
