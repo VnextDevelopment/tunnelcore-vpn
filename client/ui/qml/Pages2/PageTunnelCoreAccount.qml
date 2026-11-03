@@ -1050,11 +1050,13 @@ PageType {
                     implicitHeight: subscriptionWarningContent.implicitHeight + 32
                     radius: 16
                     visible: TunnelCoreController.subscriptionWarningVisible
-                    color: AmneziaStyle.color.translucentWhite
+                    color: TunnelCoreController.subscriptionExpired
+                           ? AmneziaStyle.color.tcErrorSurface
+                           : AmneziaStyle.color.tcWarningSurface
                     border.width: 1
                     border.color: TunnelCoreController.subscriptionExpired
-                                  ? AmneziaStyle.color.vibrantRed
-                                  : AmneziaStyle.color.accentWarning
+                                  ? AmneziaStyle.color.tcErrorBorder
+                                  : AmneziaStyle.color.tcWarningBorder
 
                     ColumnLayout {
                         id: subscriptionWarningContent
@@ -1075,7 +1077,7 @@ PageType {
                             Layout.fillWidth: true
                             textFormat: Text.PlainText
                             text: TunnelCoreController.subscriptionStatusText
-                            color: AmneziaStyle.color.paleGray
+                            color: AmneziaStyle.color.tcInk
                         }
                         BasicButtonType {
                             Layout.fillWidth: true
@@ -1088,9 +1090,11 @@ PageType {
                                      : qsTr("Renew in Telegram"))
                             enabled: !TunnelCoreController.busy
                             defaultColor: TunnelCoreController.subscriptionExpired
-                                          ? AmneziaStyle.color.vibrantRed
-                                          : AmneziaStyle.color.accentWarning
-                            hoveredColor: defaultColor
+                                          ? AmneziaStyle.color.tcErrorText
+                                          : AmneziaStyle.color.tcWarningText
+                            hoveredColor: TunnelCoreController.subscriptionExpired ? "#9C2016" : "#704B00"
+                            pressedColor: TunnelCoreController.subscriptionExpired ? "#7D1B15" : "#5D3F00"
+                            textColor: "#FFFFFF"
                             clickedFunc: function() { TunnelCoreController.renewSubscription() }
                         }
                         SmallTextType {
@@ -1099,7 +1103,7 @@ PageType {
                                      && !TunnelCoreController.externalRenewalLinkAllowed
                             textFormat: Text.PlainText
                             text: qsTr("Renew your TunnelCore subscription outside the app. Telegram users can use @tunnelcoree_bot. After renewal, return here and tap Refresh.")
-                            color: AmneziaStyle.color.paleGray
+                            color: AmneziaStyle.color.tcInk
                         }
                     }
                 }
@@ -1539,7 +1543,7 @@ PageType {
                 visible: TunnelCoreController.error.length > 0
                 text: TunnelCoreController.error
                 textFormat: Text.PlainText
-                color: AmneziaStyle.color.vibrantRed
+                color: AmneziaStyle.color.tcErrorText
             }
 
             SmallTextType {
