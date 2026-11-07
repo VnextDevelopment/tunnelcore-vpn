@@ -33,3 +33,21 @@ sudo sysctl net.ipv4.tcp_rmem="4096 87380 67108864"; \
 sudo sysctl net.ipv4.tcp_wmem="4096 65536 67108864"; \
 sudo sysctl net.ipv4.tcp_mtu_probing=1; \
 sudo sysctl net.ipv4.tcp_congestion_control=hybla
+
+# Mitigate CVE-2026-98432 on affected kernels by dropping IPv4 TCP packets
+# carrying IP options. Fixed kernels do not need the compatibility rule.
+v=$(uname -r); v=${v%%-*}; \
+case "$v" in \
+  5.10.*) fix=5.10.272 ;; \
+  6.1.*)  fix=6.1.190  ;; \
+  6.6.*)  fix=6.6.159  ;; \
+  6.12.*) fix=6.12.113 ;; \
+  6.18.*) fix=6.18.56  ;; \
+  7.2.*)  fix=7.2.10   ;; \
+  *)      fix=7.3      ;; \
+esac; \
+le() { printf '%s\n' "$1" "$2" | sort -V -C; }; \
+if le 4.4 "$v" && ! le "$fix" "$v"; then \
+  sudo iptables -t raw -C PREROUTING -p tcp -m u32 --u32 "0>>24&0xF=6:15" -j DROP -m comment --comment cve-2026-98432 2>/dev/null || \
+    sudo iptables -t raw -I PREROUTING -p tcp -m u32 --u32 "0>>24&0xF=6:15" -j DROP -m comment --comment cve-2026-98432; \
+fi
