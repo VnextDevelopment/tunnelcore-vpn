@@ -51,6 +51,86 @@ void replaceAwgNativeParameter(QString &nativeConfig, const QString &key, const 
     }
 }
 
+void removeAwgNativeParameter(QString &nativeConfig, const QString &key)
+{
+    if (nativeConfig.isEmpty())
+        return;
+
+    const QRegularExpression expression(
+        QStringLiteral("(?im)^[ \\t]*%1[ \\t]*=[^\\r\\n]*(?:\\r?\\n|$)")
+            .arg(QRegularExpression::escape(key)));
+    nativeConfig.remove(expression);
+}
+
+template <typename Config>
+bool hasDeprecatedDefaultJunk(const Config &config)
+{
+    return config.specialJunk1.trimmed() == QLatin1String(protocols::awg::defaultSpecialJunk1)
+            && config.specialJunk2.trimmed().isEmpty()
+            && config.specialJunk3.trimmed().isEmpty()
+            && config.specialJunk4.trimmed().isEmpty()
+            && config.specialJunk5.trimmed().isEmpty();
+}
+
+bool migrateDeprecatedSelfHostedAwgJunk(ContainerConfig &containerConfig)
+{
+    auto *awg = containerConfig.getAwgProtocolConfig();
+    if (!awg)
+        return false;
+
+    bool migrated = false;
+    if (hasDeprecatedDefaultJunk(awg->serverConfig)) {
+        awg->serverConfig.specialJunk1.clear();
+        migrated = true;
+    }
+
+    if (awg->clientConfig.has_value() && hasDeprecatedDefaultJunk(awg->clientConfig.value())) {
+        auto &client = awg->clientConfig.value();
+        client.specialJunk1.clear();
+        removeAwgNativeParameter(client.nativeConfig, QStringLiteral("I1"));
+        migrated = true;
+    }
+
+    return migrated;
+}
+
+bool applyTunnelCoreManagedAwg31Base(ContainerConfig &containerConfig)
+{
+    auto *awg = containerConfig.getAwgProtocolConfig();
+    if (!awg || !awg->clientConfig.has_value())
+        return false;
+
+    auto &client = awg->clientConfig.value();
+    const auto setParameter = [&client](QString &field, const QString &key, const QString &value) {
+        field = value;
+        replaceAwgNativeParameter(client.nativeConfig, key, value);
+    };
+
+    setParameter(client.junkPacketCount, QStringLiteral("Jc"), QStringLiteral("6"));
+    setParameter(client.junkPacketMinSize, QStringLiteral("Jmin"), QStringLiteral("10"));
+    setParameter(client.junkPacketMaxSize, QStringLiteral("Jmax"), QStringLiteral("50"));
+    setParameter(client.initPacketJunkSize, QStringLiteral("S1"), QStringLiteral("12"));
+    setParameter(client.responsePacketJunkSize, QStringLiteral("S2"), QStringLiteral("12"));
+    setParameter(client.cookieReplyPacketJunkSize, QStringLiteral("S3"), QStringLiteral("12"));
+    setParameter(client.transportPacketJunkSize, QStringLiteral("S4"), QStringLiteral("12"));
+    setParameter(client.initPacketMagicHeader, QStringLiteral("H1"), QStringLiteral("1"));
+    setParameter(client.responsePacketMagicHeader, QStringLiteral("H2"), QStringLiteral("2"));
+    setParameter(client.underloadPacketMagicHeader, QStringLiteral("H3"), QStringLiteral("3"));
+    setParameter(client.transportPacketMagicHeader, QStringLiteral("H4"), QStringLiteral("4"));
+
+    client.contentPaddingAddition.clear();
+    removeAwgNativeParameter(client.nativeConfig, QStringLiteral("ContentPaddingAddition"));
+    setParameter(client.rekeyAfterTime, QStringLiteral("RekeyAfterTime"), QStringLiteral("100-120"));
+    setParameter(client.rekeyTimeout, QStringLiteral("RekeyTimeout"), QStringLiteral("3-7"));
+    setParameter(client.rejectAfterTime, QStringLiteral("RejectAfterTime"), QStringLiteral("150-180"));
+    setParameter(client.keepaliveTimeout, QStringLiteral("KeepaliveTimeout"), QStringLiteral("5-15"));
+    setParameter(client.maxHandshakeAttempts, QStringLiteral("MaxHandshakeAttempts"), QStringLiteral("15-20"));
+    setParameter(client.randomTrailers, QStringLiteral("RandomTrailers"), QStringLiteral("on"));
+    setParameter(client.disableCookies, QStringLiteral("DisableCookies"), QStringLiteral("on"));
+
+    return true;
+}
+
 bool applyTunnelCoreDynamicObfuscation(ContainerConfig &containerConfig, const QString &requestedProfile,
                                        const QString &stableProfileKey)
 {
@@ -217,20 +297,32 @@ ErrorCode ConnectionController::prepareConnection(const QString &serverId,
     const QString secondaryDns = m_appSettingsRepository->secondaryDns();
     switch (kind) {
     case serverConfigUtils::ConfigType::SelfHostedAdmin: {
-        const auto cfg = m_serversRepository->selfHostedAdminConfig(serverId);
+        auto cfg = m_serversRepository->selfHostedAdminConfig(serverId);
         if (!cfg.has_value()) return ErrorCode::InternalError;
         container = cfg->defaultContainer;
         containerConfigModel = cfg->containerConfig(container);
+        if (ContainerUtils::isAwgContainer(container)
+            && migrateDeprecatedSelfHostedAwgJunk(containerConfigModel)) {
+            cfg->updateContainerConfig(container, containerConfigModel);
+            m_serversRepository->editServer(serverId, cfg->toJson(), kind);
+            qInfo() << "[TunnelCore] removed deprecated default AWG I1 from self-hosted admin config";
+        }
         dns = cfg->getDnsPair(m_appSettingsRepository->useAmneziaDns(), primaryDns, secondaryDns);
         hostName = cfg->hostName;
         description = cfg->description;
         break;
     }
     case serverConfigUtils::ConfigType::SelfHostedUser: {
-        const auto cfg = m_serversRepository->selfHostedUserConfig(serverId);
+        auto cfg = m_serversRepository->selfHostedUserConfig(serverId);
         if (!cfg.has_value()) return ErrorCode::InternalError;
         container = cfg->defaultContainer;
         containerConfigModel = cfg->containerConfig(container);
+        if (ContainerUtils::isAwgContainer(container)
+            && migrateDeprecatedSelfHostedAwgJunk(containerConfigModel)) {
+            cfg->updateContainerConfig(container, containerConfigModel);
+            m_serversRepository->editServer(serverId, cfg->toJson(), kind);
+            qInfo() << "[TunnelCore] removed deprecated default AWG I1 from self-hosted user config";
+        }
         dns = cfg->getDnsPair(primaryDns, secondaryDns);
         hostName = cfg->hostName;
         description = cfg->description;
@@ -243,14 +335,19 @@ ErrorCode ConnectionController::prepareConnection(const QString &serverId,
         containerConfigModel = cfg->containerConfig(container);
 
         if (cfg->managedProfileId == tunnelCoreManagedProfileId
-            && cfg->managedObfuscationMode.compare(
-                   QStringLiteral("client_dynamic"), Qt::CaseInsensitive) == 0
             && ContainerUtils::isAwgContainer(container)) {
-            if (!applyTunnelCoreDynamicObfuscation(
-                    containerConfigModel,
-                    cfg->managedObfuscationProfile,
-                    cfg->managedProfileKey)) {
-                qWarning() << "[TunnelCore] failed to generate dynamic AWG I1-I5; using static fallback";
+            if (!applyTunnelCoreManagedAwg31Base(containerConfigModel)) {
+                qWarning() << "[TunnelCore] failed to apply managed AWG 3.1 base parameters";
+            }
+
+            if (cfg->managedObfuscationMode.compare(
+                    QStringLiteral("client_dynamic"), Qt::CaseInsensitive) == 0) {
+                if (!applyTunnelCoreDynamicObfuscation(
+                        containerConfigModel,
+                        cfg->managedObfuscationProfile,
+                        cfg->managedProfileKey)) {
+                    qWarning() << "[TunnelCore] failed to generate dynamic AWG I1-I5; using static fallback";
+                }
             }
         }
 
