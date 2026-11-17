@@ -1108,6 +1108,15 @@ private slots:
         QVERIFY(current);
         QVERIFY(dns.isEmpty());
 
+        network.responses.enqueue({R"({"ok":false,"error":"config_not_found"})", 404});
+        done = false;
+        controller.fetchDnsPolicy(profile, [&](bool ok, const QStringList &result) {
+            done = true; current = ok; dns = result;
+        });
+        QTRY_VERIFY(done);
+        QVERIFY(!current);
+        QVERIFY(dns.isEmpty());
+
         done = false;
         controller.fetchDnsPolicy(QStringLiteral("[\"someone-else\",\"17\",\"DE\"]"),
             [&](bool ok, const QStringList &) { current = ok; done = true; });

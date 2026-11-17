@@ -146,7 +146,7 @@ selected profile.
 An available policy is `{"ok":true,"id":123,"dns":{"available":true,"recommended":"tunnelcore","servers":["10.8.0.1"]}}`.
 Only private IPv4 resolver addresses are accepted. A missing/disabled policy,
 old server (404), malformed response or network timeout uses the DNS in the
-original imported profile. Authorization failure cancels the attempt. No
+original imported profile. Authorization failure or explicit invalid device/configuration errors cancel the attempt. No
 keys, peer IPs or device slots are changed.
 
 Settings → Connection → DNS servers supports automatic TunnelCore DNS,

@@ -15,6 +15,7 @@
 #include <QUrl>
 #include <QUrlQuery>
 #include <QUuid>
+#include <QTimer>
 
 #if defined(Q_OS_ANDROID)
 #include "platforms/android/android_controller.h"
@@ -1364,6 +1365,10 @@ void TunnelCoreController::fetchDnsPolicy(const QString &profileKey,
     req.setRawHeader("Authorization", "Bearer " + m_token);
     auto *reply = m_network->get(req);
     const auto generation = m_generation;
+    QTimer::singleShot(5000, reply, [reply]() {
+        if (!reply->isFinished())
+            reply->abort();
+    });
     connect(reply, &QNetworkReply::readyRead, this, [reply]() {
         if (reply->bytesAvailable() > 16384)
             reply->abort();
@@ -1378,7 +1383,12 @@ void TunnelCoreController::fetchDnsPolicy(const QString &profileKey,
         }
         const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
         const auto body = reply->readAll();
-        if (status == 401 || status == 403) {
+        const auto object = QJsonDocument::fromJson(body).object();
+        const auto apiError = object.value("error").toString();
+        if (status == 401 || status == 403
+            || apiError == QStringLiteral("config_not_found")
+            || apiError == QStringLiteral("device_not_found")
+            || apiError == QStringLiteral("device_id_required")) {
             completion(false, {});
             return;
         }
@@ -1387,7 +1397,6 @@ void TunnelCoreController::fetchDnsPolicy(const QString &profileKey,
             completion(true, {});
             return;
         }
-        const auto object = QJsonDocument::fromJson(body).object();
         if (!object.value("ok").toBool() || object.value("id").toVariant().toLongLong() != id) {
             completion(true, {});
             return;
