@@ -133,3 +133,28 @@ Android device validation is still required for keyboard layout, VPN import and
 connection with an actual account. Legacy page files remain available for
 existing server management flows; the initial screen and service entry point
 now lead to the TunnelCore account.
+
+
+### Managed DNS policy
+
+Before opening a managed AmneziaWG connection in automatic DNS mode, request
+`GET /configs/{id}/dns/?device_id=...` with the normal Bearer token. This
+endpoint does not consume the private configuration. The binding ID is read
+from the stored managed profile key and checked against the account and
+selected profile.
+
+An available policy is `{"ok":true,"id":123,"dns":{"available":true,"recommended":"tunnelcore","servers":["10.8.0.1"]}}`.
+Only private IPv4 resolver addresses are accepted. A missing/disabled policy,
+old server (404), malformed response or network timeout uses the DNS in the
+original imported profile. Authorization failure or explicit invalid device/configuration errors cancel the attempt. No
+keys, peer IPs or device slots are changed.
+
+Settings → Connection → DNS servers supports automatic TunnelCore DNS,
+Cloudflare, Google, Quad9 and a validated custom IPv4 resolver. Changes
+apply when the tunnel is next opened; platform-level reconnects may reuse the
+active tunnel configuration. A single resolver does not acquire an implicit
+secondary. Managed DNS addresses are included in VPN-only site routes and
+removed from direct IPv4 CIDR exclusions. Excluded applications, system
+Private DNS and browser DoH remain outside this guarantee. The initial
+release does not actively probe DNS from the client or switch resolvers
+inside an existing connection; test each platform on a pilot node.

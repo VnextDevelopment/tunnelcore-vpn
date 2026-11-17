@@ -39,12 +39,15 @@ QPair<QString, QString> NativeServerConfig::getDnsPair(const QString &primaryDns
     QString d1 = dns1;
     QString d2 = dns2;
 
-    if (d1.isEmpty() || !NetworkUtilities::checkIPv4Format(d1)) {
+    const bool hasPrimary = !d1.isEmpty() && NetworkUtilities::checkIPv4Format(d1);
+    if (!hasPrimary) {
         d1 = primaryDns;
     }
-    if (d2.isEmpty() || !NetworkUtilities::checkIPv4Format(d2)) {
+    if (!d2.isEmpty() && !NetworkUtilities::checkIPv4Format(d2))
+        d2.clear();
+    // An explicit single resolver must not acquire an unrelated secondary.
+    if (!hasPrimary && d2.isEmpty())
         d2 = secondaryDns;
-    }
     return { d1, d2 };
 }
 

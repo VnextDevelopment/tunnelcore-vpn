@@ -26,6 +26,8 @@ public:
     void toggleAmneziaDns(bool enable);
     bool isAmneziaDnsEnabled() const;
 
+    QString tunnelCoreDnsMode() const;
+    void setTunnelCoreDnsMode(const QString &mode);
     QString getPrimaryDns() const;
     void setPrimaryDns(const QString &dns);
 

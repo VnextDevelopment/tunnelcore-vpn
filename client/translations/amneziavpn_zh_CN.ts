@@ -4100,6 +4100,10 @@ Create one from the current settings.</source>
         <source>Blocks network connections without VPN</source>
         <translation>阻止未经 VPN 的网络连接</translation>
     </message>
+    <message>
+        <source>Choose DNS for TunnelCore VPN</source>
+        <translation>选择 TunnelCore VPN 的 DNS</translation>
+    </message>
 </context>
 <context>
     <name>PageSettingsDns</name>
@@ -4167,6 +4171,22 @@ Create one from the current settings.</source>
         <location filename="../ui/qml/Pages2/PageSettingsDns.qml" line="165"/>
         <source>Settings saved</source>
         <translation>配置已保存</translation>
+    </message>
+    <message>
+        <source>Changes apply the next time you connect. Automatic mode uses TunnelCore DNS when available, otherwise the VPN profile DNS.</source>
+        <translation>更改将在下次连接时生效。自动模式优先使用可用的 TunnelCore DNS，否则使用 VPN 配置中的 DNS。</translation>
+    </message>
+    <message>
+        <source>TunnelCore DNS (automatic)</source>
+        <translation>TunnelCore DNS（自动）</translation>
+    </message>
+    <message>
+        <source>Custom DNS</source>
+        <translation>自定义 DNS</translation>
+    </message>
+    <message>
+        <source>Enter a valid IPv4 DNS address</source>
+        <translation>请输入有效的 IPv4 DNS 地址</translation>
     </message>
 </context>
 <context>

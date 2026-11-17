@@ -31,6 +31,8 @@ public:
     void setUseAmneziaDns(bool enabled);
     QStringList getAllowedDnsServers() const;
     void setAllowedDnsServers(const QStringList &servers);
+    QString tunnelCoreDnsMode() const;
+    void setTunnelCoreDnsMode(const QString &mode);
     QString primaryDns() const;
     void setPrimaryDns(const QString &dns);
     QString secondaryDns() const;

@@ -4100,6 +4100,10 @@ Créez-en une à partir des paramètres actuels.</translation>
         <source>Blocks network connections without VPN</source>
         <translation>Bloque les connexions réseau en dehors du VPN</translation>
     </message>
+    <message>
+        <source>Choose DNS for TunnelCore VPN</source>
+        <translation>Choisissez le DNS pour TunnelCore VPN</translation>
+    </message>
 </context>
 <context>
     <name>PageSettingsDns</name>
@@ -4167,6 +4171,22 @@ Créez-en une à partir des paramètres actuels.</translation>
         <location filename="../ui/qml/Pages2/PageSettingsDns.qml" line="165"/>
         <source>Settings saved</source>
         <translation>Paramètres enregistrés</translation>
+    </message>
+    <message>
+        <source>Changes apply the next time you connect. Automatic mode uses TunnelCore DNS when available, otherwise the VPN profile DNS.</source>
+        <translation>Les modifications s’appliquent à la prochaine connexion. Le mode automatique utilise TunnelCore DNS s’il est disponible, sinon le DNS du profil VPN.</translation>
+    </message>
+    <message>
+        <source>TunnelCore DNS (automatic)</source>
+        <translation>TunnelCore DNS (automatique)</translation>
+    </message>
+    <message>
+        <source>Custom DNS</source>
+        <translation>DNS personnalisé</translation>
+    </message>
+    <message>
+        <source>Enter a valid IPv4 DNS address</source>
+        <translation>Saisissez une adresse DNS IPv4 valide</translation>
     </message>
 </context>
 <context>

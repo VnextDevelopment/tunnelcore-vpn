@@ -8,6 +8,7 @@
 #include "core/utils/errorCodes.h"
 #include "core/utils/routeModes.h"
 #include "core/utils/commonStructs.h"
+#include "core/utils/tunnelCoreDns.h"
 #include "logger.h"
 #include "systemController.h"
 #include "amneziaApplication.h"
@@ -48,6 +49,30 @@ void SettingsUiController::toggleAmneziaDns(bool enable)
 bool SettingsUiController::isAmneziaDnsEnabled()
 {
     return m_settingsController->isAmneziaDnsEnabled();
+}
+
+QString SettingsUiController::tunnelCoreDnsMode() const
+{
+    return m_settingsController->tunnelCoreDnsMode();
+}
+
+void SettingsUiController::setTunnelCoreDnsMode(const QString &mode)
+{
+    m_settingsController->setTunnelCoreDnsMode(mode);
+    emit tunnelCoreDnsModeChanged();
+}
+
+bool SettingsUiController::saveTunnelCoreCustomDns(const QString &primary, const QString &secondary)
+{
+    const auto first = primary.trimmed();
+    const auto second = secondary.trimmed();
+    if (!TunnelCoreDns::validIPv4(first)
+        || (!second.isEmpty() && !TunnelCoreDns::validIPv4(second)))
+        return false;
+    setPrimaryDns(first);
+    setSecondaryDns(first == second ? QString() : second);
+    setTunnelCoreDnsMode(QStringLiteral("custom"));
+    return true;
 }
 
 QString SettingsUiController::getPrimaryDns()

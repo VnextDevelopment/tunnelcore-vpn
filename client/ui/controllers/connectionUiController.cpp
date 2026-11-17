@@ -123,6 +123,10 @@ QString ConnectionUiController::connectionStateText() const
 
 void ConnectionUiController::toggleConnection()
 {
+    if (m_connectionController->isDnsPolicyPending()) {
+        closeConnection();
+        return;
+    }
     if (m_state == Vpn::ConnectionState::Preparing) {
         emit preparingConfig();
         return;

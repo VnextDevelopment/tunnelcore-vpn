@@ -13,6 +13,8 @@ import "../Components"
 
 PageType {
     id: root
+    readonly property bool managedDns: TunnelCoreController.authenticated
+    property string selectedMode: SettingsController.tunnelCoreDnsMode
 
     BackButtonType {
         id: backButton
@@ -39,10 +41,10 @@ PageType {
 
         property var isServerFromApi: ServersUiController.isDefaultServerFromApi
 
-        enabled: !isServerFromApi
+        enabled: root.managedDns || !isServerFromApi
 
         Component.onCompleted: {
-            if (isServerFromApi) {
+            if (isServerFromApi && !root.managedDns) {
                 PageController.showNotificationMessage(qsTr("Default server does not support custom DNS"))
             }
         }
@@ -64,7 +66,9 @@ PageType {
                 Layout.leftMargin: 16
                 Layout.rightMargin: 16
                 
-                text: qsTr("If AmneziaDNS is not used or installed")
+                text: root.managedDns
+                      ? qsTr("Changes apply the next time you connect. Automatic mode uses TunnelCore DNS when available, otherwise the VPN profile DNS.")
+                      : qsTr("If AmneziaDNS is not used or installed")
             }
         }
 
@@ -74,8 +78,38 @@ PageType {
             width: listView.width
             spacing: 16
 
+            Repeater {
+                model: root.managedDns ? [
+                    { key: "auto", label: qsTr("TunnelCore DNS (automatic)") },
+                    { key: "cloudflare", label: "Cloudflare" },
+                    { key: "google", label: "Google" },
+                    { key: "quad9", label: "Quad9" },
+                    { key: "custom", label: qsTr("Custom DNS") }
+                ] : []
+
+                delegate: BasicButtonType {
+                    required property var modelData
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    text: (root.selectedMode === modelData.key ? "✓  " : "") + modelData.label
+                    defaultColor: root.selectedMode === modelData.key
+                                  ? AmneziaStyle.color.tcSurfaceBlue : AmneziaStyle.color.tcCard
+                    textColor: AmneziaStyle.color.tcInk
+                    borderColor: root.selectedMode === modelData.key
+                                 ? AmneziaStyle.color.tcBlue : AmneziaStyle.color.tcStroke
+                    borderWidth: 1
+                    clickedFunc: function() {
+                        root.selectedMode = modelData.key
+                        if (modelData.key !== "custom")
+                            SettingsController.tunnelCoreDnsMode = modelData.key
+                    }
+                }
+            }
+
             TextFieldWithHeaderType {
                 id: primaryDns
+                visible: !root.managedDns || root.selectedMode === "custom"
 
                 Layout.fillWidth: true
                 Layout.leftMargin: 16
@@ -91,6 +125,7 @@ PageType {
 
             TextFieldWithHeaderType {
                 id: secondaryDns
+                visible: !root.managedDns || root.selectedMode === "custom"
 
                 Layout.fillWidth: true
                 Layout.leftMargin: 16
@@ -106,6 +141,7 @@ PageType {
 
             BasicButtonType {
                 id: restoreDefaultButton
+                visible: !root.managedDns
 
                 Layout.fillWidth: true
                 Layout.topMargin: 16
@@ -142,6 +178,7 @@ PageType {
 
             BasicButtonType {
                 id: saveButton
+                visible: !root.managedDns || root.selectedMode === "custom"
 
                 Layout.fillWidth: true
                 Layout.margins: 16
@@ -149,6 +186,15 @@ PageType {
                 text: qsTr("Save")
 
                 clickedFunc: function() {
+                    if (root.managedDns) {
+                        if (!SettingsController.saveTunnelCoreCustomDns(
+                                primaryDns.textField.text, secondaryDns.textField.text)) {
+                            PageController.showNotificationMessage(qsTr("Enter a valid IPv4 DNS address"))
+                            return
+                        }
+                        PageController.showNotificationMessage(qsTr("Settings saved"))
+                        return
+                    }
                     if (primaryDns.textField.text === "") {
                         primaryDns.errorText = qsTr("Primary DNS cannot be empty")
                         return

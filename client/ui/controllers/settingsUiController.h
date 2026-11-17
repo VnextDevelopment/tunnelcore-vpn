@@ -17,6 +17,7 @@ public:
                                  ServersController* serversController,
                                  QObject *parent = nullptr);
 
+    Q_PROPERTY(QString tunnelCoreDnsMode READ tunnelCoreDnsMode WRITE setTunnelCoreDnsMode NOTIFY tunnelCoreDnsModeChanged)
     Q_PROPERTY(QString primaryDns READ getPrimaryDns WRITE setPrimaryDns NOTIFY primaryDnsChanged)
     Q_PROPERTY(QString secondaryDns READ getSecondaryDns WRITE setSecondaryDns NOTIFY secondaryDnsChanged)
     Q_PROPERTY(bool isLoggingEnabled READ isLoggingEnabled WRITE toggleLogging NOTIFY loggingStateChanged)
@@ -36,6 +37,9 @@ public slots:
     void toggleAmneziaDns(bool enable);
     bool isAmneziaDnsEnabled();
 
+    QString tunnelCoreDnsMode() const;
+    void setTunnelCoreDnsMode(const QString &mode);
+    bool saveTunnelCoreCustomDns(const QString &primary, const QString &secondary);
     QString getPrimaryDns();
     void setPrimaryDns(const QString &dns);
 
@@ -106,6 +110,7 @@ public slots:
     void disableHomeAdLabel();
 
 signals:
+    void tunnelCoreDnsModeChanged();
     void primaryDnsChanged();
     void secondaryDnsChanged();
     void loggingStateChanged();

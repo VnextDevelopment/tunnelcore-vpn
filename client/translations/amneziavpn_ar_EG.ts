@@ -4101,6 +4101,10 @@ Create one from the current settings.</source>
         <source>Blocks network connections without VPN</source>
         <translation>يحظر اتصالات الشبكة بدون VPN</translation>
     </message>
+    <message>
+        <source>Choose DNS for TunnelCore VPN</source>
+        <translation>اختر DNS لـ TunnelCore VPN</translation>
+    </message>
 </context>
 <context>
     <name>PageSettingsDns</name>
@@ -4168,6 +4172,22 @@ Create one from the current settings.</source>
         <location filename="../ui/qml/Pages2/PageSettingsDns.qml" line="165"/>
         <source>Settings saved</source>
         <translation>تم حفظ الإعدادات</translation>
+    </message>
+    <message>
+        <source>Changes apply the next time you connect. Automatic mode uses TunnelCore DNS when available, otherwise the VPN profile DNS.</source>
+        <translation>تُطبّق التغييرات عند الاتصال التالي. يستخدم الوضع التلقائي TunnelCore DNS عند توفره، وإلا يستخدم DNS الخاص بملف VPN.</translation>
+    </message>
+    <message>
+        <source>TunnelCore DNS (automatic)</source>
+        <translation>TunnelCore DNS (تلقائي)</translation>
+    </message>
+    <message>
+        <source>Custom DNS</source>
+        <translation>DNS مخصص</translation>
+    </message>
+    <message>
+        <source>Enter a valid IPv4 DNS address</source>
+        <translation>أدخل عنوان IPv4 DNS صالحًا</translation>
     </message>
 </context>
 <context>

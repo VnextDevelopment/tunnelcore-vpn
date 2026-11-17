@@ -50,6 +50,16 @@ bool SettingsController::isAmneziaDnsEnabled() const
     return m_appSettingsRepository->useAmneziaDns();
 }
 
+QString SettingsController::tunnelCoreDnsMode() const
+{
+    return m_appSettingsRepository->tunnelCoreDnsMode();
+}
+
+void SettingsController::setTunnelCoreDnsMode(const QString &mode)
+{
+    m_appSettingsRepository->setTunnelCoreDnsMode(mode);
+}
+
 QString SettingsController::getPrimaryDns() const
 {
     return m_appSettingsRepository->primaryDns();

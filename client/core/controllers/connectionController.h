@@ -5,6 +5,9 @@
 #include <QJsonObject>
 #include <QPair>
 #include <memory>
+#include <functional>
+#include <utility>
+#include <QStringList>
 
 #include "core/utils/containerEnum.h"
 #include "core/utils/containers/containerUtils.h"
@@ -32,10 +35,14 @@ public:
 
     ErrorCode prepareConnection(const QString &serverId,
                                QJsonObject& vpnConfiguration,
-                               DockerContainer& container);
+                               DockerContainer& container,
+                               const QStringList &managedDns = {});
 
     ErrorCode isConnectionSupported(const QString &serverId) const;
 
+    using DnsPolicyFetcher = std::function<void(const QString &, std::function<void(bool, const QStringList &)>)>;
+    void setDnsPolicyFetcher(DnsPolicyFetcher fetcher) { m_dnsPolicyFetcher = std::move(fetcher); }
+    bool isDnsPolicyPending() const { return m_dnsPending; }
     ErrorCode openConnection(const QString &serverId);
 
     void closeConnection();
@@ -74,6 +81,10 @@ signals:
 #endif
 
 private:
+    ErrorCode openConnectionWithDns(const QString &serverId, const QStringList &managedDns);
+    DnsPolicyFetcher m_dnsPolicyFetcher;
+    quint64 m_dnsAttempt = 0;
+    bool m_dnsPending = false;
     ErrorCode defaultContainerForServer(const QString &serverId, DockerContainer &container) const;
 
     SecureServersRepository* m_serversRepository;

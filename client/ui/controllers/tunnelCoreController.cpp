@@ -1,4 +1,5 @@
 #include "tunnelCoreController.h"
+#include "../../core/utils/tunnelCoreDns.h"
 
 #include <QDebug>
 #include <QCryptographicHash>
@@ -14,6 +15,7 @@
 #include <QUrl>
 #include <QUrlQuery>
 #include <QUuid>
+#include <QTimer>
 
 #if defined(Q_OS_ANDROID)
 #include "platforms/android/android_controller.h"
@@ -1341,6 +1343,66 @@ QString TunnelCoreController::selectedProfileKey() const
     return QString::fromUtf8(QJsonDocument(QJsonArray {
         m_username, QString::number(m_selectedConfigId), m_effectiveVpnCountry
     }).toJson(QJsonDocument::Compact));
+}
+
+void TunnelCoreController::fetchDnsPolicy(const QString &profileKey,
+                                          std::function<void(bool, const QStringList &)> completion)
+{
+    const auto key = QJsonDocument::fromJson(profileKey.toUtf8()).array();
+    bool validId = false;
+    const auto id = key.size() == 3 ? key.at(1).toString().toLongLong(&validId) : 0;
+    if (!authenticated() || key.size() != 3 || key.at(0).toString() != m_username
+        || !validId || id <= 0
+        || (!selectedProfileKey().isEmpty() && selectedProfileKey() != profileKey)) {
+        completion(false, {});
+        return;
+    }
+
+    QNetworkRequest req {QUrl(apiBase + deviceRequestPath(QStringLiteral("configs/%1/dns/").arg(id)))};
+    req.setTransferTimeout(5000);
+    req.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::ManualRedirectPolicy);
+    req.setRawHeader("Accept", "application/json");
+    req.setRawHeader("Authorization", "Bearer " + m_token);
+    auto *reply = m_network->get(req);
+    const auto generation = m_generation;
+    QTimer::singleShot(5000, reply, [reply]() {
+        if (!reply->isFinished())
+            reply->abort();
+    });
+    connect(reply, &QNetworkReply::readyRead, this, [reply]() {
+        if (reply->bytesAvailable() > 16384)
+            reply->abort();
+    });
+    connect(reply, &QNetworkReply::finished, this,
+            [this, reply, generation, profileKey, id, completion = std::move(completion)]() {
+        reply->deleteLater();
+        if (generation != m_generation || !authenticated()
+            || (!selectedProfileKey().isEmpty() && selectedProfileKey() != profileKey)) {
+            completion(false, {});
+            return;
+        }
+        const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        const auto body = reply->readAll();
+        const auto object = QJsonDocument::fromJson(body).object();
+        const auto apiError = object.value("error").toString();
+        if (status == 401 || status == 403
+            || apiError == QStringLiteral("config_not_found")
+            || apiError == QStringLiteral("device_not_found")
+            || apiError == QStringLiteral("device_id_required")) {
+            completion(false, {});
+            return;
+        }
+        // Old API, unhealthy resolver or timeout: use the original profile.
+        if (reply->error() != QNetworkReply::NoError || status != 200 || body.size() > 16384) {
+            completion(true, {});
+            return;
+        }
+        if (!object.value("ok").toBool() || object.value("id").toVariant().toLongLong() != id) {
+            completion(true, {});
+            return;
+        }
+        completion(true, TunnelCoreDns::policyServers(object.value("dns").toObject()));
+    });
 }
 
 void TunnelCoreController::selectCurrentConfig()

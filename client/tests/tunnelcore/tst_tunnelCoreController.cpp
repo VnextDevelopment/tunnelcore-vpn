@@ -1,5 +1,6 @@
 #include "../../ui/controllers/tunnelCoreController.h"
 #include "../../core/utils/tunnelCoreObfuscation.h"
+#include "../../core/utils/tunnelCoreDns.h"
 
 #include <QDateTime>
 #include <QDesktopServices>
@@ -1046,6 +1047,82 @@ private slots:
         QCOMPARE(QJsonDocument::fromJson(network.bodies.last()).object(), QJsonObject());
     }
 
+
+    void managedDnsPolicyAndModes()
+    {
+        QCOMPARE(TunnelCoreDns::parseServers("10.8.0.1"), QStringList({"10.8.0.1"}));
+        QCOMPARE(TunnelCoreDns::parseServers("1.1.1.1, 8.8.8.8"), QStringList({"1.1.1.1", "8.8.8.8"}));
+        QVERIFY(TunnelCoreDns::parseServers("999.1.1.1, 127.0.0.1").isEmpty());
+        const QPair<QString, QString> original{"1.1.1.1", "8.8.8.8"};
+        const auto policy = QJsonDocument::fromJson(R"({"available":true,"recommended":"tunnelcore","servers":["10.8.0.1"]})").object();
+        const auto servers = TunnelCoreDns::policyServers(policy);
+        QCOMPARE(servers, QStringList({"10.8.0.1"}));
+        const auto single = TunnelCoreDns::choose("auto", servers, original, {}, {});
+        QCOMPARE(single.first, QString("10.8.0.1"));
+        QVERIFY(single.second.isEmpty());
+        QCOMPARE(TunnelCoreDns::choose("auto", {}, original, {}, {}), original);
+        QCOMPARE(TunnelCoreDns::choose("google", servers, original, {}, {}).first, QString("8.8.8.8"));
+        QCOMPARE(TunnelCoreDns::choose("custom", servers, original, "9.9.9.9", {}).first, QString("9.9.9.9"));
+        QVERIFY(TunnelCoreDns::policyServers(QJsonDocument::fromJson(
+            R"({"available":true,"recommended":"tunnelcore","servers":["8.8.8.8"]})").object()).isEmpty());
+        const auto bypass = TunnelCoreDns::withoutDnsHosts("10.8.0.0/30", servers);
+        QVERIFY(!bypass.isEmpty());
+        for (const auto &route : bypass) {
+            const auto parsed = QHostAddress::parseSubnet(route);
+            QVERIFY(!QHostAddress("10.8.0.1").isInSubnet(parsed.first, parsed.second));
+        }
+        QVERIFY(TunnelCoreDns::withoutDnsHosts("10.8.0.1/32", servers).isEmpty());
+        QCOMPARE(TunnelCoreDns::withoutDnsHosts("192.168.0.0/16", servers),
+                 QStringList({"192.168.0.0/16"}));
+    }
+
+    void dnsPolicyFetchIsIndependentOfConfigDownload()
+    {
+        Network network;
+        enqueueLogin(network);
+        TunnelCoreController controller(nullptr, &network);
+        controller.login("client", "password");
+        QTRY_VERIFY(!controller.busy());
+        const auto profile = controller.selectedProfileKey();
+        QVERIFY(!profile.isEmpty());
+        network.responses.enqueue({R"({"ok":true,"id":17,"dns":{"available":true,"recommended":"tunnelcore","servers":["10.8.0.1"]}})"});
+        bool done = false;
+        bool current = false;
+        QStringList dns;
+        controller.fetchDnsPolicy(profile, [&](bool ok, const QStringList &result) {
+            done = true; current = ok; dns = result;
+        });
+        QTRY_VERIFY(done);
+        QVERIFY(current);
+        QCOMPARE(dns, QStringList({"10.8.0.1"}));
+        QCOMPARE(network.requests.last().url().path(), QString("/api/vpn/v1/configs/17/dns/"));
+        QCOMPARE(network.requests.last().rawHeader("Authorization"), QByteArray("Bearer test-token"));
+        QVERIFY(QUrlQuery(network.requests.last().url()).hasQueryItem("device_id"));
+
+        network.responses.enqueue({"{}", 404});
+        done = false;
+        controller.fetchDnsPolicy(profile, [&](bool ok, const QStringList &result) {
+            done = true; current = ok; dns = result;
+        });
+        QTRY_VERIFY(done);
+        QVERIFY(current);
+        QVERIFY(dns.isEmpty());
+
+        network.responses.enqueue({R"({"ok":false,"error":"config_not_found"})", 404});
+        done = false;
+        controller.fetchDnsPolicy(profile, [&](bool ok, const QStringList &result) {
+            done = true; current = ok; dns = result;
+        });
+        QTRY_VERIFY(done);
+        QVERIFY(!current);
+        QVERIFY(dns.isEmpty());
+
+        done = false;
+        controller.fetchDnsPolicy(QStringLiteral("[\"someone-else\",\"17\",\"DE\"]"),
+            [&](bool ok, const QStringList &) { current = ok; done = true; });
+        QVERIFY(done);
+        QVERIFY(!current);
+    }
 
     void expiredSession()
     {

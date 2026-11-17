@@ -4106,6 +4106,10 @@ Create one from the current settings.</source>
         <source>Blocks network connections without VPN</source>
         <translation>Блокирует интернет-соединение без VPN</translation>
     </message>
+    <message>
+        <source>Choose DNS for TunnelCore VPN</source>
+        <translation>Выберите DNS для TunnelCore VPN</translation>
+    </message>
 </context>
 <context>
     <name>PageSettingsDns</name>
@@ -4173,6 +4177,22 @@ Create one from the current settings.</source>
         <location filename="../ui/qml/Pages2/PageSettingsDns.qml" line="165"/>
         <source>Settings saved</source>
         <translation>Настройки сохранены</translation>
+    </message>
+    <message>
+        <source>Changes apply the next time you connect. Automatic mode uses TunnelCore DNS when available, otherwise the VPN profile DNS.</source>
+        <translation>Изменения применяются при следующем подключении. Автоматический режим использует TunnelCore DNS, если он доступен, иначе DNS из профиля VPN.</translation>
+    </message>
+    <message>
+        <source>TunnelCore DNS (automatic)</source>
+        <translation>TunnelCore DNS (автоматически)</translation>
+    </message>
+    <message>
+        <source>Custom DNS</source>
+        <translation>Пользовательский DNS</translation>
+    </message>
+    <message>
+        <source>Enter a valid IPv4 DNS address</source>
+        <translation>Введите корректный IPv4-адрес DNS</translation>
     </message>
 </context>
 <context>

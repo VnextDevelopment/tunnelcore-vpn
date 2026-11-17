@@ -63,6 +63,7 @@ PageType {
 
             SwitcherType {
                 id: amneziaDnsSwitch
+                visible: !TunnelCoreController.authenticated
 
                 Layout.fillWidth: true
                 Layout.margins: 16
@@ -93,7 +94,9 @@ PageType {
                 Layout.fillWidth: true
 
                 text: qsTr("DNS servers")
-                descriptionText: qsTr("When AmneziaDNS is not used or installed")
+                descriptionText: TunnelCoreController.authenticated
+                                 ? qsTr("Choose DNS for TunnelCore VPN")
+                                 : qsTr("When AmneziaDNS is not used or installed")
                 rightImageSource: "qrc:/images/controls/chevron-right.svg"
                 textColor: AmneziaStyle.color.tcInk
                 descriptionColor: AmneziaStyle.color.tcMuted

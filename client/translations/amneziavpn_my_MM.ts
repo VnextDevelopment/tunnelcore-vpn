@@ -4100,6 +4100,10 @@ Create one from the current settings.</source>
         <source>Blocks network connections without VPN</source>
         <translation>VPN မရှိဘဲ ကွန်ရက် ချိတ်ဆက်မှုများကို ပိတ်ဆို့သည်</translation>
     </message>
+    <message>
+        <source>Choose DNS for TunnelCore VPN</source>
+        <translation>TunnelCore VPN အတွက် DNS ရွေးပါ</translation>
+    </message>
 </context>
 <context>
     <name>PageSettingsDns</name>
@@ -4167,6 +4171,22 @@ Create one from the current settings.</source>
         <location filename="../ui/qml/Pages2/PageSettingsDns.qml" line="165"/>
         <source>Settings saved</source>
         <translation>ဆက်တင်များကို သိမ်းဆည်းပြီးပြီ</translation>
+    </message>
+    <message>
+        <source>Changes apply the next time you connect. Automatic mode uses TunnelCore DNS when available, otherwise the VPN profile DNS.</source>
+        <translation>ပြောင်းလဲမှုများကို နောက်တစ်ကြိမ် ချိတ်ဆက်ချိန်တွင် အသုံးပြုမည်။ အလိုအလျောက်စနစ်သည် ရရှိနိုင်ပါက TunnelCore DNS၊ မရရှိပါက VPN ပရိုဖိုင် DNS ကို အသုံးပြုသည်။</translation>
+    </message>
+    <message>
+        <source>TunnelCore DNS (automatic)</source>
+        <translation>TunnelCore DNS (အလိုအလျောက်)</translation>
+    </message>
+    <message>
+        <source>Custom DNS</source>
+        <translation>စိတ်ကြိုက် DNS</translation>
+    </message>
+    <message>
+        <source>Enter a valid IPv4 DNS address</source>
+        <translation>မှန်ကန်သော IPv4 DNS လိပ်စာ ထည့်ပါ</translation>
     </message>
 </context>
 <context>

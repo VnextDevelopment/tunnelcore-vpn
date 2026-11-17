@@ -12,6 +12,8 @@
 #include "core/utils/utilities.h"
 #include "core/utils/serverConfigUtils.h"
 #include "core/utils/tunnelCoreObfuscation.h"
+#include "core/utils/tunnelCoreDns.h"
+#include <QPointer>
 #include "version.h"
 #include "core/utils/containerEnum.h"
 #include "core/utils/containers/containerUtils.h"
@@ -283,7 +285,8 @@ ErrorCode ConnectionController::isConnectionSupported(const QString &serverId) c
 
 ErrorCode ConnectionController::prepareConnection(const QString &serverId,
                                                  QJsonObject& vpnConfiguration,
-                                                 DockerContainer& container)
+                                                 DockerContainer& container,
+                                                 const QStringList &managedDns)
 {
     ContainerConfig containerConfigModel;
     QPair<QString, QString> dns;
@@ -352,6 +355,15 @@ ErrorCode ConnectionController::prepareConnection(const QString &serverId,
         }
 
         dns = cfg->getDnsPair(primaryDns, secondaryDns);
+        if (cfg->managedProfileId == tunnelCoreManagedProfileId && ContainerUtils::isAwgContainer(container)) {
+            dns = TunnelCoreDns::choose(m_appSettingsRepository->tunnelCoreDnsMode(), managedDns,
+                                        dns, primaryDns, secondaryDns);
+            auto &protocol = containerConfigModel.protocolConfig;
+            auto native = protocol.nativeConfig();
+            replaceAwgNativeParameter(native, QStringLiteral("DNS"),
+                dns.second.isEmpty() ? dns.first : dns.first + QStringLiteral(", ") + dns.second);
+            protocol.setNativeConfig(native);
+        }
         hostName = cfg->hostName;
         description = cfg->description;
         break;
@@ -380,16 +392,53 @@ ErrorCode ConnectionController::prepareConnection(const QString &serverId,
 
     vpnConfiguration = createConnectionConfiguration(dns, isApiConfig, hostName, description, configVersion,
                                                      containerConfigModel, container);
+    if (kind == serverConfigUtils::ConfigType::Native && ContainerUtils::isAwgContainer(container)) {
+        const auto cfg = m_serversRepository->nativeConfig(serverId);
+        if (cfg && cfg->managedProfileId == tunnelCoreManagedProfileId)
+            vpnConfiguration.insert(QStringLiteral("tunnelCoreManagedDns"), true);
+    }
 
     return ErrorCode::NoError;
 }
 
 ErrorCode ConnectionController::openConnection(const QString &serverId)
 {
+    if (m_dnsPending)
+        return ErrorCode::NoError;
+    const auto cfg = m_serversRepository->nativeConfig(serverId);
+    if (m_dnsPolicyFetcher && cfg && cfg->managedProfileId == tunnelCoreManagedProfileId
+        && ContainerUtils::isAwgContainer(cfg->defaultContainer)
+        && !cfg->managedProfileKey.isEmpty()
+        && m_appSettingsRepository->tunnelCoreDnsMode() == QStringLiteral("auto")) {
+        const auto profileKey = cfg->managedProfileKey;
+        const auto attempt = ++m_dnsAttempt;
+        m_dnsPending = true;
+        setConnectionState(Vpn::ConnectionState::Preparing);
+        QPointer<ConnectionController> self(this);
+        m_dnsPolicyFetcher(profileKey, [self, serverId, profileKey, attempt](bool current, const QStringList &servers) {
+            if (!self || attempt != self->m_dnsAttempt)
+                return;
+            self->m_dnsPending = false;
+            const auto active = self->m_serversRepository->nativeConfig(serverId);
+            if (!current || !active || active->managedProfileKey != profileKey
+                || self->m_serversRepository->defaultServerId() != serverId) {
+                self->setConnectionState(Vpn::ConnectionState::Disconnected);
+                return;
+            }
+            if (self->openConnectionWithDns(serverId, servers) != ErrorCode::NoError)
+                self->setConnectionState(Vpn::ConnectionState::Disconnected);
+        });
+        return ErrorCode::NoError;
+    }
+    return openConnectionWithDns(serverId, {});
+}
+
+ErrorCode ConnectionController::openConnectionWithDns(const QString &serverId, const QStringList &managedDns)
+{
     QJsonObject vpnConfiguration;
     DockerContainer container;
 
-    ErrorCode errorCode = prepareConnection(serverId, vpnConfiguration, container);
+    ErrorCode errorCode = prepareConnection(serverId, vpnConfiguration, container, managedDns);
     if (errorCode != ErrorCode::NoError) {
         return errorCode;
     }
@@ -405,6 +454,12 @@ ErrorCode ConnectionController::openConnection(const QString &serverId)
 
 void ConnectionController::closeConnection()
 {
+    ++m_dnsAttempt;
+    if (m_dnsPending) {
+        m_dnsPending = false;
+        setConnectionState(Vpn::ConnectionState::Disconnected);
+        return;
+    }
     if (m_vpnConnection) {
         emit closeConnectionRequested();
     }
