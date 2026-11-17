@@ -85,11 +85,11 @@ open class Wireguard : Protocol() {
             InetNetwork.parse(address.trim())
         }.forEach(::addAddress)
 
-        config.optStringOrNull("dns1")?.let { dns ->
+        config.optStringOrNull("dns1")?.takeIf { it.isNotBlank() }?.let { dns ->
             addDnsServer(parseInetAddress(dns.trim()))
         }
 
-        config.optStringOrNull("dns2")?.let { dns ->
+        config.optStringOrNull("dns2")?.takeIf { it.isNotBlank() }?.let { dns ->
             addDnsServer(parseInetAddress(dns.trim()))
         }
 

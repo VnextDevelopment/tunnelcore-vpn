@@ -358,8 +358,12 @@ void CoreController::initControllers()
                 m_ipSplitTunnelingController->getCurrentSites());
         return true;
     };
-    setQmlContextProperty("TunnelCoreController",
-                          new TunnelCoreController(this, nullptr, std::move(tunnelCoreSessionStorage)));
+    auto *tunnelCore = new TunnelCoreController(this, nullptr, std::move(tunnelCoreSessionStorage));
+    setQmlContextProperty("TunnelCoreController", tunnelCore);
+    m_connectionController->setDnsPolicyFetcher(
+        [tunnelCore](const QString &profileKey, auto completion) {
+            tunnelCore->fetchDnsPolicy(profileKey, std::move(completion));
+        });
 
     m_serversUiController = new ServersUiController(m_serversController, m_settingsController, m_serversModel, m_containersModel, m_defaultServerContainersModel, this);
     setQmlContextProperty("ServersUiController", m_serversUiController);

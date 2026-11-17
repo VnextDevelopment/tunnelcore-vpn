@@ -491,9 +491,12 @@ void VpnConnection::appendSplitTunnelingConfig()
             if (sitesJsonArray.isEmpty()) {
                 routeMode = amnezia::RouteMode::VpnAllSites;
             } else if (routeMode == amnezia::RouteMode::VpnOnlyForwardSites) {
-                // Allow traffic to Amnezia DNS
-                sitesJsonArray.append(m_vpnConfiguration.value(configKey::dns1).toString());
-                sitesJsonArray.append(m_vpnConfiguration.value(configKey::dns2).toString());
+                // Keep selected DNS reachable through the tunnel.
+                for (const auto &key : {configKey::dns1, configKey::dns2}) {
+                    const auto address = m_vpnConfiguration.value(key).toString();
+                    if (!address.isEmpty())
+                        sitesJsonArray.append(address);
+                }
             }
         }
     }

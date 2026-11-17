@@ -13,6 +13,7 @@
 #include "core/utils/constants/apiConstants.h"
 #include "core/utils/constants/configKeys.h"
 #include "core/utils/networkUtilities.h"
+#include "core/utils/tunnelCoreDns.h"
 
 using namespace amnezia;
 
@@ -69,6 +70,18 @@ void SecureAppSettingsRepository::setAllowedDnsServers(const QStringList &server
 {
     setValue("Conf/allowedDnsServers", servers);
     emit allowedDnsServersChanged(servers);
+}
+
+QString SecureAppSettingsRepository::tunnelCoreDnsMode() const
+{
+    const auto mode = value("Conf/tunnelCoreDnsMode", QStringLiteral("auto")).toString();
+    return TunnelCoreDns::validMode(mode) ? mode : QStringLiteral("auto");
+}
+
+void SecureAppSettingsRepository::setTunnelCoreDnsMode(const QString &mode)
+{
+    if (TunnelCoreDns::validMode(mode))
+        setValue("Conf/tunnelCoreDnsMode", mode);
 }
 
 QString SecureAppSettingsRepository::primaryDns() const

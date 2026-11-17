@@ -144,7 +144,7 @@ struct WGConfig: Decodable {
     """
     [Interface]
     Address = \(clientIP)
-    DNS = \(dns1), \(dns2)
+    DNS = \([dns1, dns2].filter { !$0.isEmpty }.joined(separator: ", "))
     MTU = \(mtu)
     PrivateKey = \(clientPrivateKey)
     \(settings)

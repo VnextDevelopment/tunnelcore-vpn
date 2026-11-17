@@ -8,6 +8,7 @@
 #include <QPointer>
 #include <QPair>
 #include <QSet>
+#include <QStringList>
 #include <QVariantList>
 #include <functional>
 #include <tuple>
@@ -82,6 +83,10 @@ public:
     QString subscriptionStatusText() const;
     bool usesAppleBilling() const;
     bool externalRenewalLinkAllowed() const;
+
+    // Returns false only when the authenticated profile is no longer current.
+    void fetchDnsPolicy(const QString &profileKey,
+                        std::function<void(bool, const QStringList &)> completion);
 
     Q_INVOKABLE void loginCode(const QString &code);
     // Legacy login methods remain available during the server transition, but the
