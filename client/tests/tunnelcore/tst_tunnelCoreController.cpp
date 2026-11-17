@@ -1047,6 +1047,26 @@ private slots:
     }
 
 
+    void outdatedClientReceivesExplicitUpdateRequirement()
+    {
+        QCoreApplication::setApplicationVersion(QStringLiteral("5.0.2.173"));
+        Network network;
+        network.responses.enqueue({R"({"ok":true,"access_token":"test-token","token_type":"Bearer","user":{"username":"client"}})"});
+        network.responses.enqueue({R"({"ok":false,"error":"client_update_required","minimum_version":"5.0.2.174"})", 426});
+        TunnelCoreController controller(nullptr, &network);
+        controller.login("client", "password");
+        QTRY_VERIFY(!controller.busy());
+        QVERIFY(controller.authenticated());
+        QVERIFY(controller.clientUpdateRequired());
+        QCOMPARE(controller.minimumClientVersion(), QString("5.0.2.174"));
+        QVERIFY(controller.error().contains("5.0.2.174"));
+        QCOMPARE(network.requests.last().url().path(), QString("/api/vpn/v1/devices/register/"));
+        QCOMPARE(network.requests.last().rawHeader("X-TunnelCore-Client-Version"), QByteArray("5.0.2.173"));
+        QVERIFY(controller.configs().isEmpty());
+        controller.clearError();
+        QVERIFY(controller.clientUpdateRequired());
+    }
+
     void expiredSession()
     {
         Network network;

@@ -1538,6 +1538,24 @@ PageType {
                 }
             }
 
+            BasicButtonType {
+                Layout.fillWidth: true
+                visible: TunnelCoreController.clientUpdateRequired
+                text: qsTranslate("PageSettingsAbout", "Check for updates")
+                clickedFunc: function() {
+                    PageController.goToPage(PageEnum.PageSettingsAbout)
+                }
+            }
+
+            SmallTextType {
+                Layout.fillWidth: true
+                visible: TunnelCoreController.clientUpdateRequired && TunnelCoreController.error.length === 0
+                text: qsTr("Update TunnelCore VPN to receive new configurations. Minimum version: %1.")
+                      .arg(TunnelCoreController.minimumClientVersion)
+                textFormat: Text.PlainText
+                color: AmneziaStyle.color.tcErrorText
+            }
+
             SmallTextType {
                 Layout.fillWidth: true
                 visible: TunnelCoreController.error.length > 0

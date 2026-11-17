@@ -14,6 +14,11 @@
 #include <QUrl>
 #include <QUrlQuery>
 #include <QUuid>
+#include <QRegularExpression>
+
+#ifndef TUNNELCORE_CONTROLLER_TESTS
+#include "version.h"
+#endif
 
 #if defined(Q_OS_ANDROID)
 #include "platforms/android/android_controller.h"
@@ -26,6 +31,22 @@
 #endif
 
 namespace {
+QByteArray clientVersion()
+{
+#ifdef TUNNELCORE_CONTROLLER_TESTS
+    return QCoreApplication::applicationVersion().toLatin1();
+#else
+    return QByteArray(APP_VERSION);
+#endif
+}
+
+bool isConfigIssuancePath(const QString &path, bool post)
+{
+    return path.startsWith(QStringLiteral("configs/"))
+        || (post && (path == QStringLiteral("devices/register/")
+                    || path == QStringLiteral("country-selection/")));
+}
+
 const QString apiBase = QStringLiteral("https://tlsdmd.isgood.host/api/vpn/v1/");
 constexpr qint64 maxResponseSize = 2 * 1024 * 1024;
 constexpr qsizetype maxLoggedResponseSize = 2048;
@@ -423,6 +444,7 @@ void TunnelCoreController::request(const QString &path, const QJsonObject &body,
     request.setTransferTimeout(30000);
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::ManualRedirectPolicy);
     request.setRawHeader("Accept", "application/json");
+    request.setRawHeader("X-TunnelCore-Client-Version", clientVersion());
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     if (!post || authenticatedRequest)
         request.setRawHeader("Authorization", "Bearer " + m_token);
@@ -440,7 +462,7 @@ void TunnelCoreController::request(const QString &path, const QJsonObject &body,
             reply->abort();
     });
     connect(reply, &QNetworkReply::finished, this,
-            [this, reply, generation, post, success, failure, requestUrl, method]() {
+            [this, reply, generation, post, success, failure, requestUrl, method, path]() {
         reply->deleteLater();
         if (generation != m_generation)
             return;
@@ -465,6 +487,20 @@ void TunnelCoreController::request(const QString &path, const QJsonObject &body,
                 qWarning().noquote()
                     << "[TunnelCore API] error body="
                     << QString::fromUtf8(responseBody.left(maxLoggedResponseSize));
+            }
+        }
+
+        if (status == 426 && isConfigIssuancePath(path, post)) {
+            const auto object = QJsonDocument::fromJson(responseBody).object();
+            if (object.value("error").toString() == QStringLiteral("client_update_required")) {
+                const auto minimum = object.value("minimum_version").toString();
+                const QRegularExpression versionPattern(QStringLiteral(R"(\A[0-9]{1,9}(\.[0-9]{1,9}){2,3}\z)"));
+                m_minimumClientVersion = versionPattern.match(minimum).hasMatch()
+                    ? minimum : QStringLiteral("—");
+                m_configs.clear();
+                fail(tr("Update TunnelCore VPN to receive new configurations. Minimum version: %1.")
+                     .arg(m_minimumClientVersion));
+                return;
             }
         }
 
@@ -505,6 +541,8 @@ void TunnelCoreController::request(const QString &path, const QJsonObject &body,
             return;
         }
         m_busy = false;
+        if (isConfigIssuancePath(path, post))
+            m_minimumClientVersion.clear();
         success(document.object());
         emit changed();
     });
@@ -658,6 +696,7 @@ void TunnelCoreController::clearSession()
     m_effectiveVpnCountry.clear();
     m_pendingConfigId = 0;
     m_error.clear();
+    m_minimumClientVersion.clear();
     m_selectedConfigId = 0;
     m_busy = false;
     m_emailAccount = false;
@@ -1057,6 +1096,7 @@ void TunnelCoreController::refreshRoutingCacheInBackground(const QString &cacheK
     networkRequest.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                                 QNetworkRequest::ManualRedirectPolicy);
     networkRequest.setRawHeader("Accept", "application/json");
+    networkRequest.setRawHeader("X-TunnelCore-Client-Version", clientVersion());
     networkRequest.setRawHeader("Authorization", "Bearer " + m_token);
 
     qInfo().noquote() << "[TunnelCore routing] background refresh GET"

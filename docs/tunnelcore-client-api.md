@@ -133,3 +133,15 @@ Android device validation is still required for keyboard layout, VPN import and
 connection with an actual account. Legacy page files remain available for
 existing server management flows; the initial screen and service entry point
 now lead to the TunnelCore account.
+
+
+### Minimum client version
+
+Send `X-TunnelCore-Client-Version: <APP_VERSION>` on managed API requests.
+The central server can require a minimum numeric version for config issuance,
+device registration and country migration. HTTP 426 with
+`{"ok":false,"error":"client_update_required","minimum_version":"5.0.2.173"}`
+shows the required version and an update-settings action without clearing
+the account session or existing profile. A blank server policy permits
+legacy clients. Previously issued configs and manual Telegram files are
+not revoked. This is a compatibility gate, not client attestation.

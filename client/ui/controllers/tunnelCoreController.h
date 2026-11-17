@@ -36,6 +36,8 @@ class TunnelCoreController : public QObject
     Q_PROPERTY(bool busy READ busy NOTIFY changed)
     Q_PROPERTY(QString username READ username NOTIFY changed)
     Q_PROPERTY(QString error READ error NOTIFY changed)
+    Q_PROPERTY(bool clientUpdateRequired READ clientUpdateRequired NOTIFY changed)
+    Q_PROPERTY(QString minimumClientVersion READ minimumClientVersion NOTIFY changed)
     Q_PROPERTY(bool emailAccount READ emailAccount NOTIFY changed)
     Q_PROPERTY(bool telegramLinked READ telegramLinked NOTIFY changed)
     Q_PROPERTY(bool accountDeletionRequested READ accountDeletionRequested NOTIFY changed)
@@ -63,6 +65,8 @@ public:
     bool busy() const { return m_busy; }
     QString username() const { return m_username; }
     QString error() const { return m_error; }
+    bool clientUpdateRequired() const { return !m_minimumClientVersion.isEmpty(); }
+    QString minimumClientVersion() const { return m_minimumClientVersion; }
     bool emailAccount() const { return m_emailAccount; }
     bool telegramLinked() const { return m_telegramLinked; }
     bool accountDeletionRequested() const { return m_accountDeletionRequested; }
@@ -143,6 +147,7 @@ private:
     QByteArray m_token;
     QString m_username;
     QString m_error;
+    QString m_minimumClientVersion;
     QVariantList m_subscriptions;
     QVariantList m_configs;
     QVariantList m_vpnCountries;
