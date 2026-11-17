@@ -6964,6 +6964,10 @@ Remove the server from the app to continue.</source>
     <message><source>Request permanent account deletion?</source><translation>Запросить безвозвратное удаление аккаунта?</translation></message>
     <message><source>We will permanently delete your account and associated data after processing your request, except information we must retain by law. Your VPN access will end. This action cannot be undone.</source><translation>После обработки запроса мы безвозвратно удалим аккаунт и связанные данные, кроме сведений, которые обязаны хранить по закону. Доступ к VPN прекратится. Отменить удаление будет невозможно.</translation></message>
     <message><source>Send deletion request</source><translation>Отправить запрос на удаление</translation></message>
+    <message>
+        <source>Update TunnelCore VPN to receive new configurations. Minimum version: %1.</source>
+        <translation>Обновите TunnelCore VPN, чтобы получать новые конфигурации. Минимальная версия: %1.</translation>
+    </message>
 </context>
 <context>
     <name>VpnCountries</name>
@@ -7058,5 +7062,9 @@ Remove the server from the app to continue.</source>
     <message><source>Link Telegram to this account before renewing in the bot.</source><translation>Перед продлением в боте привяжите Telegram к этому аккаунту.</translation></message>
     <message><source>Could not confirm the account deletion request. Contact support.</source><translation>Не удалось подтвердить запрос на удаление аккаунта. Свяжитесь с поддержкой.</translation></message>
     <message><source>Could not submit the account deletion request. Try again or use the website.</source><translation>Не удалось отправить запрос на удаление. Повторите попытку или воспользуйтесь сайтом.</translation></message>
+    <message>
+        <source>Update TunnelCore VPN to receive new configurations. Minimum version: %1.</source>
+        <translation>Обновите TunnelCore VPN, чтобы получать новые конфигурации. Минимальная версия: %1.</translation>
+    </message>
 </context>
 </TS>

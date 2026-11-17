@@ -6900,10 +6900,18 @@ Remove the server from the app to continue.</source>
     <message><source>Request permanent account deletion?</source><translation>هل تريد طلب حذف الحساب نهائيًا؟</translation></message>
     <message><source>We will permanently delete your account and associated data after processing your request, except information we must retain by law. Your VPN access will end. This action cannot be undone.</source><translation>بعد معالجة طلبك سنحذف حسابك وبياناته نهائيًا، باستثناء المعلومات التي يفرض القانون الاحتفاظ بها. سيتوقف اتصال VPN الخاص بك. لا يمكن التراجع عن هذا الإجراء.</translation></message>
     <message><source>Send deletion request</source><translation>إرسال طلب الحذف</translation></message>
+    <message>
+        <source>Update TunnelCore VPN to receive new configurations. Minimum version: %1.</source>
+        <translation>حدّث TunnelCore VPN لتلقي تكوينات جديدة. الإصدار الأدنى: %1.</translation>
+    </message>
 </context>
 <context>
     <name>TunnelCoreController</name>
     <message><source>Could not confirm the account deletion request. Contact support.</source><translation>تعذر تأكيد طلب حذف الحساب. اتصل بالدعم.</translation></message>
     <message><source>Could not submit the account deletion request. Try again or use the website.</source><translation>تعذر إرسال طلب الحذف. حاول مجددًا أو استخدم الموقع.</translation></message>
+    <message>
+        <source>Update TunnelCore VPN to receive new configurations. Minimum version: %1.</source>
+        <translation>حدّث TunnelCore VPN لتلقي تكوينات جديدة. الإصدار الأدنى: %1.</translation>
+    </message>
 </context>
 </TS>

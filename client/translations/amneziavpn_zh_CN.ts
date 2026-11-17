@@ -6884,10 +6884,18 @@ Remove the server from the app to continue.</source>
     <message><source>Request permanent account deletion?</source><translation>确认申请永久删除账户？</translation></message>
     <message><source>We will permanently delete your account and associated data after processing your request, except information we must retain by law. Your VPN access will end. This action cannot be undone.</source><translation>申请处理完成后，我们将永久删除您的账户及相关数据，但依法必须保留的信息除外。VPN 服务将停止，且操作不可撤销。</translation></message>
     <message><source>Send deletion request</source><translation>提交删除申请</translation></message>
+    <message>
+        <source>Update TunnelCore VPN to receive new configurations. Minimum version: %1.</source>
+        <translation>请更新 TunnelCore VPN 以获取新配置。最低版本：%1。</translation>
+    </message>
 </context>
 <context>
     <name>TunnelCoreController</name>
     <message><source>Could not confirm the account deletion request. Contact support.</source><translation>无法确认账户删除申请，请联系支持团队。</translation></message>
     <message><source>Could not submit the account deletion request. Try again or use the website.</source><translation>无法提交删除申请。请重试或通过网站提交。</translation></message>
+    <message>
+        <source>Update TunnelCore VPN to receive new configurations. Minimum version: %1.</source>
+        <translation>请更新 TunnelCore VPN 以获取新配置。最低版本：%1。</translation>
+    </message>
 </context>
 </TS>

@@ -6884,10 +6884,18 @@ Remove the server from the app to continue.</source>
     <message><source>Request permanent account deletion?</source><translation>계정 영구 삭제를 요청하시겠습니까?</translation></message>
     <message><source>We will permanently delete your account and associated data after processing your request, except information we must retain by law. Your VPN access will end. This action cannot be undone.</source><translation>요청이 처리되면 법적으로 보관해야 하는 정보를 제외한 계정과 관련 데이터를 영구 삭제합니다. VPN 이용이 종료되며 되돌릴 수 없습니다.</translation></message>
     <message><source>Send deletion request</source><translation>삭제 요청 보내기</translation></message>
+    <message>
+        <source>Update TunnelCore VPN to receive new configurations. Minimum version: %1.</source>
+        <translation>새 구성을 받으려면 TunnelCore VPN을 업데이트하세요. 최소 버전: %1.</translation>
+    </message>
 </context>
 <context>
     <name>TunnelCoreController</name>
     <message><source>Could not confirm the account deletion request. Contact support.</source><translation>계정 삭제 요청을 확인할 수 없습니다. 지원팀에 문의하세요.</translation></message>
     <message><source>Could not submit the account deletion request. Try again or use the website.</source><translation>계정 삭제 요청을 보낼 수 없습니다. 다시 시도하거나 웹사이트를 이용하세요.</translation></message>
+    <message>
+        <source>Update TunnelCore VPN to receive new configurations. Minimum version: %1.</source>
+        <translation>새 구성을 받으려면 TunnelCore VPN을 업데이트하세요. 최소 버전: %1.</translation>
+    </message>
 </context>
 </TS>
