@@ -6884,10 +6884,18 @@ Remove the server from the app to continue.</source>
     <message><source>Request permanent account deletion?</source><translation>آیا درخواست حذف دائمی حساب را دارید؟</translation></message>
     <message><source>We will permanently delete your account and associated data after processing your request, except information we must retain by law. Your VPN access will end. This action cannot be undone.</source><translation>پس از بررسی درخواست، حساب و داده‌های مرتبط برای همیشه حذف می‌شوند، به‌جز اطلاعاتی که نگهداری آنها طبق قانون الزامی است. دسترسی VPN پایان می‌یابد. این اقدام برگشت‌ناپذیر است.</translation></message>
     <message><source>Send deletion request</source><translation>ارسال درخواست حذف</translation></message>
+    <message>
+        <source>Update TunnelCore VPN to receive new configurations. Minimum version: %1.</source>
+        <translation>برای دریافت پیکربندی‌های جدید، TunnelCore VPN را به‌روزرسانی کنید. حداقل نسخه: %1.</translation>
+    </message>
 </context>
 <context>
     <name>TunnelCoreController</name>
     <message><source>Could not confirm the account deletion request. Contact support.</source><translation>تأیید درخواست حذف حساب ممکن نشد. با پشتیبانی تماس بگیرید.</translation></message>
     <message><source>Could not submit the account deletion request. Try again or use the website.</source><translation>ارسال درخواست حذف ناموفق بود. دوباره تلاش کنید یا از وب‌سایت استفاده کنید.</translation></message>
+    <message>
+        <source>Update TunnelCore VPN to receive new configurations. Minimum version: %1.</source>
+        <translation>برای دریافت پیکربندی‌های جدید، TunnelCore VPN را به‌روزرسانی کنید. حداقل نسخه: %1.</translation>
+    </message>
 </context>
 </TS>

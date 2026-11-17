@@ -6890,10 +6890,18 @@ Remove the server from the app to continue.</source>
     <message><source>Request permanent account deletion?</source><translation>Запросити остаточне видалення облікового запису?</translation></message>
     <message><source>We will permanently delete your account and associated data after processing your request, except information we must retain by law. Your VPN access will end. This action cannot be undone.</source><translation>Після опрацювання запиту ми остаточно видалимо обліковий запис і пов’язані дані, крім відомостей, які маємо зберігати за законом. Доступ до VPN припиниться. Цю дію неможливо скасувати.</translation></message>
     <message><source>Send deletion request</source><translation>Надіслати запит на видалення</translation></message>
+    <message>
+        <source>Update TunnelCore VPN to receive new configurations. Minimum version: %1.</source>
+        <translation>Оновіть TunnelCore VPN, щоб отримувати нові конфігурації. Мінімальна версія: %1.</translation>
+    </message>
 </context>
 <context>
     <name>TunnelCoreController</name>
     <message><source>Could not confirm the account deletion request. Contact support.</source><translation>Не вдалося підтвердити запит на видалення. Зверніться до підтримки.</translation></message>
     <message><source>Could not submit the account deletion request. Try again or use the website.</source><translation>Не вдалося надіслати запит. Спробуйте ще раз або скористайтеся сайтом.</translation></message>
+    <message>
+        <source>Update TunnelCore VPN to receive new configurations. Minimum version: %1.</source>
+        <translation>Оновіть TunnelCore VPN, щоб отримувати нові конфігурації. Мінімальна версія: %1.</translation>
+    </message>
 </context>
 </TS>

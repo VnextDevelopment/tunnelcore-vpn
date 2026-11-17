@@ -63,6 +63,10 @@
     <message><source>Request permanent account deletion?</source><translation>Hesabın kalıcı olarak silinmesini istiyor musunuz?</translation></message>
     <message><source>We will permanently delete your account and associated data after processing your request, except information we must retain by law. Your VPN access will end. This action cannot be undone.</source><translation>İsteğiniz işlendikten sonra hesabınız ve ilgili veriler, yasalar gereği saklanması gerekenler hariç, kalıcı olarak silinecek. VPN erişiminiz sona erecek. Bu işlem geri alınamaz.</translation></message>
     <message><source>Send deletion request</source><translation>Silme isteği gönder</translation></message>
+    <message>
+        <source>Update TunnelCore VPN to receive new configurations. Minimum version: %1.</source>
+        <translation>Yeni yapılandırmaları almak için TunnelCore VPN’i güncelleyin. Minimum sürüm: %1.</translation>
+    </message>
 </context>
 <context>
     <name>PageHome</name>
@@ -162,6 +166,10 @@
     <message><source>Link Telegram to this account before renewing in the bot.</source><translation>Bot üzerinden yenilemeden önce Telegram&apos;ı bu hesaba bağlayın.</translation></message>
     <message><source>Could not confirm the account deletion request. Contact support.</source><translation>Hesap silme isteği doğrulanamadı. Destek ekibiyle iletişime geçin.</translation></message>
     <message><source>Could not submit the account deletion request. Try again or use the website.</source><translation>Hesap silme isteği gönderilemedi. Yeniden deneyin veya web sitesini kullanın.</translation></message>
+    <message>
+        <source>Update TunnelCore VPN to receive new configurations. Minimum version: %1.</source>
+        <translation>Yeni yapılandırmaları almak için TunnelCore VPN’i güncelleyin. Minimum sürüm: %1.</translation>
+    </message>
 </context>
 <context>
     <name>PageSettingsApplication</name>

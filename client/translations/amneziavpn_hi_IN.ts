@@ -6887,10 +6887,18 @@ Remove the server from the app to continue.</source>
     <message><source>Request permanent account deletion?</source><translation>क्या आप खाता स्थायी रूप से हटाने का अनुरोध करना चाहते हैं?</translation></message>
     <message><source>We will permanently delete your account and associated data after processing your request, except information we must retain by law. Your VPN access will end. This action cannot be undone.</source><translation>आपका अनुरोध संसाधित होने पर खाता और संबंधित डेटा स्थायी रूप से हटा दिया जाएगा, सिवाय उस जानकारी के जिसे कानूनन रखना ज़रूरी है। VPN एक्सेस समाप्त हो जाएगा। यह कार्रवाई वापस नहीं ली जा सकती।</translation></message>
     <message><source>Send deletion request</source><translation>हटाने का अनुरोध भेजें</translation></message>
+    <message>
+        <source>Update TunnelCore VPN to receive new configurations. Minimum version: %1.</source>
+        <translation>नई कॉन्फ़िगरेशन पाने के लिए TunnelCore VPN अपडेट करें। न्यूनतम संस्करण: %1।</translation>
+    </message>
 </context>
 <context>
     <name>TunnelCoreController</name>
     <message><source>Could not confirm the account deletion request. Contact support.</source><translation>खाता हटाने के अनुरोध की पुष्टि नहीं हो सकी। सहायता टीम से संपर्क करें।</translation></message>
     <message><source>Could not submit the account deletion request. Try again or use the website.</source><translation>खाता हटाने का अनुरोध नहीं भेजा जा सका। फिर कोशिश करें या वेबसाइट का उपयोग करें।</translation></message>
+    <message>
+        <source>Update TunnelCore VPN to receive new configurations. Minimum version: %1.</source>
+        <translation>नई कॉन्फ़िगरेशन पाने के लिए TunnelCore VPN अपडेट करें। न्यूनतम संस्करण: %1।</translation>
+    </message>
 </context>
 </TS>

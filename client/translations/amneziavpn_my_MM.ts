@@ -6884,10 +6884,18 @@ Remove the server from the app to continue.</source>
     <message><source>Request permanent account deletion?</source><translation>အကောင့်ကို အပြီးတိုင်ဖျက်ရန် တောင်းဆိုမလား။</translation></message>
     <message><source>We will permanently delete your account and associated data after processing your request, except information we must retain by law. Your VPN access will end. This action cannot be undone.</source><translation>တောင်းဆိုချက်ကို ဆောင်ရွက်ပြီးနောက် ဥပဒေအရ သိမ်းဆည်းရန်လိုအပ်သော အချက်အလက်များမှအပ အကောင့်နှင့် ဒေတာများကို အပြီးတိုင်ဖျက်ပါမည်။ VPN အသုံးပြုခွင့် ရပ်ဆိုင်းမည်ဖြစ်ပြီး ပြန်လည်ရယူ၍ မရပါ။</translation></message>
     <message><source>Send deletion request</source><translation>ဖျက်ရန် တောင်းဆိုချက်ပို့ပါ</translation></message>
+    <message>
+        <source>Update TunnelCore VPN to receive new configurations. Minimum version: %1.</source>
+        <translation>ဖွဲ့စည်းမှုပုံစံအသစ်များ ရရှိရန် TunnelCore VPN ကို အပ်ဒိတ်လုပ်ပါ။ အနည်းဆုံးဗားရှင်း: %1။</translation>
+    </message>
 </context>
 <context>
     <name>TunnelCoreController</name>
     <message><source>Could not confirm the account deletion request. Contact support.</source><translation>အကောင့်ဖျက်ရန် တောင်းဆိုချက်ကို အတည်မပြုနိုင်ပါ။ အကူအညီပေးရေးကို ဆက်သွယ်ပါ။</translation></message>
     <message><source>Could not submit the account deletion request. Try again or use the website.</source><translation>တောင်းဆိုချက် မပို့နိုင်ပါ။ ထပ်ကြိုးစားပါ သို့မဟုတ် ဝဘ်ဆိုက်ကို အသုံးပြုပါ။</translation></message>
+    <message>
+        <source>Update TunnelCore VPN to receive new configurations. Minimum version: %1.</source>
+        <translation>ဖွဲ့စည်းမှုပုံစံအသစ်များ ရရှိရန် TunnelCore VPN ကို အပ်ဒိတ်လုပ်ပါ။ အနည်းဆုံးဗားရှင်း: %1။</translation>
+    </message>
 </context>
 </TS>
