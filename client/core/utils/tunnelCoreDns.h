@@ -58,6 +58,34 @@ inline QStringList policyServers(const QJsonObject &policy)
     return result;
 }
 
+// Subtract DNS host addresses from direct IPv4 CIDRs.
+inline QStringList withoutDnsHosts(const QString &route, const QStringList &dns)
+{
+    const auto parsed = QHostAddress::parseSubnet(route);
+    if (parsed.first.protocol() != QAbstractSocket::IPv4Protocol || parsed.second < 0 || parsed.second > 32)
+        return {route};
+    const quint32 address = parsed.first.toIPv4Address();
+    const int prefix = parsed.second;
+    for (const auto &host : dns) {
+        if (!validIPv4(host))
+            continue;
+        const QHostAddress ip(host);
+        if (!ip.isInSubnet(parsed.first, prefix))
+            continue;
+        if (prefix == 32)
+            return {};
+        const int child = prefix + 1;
+        const quint32 mask = prefix == 0 ? 0u : (0xffffffffu << (32 - prefix));
+        const quint32 first = address & mask;
+        const quint32 second = first | (quint32(1) << (32 - child));
+        const auto suffix = QStringLiteral("/") + QString::number(child);
+        auto result = withoutDnsHosts(QHostAddress(first).toString() + suffix, dns);
+        result.append(withoutDnsHosts(QHostAddress(second).toString() + suffix, dns));
+        return result;
+    }
+    return {route};
+}
+
 inline bool validMode(const QString &mode)
 {
     return mode == "auto" || mode == "cloudflare" || mode == "google"

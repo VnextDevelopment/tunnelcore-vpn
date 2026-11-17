@@ -39,6 +39,7 @@ public slots:
 
     QString tunnelCoreDnsMode() const;
     void setTunnelCoreDnsMode(const QString &mode);
+    bool saveTunnelCoreCustomDns(const QString &primary, const QString &secondary);
     QString getPrimaryDns();
     void setPrimaryDns(const QString &dns);
 

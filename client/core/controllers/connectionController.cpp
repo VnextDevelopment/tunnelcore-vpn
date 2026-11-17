@@ -392,6 +392,11 @@ ErrorCode ConnectionController::prepareConnection(const QString &serverId,
 
     vpnConfiguration = createConnectionConfiguration(dns, isApiConfig, hostName, description, configVersion,
                                                      containerConfigModel, container);
+    if (kind == serverConfigUtils::ConfigType::Native && ContainerUtils::isAwgContainer(container)) {
+        const auto cfg = m_serversRepository->nativeConfig(serverId);
+        if (cfg && cfg->managedProfileId == tunnelCoreManagedProfileId)
+            vpnConfiguration.insert(QStringLiteral("tunnelCoreManagedDns"), true);
+    }
 
     return ErrorCode::NoError;
 }

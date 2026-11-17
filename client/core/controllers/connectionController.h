@@ -6,6 +6,7 @@
 #include <QPair>
 #include <memory>
 #include <functional>
+#include <utility>
 #include <QStringList>
 
 #include "core/utils/containerEnum.h"
@@ -41,6 +42,7 @@ public:
 
     using DnsPolicyFetcher = std::function<void(const QString &, std::function<void(bool, const QStringList &)>)>;
     void setDnsPolicyFetcher(DnsPolicyFetcher fetcher) { m_dnsPolicyFetcher = std::move(fetcher); }
+    bool isDnsPolicyPending() const { return m_dnsPending; }
     ErrorCode openConnection(const QString &serverId);
 
     void closeConnection();

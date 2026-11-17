@@ -1,3 +1,4 @@
+#include "core/utils/tunnelCoreDns.h"
 #include "vpnConnection.h"
 
 #include <QDebug>
@@ -484,8 +485,18 @@ void VpnConnection::appendSplitTunnelingConfig()
                 }
             }
             sites.removeDuplicates();
+            const bool managedDns = m_vpnConfiguration.value(QStringLiteral("tunnelCoreManagedDns")).toBool();
+            const QStringList dnsHosts = {
+                m_vpnConfiguration.value(configKey::dns1).toString(),
+                m_vpnConfiguration.value(configKey::dns2).toString()
+            };
             for (const auto &site : sites) {
-                sitesJsonArray.append(site);
+                if (managedDns && routeMode == amnezia::RouteMode::VpnAllExceptSites) {
+                    for (const auto &route : TunnelCoreDns::withoutDnsHosts(site, dnsHosts))
+                        sitesJsonArray.append(route);
+                } else {
+                    sitesJsonArray.append(site);
+                }
             }
 
             if (sitesJsonArray.isEmpty()) {
@@ -495,7 +506,7 @@ void VpnConnection::appendSplitTunnelingConfig()
                 for (const auto &key : {configKey::dns1, configKey::dns2}) {
                     const auto address = m_vpnConfiguration.value(key).toString();
                     if (!address.isEmpty())
-                        sitesJsonArray.append(address);
+                        sitesJsonArray.append(managedDns ? address + QStringLiteral("/32") : address);
                 }
             }
         }
