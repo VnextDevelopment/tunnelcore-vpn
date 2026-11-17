@@ -4110,6 +4110,10 @@ Create one from the current settings.</source>
         <source>Blocks network connections without VPN</source>
         <translation>وی پی این کے بغیر نیٹ ورک کنکشنز کو روکتا ہے</translation>
     </message>
+    <message>
+        <source>Choose DNS for TunnelCore VPN</source>
+        <translation>TunnelCore VPN کے لیے DNS منتخب کریں</translation>
+    </message>
 </context>
 <context>
     <name>PageSettingsDns</name>
@@ -4177,6 +4181,22 @@ Create one from the current settings.</source>
         <location filename="../ui/qml/Pages2/PageSettingsDns.qml" line="165"/>
         <source>Settings saved</source>
         <translation>ترتیبات محفوظ ہوگئیں</translation>
+    </message>
+    <message>
+        <source>Changes apply the next time you connect. Automatic mode uses TunnelCore DNS when available, otherwise the VPN profile DNS.</source>
+        <translation>تبدیلیاں اگلے کنکشن پر لاگو ہوں گی۔ خودکار موڈ دستیاب ہونے پر TunnelCore DNS، ورنہ VPN پروفائل کا DNS استعمال کرتا ہے۔</translation>
+    </message>
+    <message>
+        <source>TunnelCore DNS (automatic)</source>
+        <translation>TunnelCore DNS (خودکار)</translation>
+    </message>
+    <message>
+        <source>Custom DNS</source>
+        <translation>حسبِ ضرورت DNS</translation>
+    </message>
+    <message>
+        <source>Enter a valid IPv4 DNS address</source>
+        <translation>درست IPv4 DNS پتہ درج کریں</translation>
     </message>
 </context>
 <context>

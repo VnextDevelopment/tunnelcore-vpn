@@ -174,4 +174,30 @@
         <translation>TunnelCore VPN&apos;i Android Hızlı Ayarlar panelinden bağlayın veya bağlantısını kesin</translation>
     </message>
 </context>
+<context>
+    <name>PageSettingsConnection</name>
+    <message>
+        <source>Choose DNS for TunnelCore VPN</source>
+        <translation>TunnelCore VPN için DNS seçin</translation>
+    </message>
+</context>
+<context>
+    <name>PageSettingsDns</name>
+    <message>
+        <source>Changes apply the next time you connect. Automatic mode uses TunnelCore DNS when available, otherwise the VPN profile DNS.</source>
+        <translation>Değişiklikler bir sonraki bağlantıda uygulanır. Otomatik mod, kullanılabiliyorsa TunnelCore DNS’i, aksi halde VPN profilindeki DNS’i kullanır.</translation>
+    </message>
+    <message>
+        <source>TunnelCore DNS (automatic)</source>
+        <translation>TunnelCore DNS (otomatik)</translation>
+    </message>
+    <message>
+        <source>Custom DNS</source>
+        <translation>Özel DNS</translation>
+    </message>
+    <message>
+        <source>Enter a valid IPv4 DNS address</source>
+        <translation>Geçerli bir IPv4 DNS adresi girin</translation>
+    </message>
+</context>
 </TS>

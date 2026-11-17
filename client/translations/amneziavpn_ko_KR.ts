@@ -4100,6 +4100,10 @@ Create one from the current settings.</source>
         <source>Blocks network connections without VPN</source>
         <translation>VPN을 사용하지 않는 네트워크 연결을 차단합니다</translation>
     </message>
+    <message>
+        <source>Choose DNS for TunnelCore VPN</source>
+        <translation>TunnelCore VPN의 DNS 선택</translation>
+    </message>
 </context>
 <context>
     <name>PageSettingsDns</name>
@@ -4167,6 +4171,22 @@ Create one from the current settings.</source>
         <location filename="../ui/qml/Pages2/PageSettingsDns.qml" line="165"/>
         <source>Settings saved</source>
         <translation>설정을 저장했습니다</translation>
+    </message>
+    <message>
+        <source>Changes apply the next time you connect. Automatic mode uses TunnelCore DNS when available, otherwise the VPN profile DNS.</source>
+        <translation>변경 사항은 다음 연결 시 적용됩니다. 자동 모드는 사용 가능한 경우 TunnelCore DNS를, 그렇지 않으면 VPN 프로필의 DNS를 사용합니다.</translation>
+    </message>
+    <message>
+        <source>TunnelCore DNS (automatic)</source>
+        <translation>TunnelCore DNS (자동)</translation>
+    </message>
+    <message>
+        <source>Custom DNS</source>
+        <translation>사용자 지정 DNS</translation>
+    </message>
+    <message>
+        <source>Enter a valid IPv4 DNS address</source>
+        <translation>유효한 IPv4 DNS 주소를 입력하세요</translation>
     </message>
 </context>
 <context>
